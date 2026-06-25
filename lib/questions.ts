@@ -21,6 +21,8 @@ export interface Question {
   placeholder?: string;
   options?: Option[];
   required?: boolean;
+  /** If true, shows a text input when the user selects the "other" option */
+  allowOtherText?: boolean;
   /** If set, this question only shows when answers[conditionKey] matches conditionValue */
   conditionKey?: string;
   conditionValue?: string | string[];
@@ -137,6 +139,7 @@ const branchingStep: Step = {
       question: "ประเทศปลายทาง",
       questionEn: "Destination Country",
       required: true,
+      allowOtherText: true,
       options: [
         { value: "uk", label: "สหราชอาณาจักร 🇬🇧" },
         { value: "schengen", label: "เชงเก้น / ยุโรป 🇪🇺" },

@@ -65,11 +65,13 @@ export function QuestionScreen({
   submitting,
 }: QuestionScreenProps) {
   const value = answers[question.id] as string | undefined;
+  const otherText = answers[question.id + "_other"] as string | undefined;
   const validationError = getValidationError(question, value);
   const isAnswered =
     question.type === "consent"
       ? value === "true"
-      : value !== undefined && value !== "" && validationError === null;
+      : value !== undefined && value !== "" && validationError === null &&
+        !(question.allowOtherText && value === "other" && !otherText?.trim());
   const pct = Math.round(((qIndex + 1) / totalQ) * 100);
 
   function handleSelect(v: string) {
@@ -206,6 +208,39 @@ export function QuestionScreen({
                       <span>{opt.label}</span>
                     </motion.button>
                   ))}
+
+                  {/* Other text input */}
+                  {question.allowOtherText && value === "other" && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="mt-1"
+                    >
+                      <input
+                        type="text"
+                        value={otherText ?? ""}
+                        onChange={(e) => onAnswer(question.id + "_other", e.target.value)}
+                        placeholder="ระบุประเทศปลายทาง"
+                        autoFocus
+                        onKeyDown={(e) => { if (e.key === "Enter" && isAnswered) onNext(); }}
+                        className="w-full px-4 py-4 rounded-2xl border-2 border-accent bg-card text-primary placeholder:text-muted-soft text-base focus:outline-none focus:border-accent transition-colors"
+                      />
+                    </motion.div>
+                  )}
+
+                  {/* Next button for "other" with text */}
+                  {question.allowOtherText && value === "other" && isAnswered && (
+                    <motion.button
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      onClick={onNext}
+                      className="self-start px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95"
+                      style={{ background: "#ffd166", color: "#1b3d5c" }}
+                    >
+                      ถัดไป →
+                    </motion.button>
+                  )}
                 </div>
               )}
 

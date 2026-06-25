@@ -23,7 +23,9 @@ export async function POST(request: NextRequest) {
     // Branching
     occupation: answers.occupation ?? "",
     visaType: answers.visaType ?? "",
-    destination: answers.destination ?? "",
+    destination: answers.destination === "other"
+      ? (answers.destination_other ?? "อื่นๆ")
+      : (answers.destination ?? ""),
     // Financial
     monthlyIncome: answers.monthlyIncome ?? "",
     bankBalance: answers.bankBalance ?? "",
