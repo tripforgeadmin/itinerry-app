@@ -88,6 +88,7 @@ export default function QuestionnairePage() {
     <QuestionScreen
       question={current.question}
       sectionTitle={current.step.title}
+      sectionTitleEn={current.step.titleEn}
       qIndex={step}
       totalQ={flat.length}
       answers={answers}

@@ -1,13 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
 import type { Question } from "@/lib/questions";
 import type { Answers } from "@/store/formStore";
 
+type Lang = "th" | "en";
+
 interface QuestionScreenProps {
   question: Question;
   sectionTitle: string;
+  sectionTitleEn?: string;
   sectionEmoji: string;
   qIndex: number;
   totalQ: number;
@@ -52,6 +56,7 @@ function getValidationError(question: Question, value: string | undefined): stri
 export function QuestionScreen({
   question,
   sectionTitle,
+  sectionTitleEn,
   sectionEmoji,
   qIndex,
   totalQ,
@@ -64,6 +69,7 @@ export function QuestionScreen({
   direction,
   submitting,
 }: QuestionScreenProps) {
+  const [lang, setLang] = useState<Lang>("th");
   const value = answers[question.id] as string | undefined;
   const otherText = answers[question.id + "_other"] as string | undefined;
   const validationError = getValidationError(question, value);
@@ -88,9 +94,26 @@ export function QuestionScreen({
       <div className="px-5 pt-5 pb-4 bg-card border-b border-border">
         <div className="flex items-center justify-between mb-3">
           <ItinerryLogo size="sm" />
-          <span className="text-xs text-muted font-medium bg-surface px-2.5 py-1 rounded-full">
-            {qIndex + 1} / {totalQ}
-          </span>
+          <div className="flex items-center gap-2">
+            {/* Language toggle */}
+            <div className="flex rounded-full border border-border overflow-hidden text-xs font-bold">
+              <button
+                onClick={() => setLang("th")}
+                className={`px-2.5 py-1 transition-colors ${lang === "th" ? "bg-accent text-white" : "text-muted hover:text-primary"}`}
+              >
+                TH
+              </button>
+              <button
+                onClick={() => setLang("en")}
+                className={`px-2.5 py-1 transition-colors ${lang === "en" ? "bg-accent text-white" : "text-muted hover:text-primary"}`}
+              >
+                EN
+              </button>
+            </div>
+            <span className="text-xs text-muted font-medium bg-surface px-2.5 py-1 rounded-full">
+              {qIndex + 1} / {totalQ}
+            </span>
+          </div>
         </div>
         {/* Progress */}
         <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
@@ -105,7 +128,9 @@ export function QuestionScreen({
         {/* Section tag */}
         <div className="flex items-center gap-1.5 mt-2.5">
           <span className="text-sm">{sectionEmoji}</span>
-          <span className="text-xs font-semibold text-accent">{sectionTitle}</span>
+          <span className="text-xs font-semibold text-accent">
+            {lang === "en" && sectionTitleEn ? sectionTitleEn : sectionTitle}
+          </span>
         </div>
       </div>
 
@@ -125,12 +150,9 @@ export function QuestionScreen({
             {/* Question */}
             <div>
               <h2 className="text-xl font-bold text-primary leading-snug">
-                {question.question}
+                {lang === "en" && question.questionEn ? question.questionEn : question.question}
                 {question.required && <span className="text-red-alert ml-1 text-base">*</span>}
               </h2>
-              {question.questionEn && (
-                <p className="text-xs text-muted mt-1">{question.questionEn}</p>
-              )}
             </div>
 
             {/* Inputs */}
@@ -168,7 +190,7 @@ export function QuestionScreen({
                       className="self-start px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95"
                       style={{ background: "#ffd166", color: "#1b3d5c" }}
                     >
-                      ถัดไป →
+                      {lang === "en" ? "Next →" : "ถัดไป →"}
                     </motion.button>
                   )}
                 </>
@@ -205,7 +227,7 @@ export function QuestionScreen({
                         )}
                       </span>
                       {opt.emoji && <span className="text-lg">{opt.emoji}</span>}
-                      <span>{opt.label}</span>
+                      <span>{lang === "en" && opt.labelEn ? opt.labelEn : opt.label}</span>
                     </motion.button>
                   ))}
 
@@ -221,7 +243,7 @@ export function QuestionScreen({
                         type="text"
                         value={otherText ?? ""}
                         onChange={(e) => onAnswer(question.id + "_other", e.target.value)}
-                        placeholder="ระบุประเทศปลายทาง"
+                        placeholder={lang === "en" ? "Enter destination country" : "ระบุประเทศปลายทาง"}
                         autoFocus
                         onKeyDown={(e) => { if (e.key === "Enter" && isAnswered) onNext(); }}
                         className="w-full px-4 py-4 rounded-2xl border-2 border-accent bg-card text-primary placeholder:text-muted-soft text-base focus:outline-none focus:border-accent transition-colors"
@@ -238,7 +260,7 @@ export function QuestionScreen({
                       className="self-start px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95"
                       style={{ background: "#ffd166", color: "#1b3d5c" }}
                     >
-                      ถัดไป →
+                      {lang === "en" ? "Next →" : "ถัดไป →"}
                     </motion.button>
                   )}
                 </div>
@@ -265,7 +287,9 @@ export function QuestionScreen({
                         </svg>
                       )}
                     </span>
-                    <span className="text-sm text-primary-mid leading-relaxed">{question.question}</span>
+                    <span className="text-sm text-primary-mid leading-relaxed">
+                      {lang === "en" && question.questionEn ? question.questionEn : question.question}
+                    </span>
                   </button>
                   {isAnswered && (
                     <motion.button
@@ -276,7 +300,11 @@ export function QuestionScreen({
                       className="self-start px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 disabled:opacity-60"
                       style={{ background: "#ffd166", color: "#1b3d5c" }}
                     >
-                      {submitting ? "กำลังส่ง..." : isLast ? "ส่งข้อมูล ✓" : "ถัดไป →"}
+                      {submitting
+                        ? (lang === "en" ? "Submitting..." : "กำลังส่ง...")
+                        : isLast
+                          ? (lang === "en" ? "Submit ✓" : "ส่งข้อมูล ✓")
+                          : (lang === "en" ? "Next →" : "ถัดไป →")}
                     </motion.button>
                   )}
                 </div>
@@ -293,7 +321,7 @@ export function QuestionScreen({
             onClick={onBack}
             className="flex items-center gap-1.5 text-muted text-sm hover:text-primary transition-colors"
           >
-            ← ย้อนกลับ
+            {lang === "en" ? "← Back" : "← ย้อนกลับ"}
           </button>
         </div>
       )}
