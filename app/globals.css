@@ -1,26 +1,67 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Noto+Sans+Thai:wght@100..900&display=swap");
+
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* ─── Colors ─────────────────────────────────────────────────────────── */
+  --color-primary: #1b3d5c;
+  --color-primary-mid: #2e5573;
+  --color-accent: #44a8db;
+  --color-accent-hover: #2b86b5;
+  --color-accent-tint: #d6effa;
+  --color-accent-bg: #f0f8fd;
+  --color-accent-subtle: #e8f5fc;
+  --color-card: #fdfeff;
+  --color-muted: #64748b;
+  --color-navy: #0f172a;
+  --color-surface: #f8fafc;
+  --color-surface-soft: #f3f4f6;
+  --color-border: #e2e8f0;
+  --color-border-mid: #cbd5e1;
+  --color-muted-soft: #94a3b8;
+  --color-muted-mid: #6b7280;
+  --color-muted-strong: #475569;
+  --color-slate-deep: #334155;
+  --color-yellow: #ffd166;
+  --color-yellow-hover: #f5c842;
+  --color-yellow-strong: #ffc533;
+  --color-yellow-mid: #fed984;
+  --color-yellow-pale: #fff8e1;
+  --color-on-yellow: var(--color-primary);
+  --color-logo-primary: #00c3ff;
+  --color-sky-bg: #f0f9ff;
+  --color-sky-border: #bae6fd;
+  --color-red-alert: #e32c2c;
+  --color-success: #4ade80;
+  --color-success-mid: #2d7a5a;
+  --color-success-deep: #1a6b47;
+  --color-success-bg: #e6f7f0;
+  --color-blue-pale: #dbeafe;
+  --color-mint: #a3e0c6;
+  --color-pink: #ec4899;
+  --color-emerald: #10b981;
+  --color-purple: #8b5cf6;
+  --color-orange: #f97316;
+  --color-line: #06c755;
+  --color-warning: #f59e0b;
+  --color-warning-deep: #b8860b;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* ─── Typography ─────────────────────────────────────────────────────── */
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-thai: "Noto Sans Thai", sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* ─── Border Radius ──────────────────────────────────────────────────── */
+  --radius-card: 1rem;
+  --radius-container: 1.5rem;
+
+  /* ─── Shadows ────────────────────────────────────────────────────────── */
+  --shadow-card: 0px 2px 12px 0px rgba(68, 168, 219, 0.1);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Plus Jakarta Sans", "Noto Sans Thai", sans-serif;
+  background-color: var(--color-surface);
+  color: var(--color-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
