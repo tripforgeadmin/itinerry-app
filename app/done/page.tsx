@@ -30,10 +30,9 @@ export default function DonePage() {
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="w-20 h-20 rounded-full flex items-center justify-center text-4xl"
-          style={{ background: "rgba(74, 222, 128, 0.2)", border: "2px solid rgba(74,222,128,0.4)" }}
         >
-          ✅
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/approve.png" alt="approved" className="w-24 h-24 object-contain" />
         </motion.div>
 
         {/* Headline */}
