@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { QuestionScreen } from "@/components/form/QuestionScreen";
+import type { Lang } from "@/components/form/QuestionScreen";
 import { useFormStore } from "@/store/formStore";
 import { getActiveSteps } from "@/lib/questions";
 import type { Question, Step } from "@/lib/questions";
@@ -26,6 +27,7 @@ export default function QuestionnairePage() {
   const [submitting, setSubmitting] = useState(false);
   const [direction, setDirection] = useState(1);
   const [mounted, setMounted] = useState(false);
+  const [lang, setLang] = useState<Lang>("th");
   const prevStepRef = useRef(step);
 
   useEffect(() => { setMounted(true); }, []);
@@ -92,6 +94,8 @@ export default function QuestionnairePage() {
       qIndex={step}
       totalQ={flat.length}
       answers={answers}
+      lang={lang}
+      onLangChange={setLang}
       sectionEmoji={current.step.emoji}
       onAnswer={(key, value) => setAnswer(key, value)}
       onNext={handleNext}

@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
 import type { Question } from "@/lib/questions";
 import type { Answers } from "@/store/formStore";
 
-type Lang = "th" | "en";
+export type Lang = "th" | "en";
 
 interface QuestionScreenProps {
   question: Question;
@@ -16,6 +15,8 @@ interface QuestionScreenProps {
   qIndex: number;
   totalQ: number;
   answers: Answers;
+  lang: Lang;
+  onLangChange: (l: Lang) => void;
   onAnswer: (key: string, value: string) => void;
   onNext: () => void;
   onBack: () => void;
@@ -61,6 +62,8 @@ export function QuestionScreen({
   qIndex,
   totalQ,
   answers,
+  lang,
+  onLangChange,
   onAnswer,
   onNext,
   onBack,
@@ -69,7 +72,6 @@ export function QuestionScreen({
   direction,
   submitting,
 }: QuestionScreenProps) {
-  const [lang, setLang] = useState<Lang>("th");
   const value = answers[question.id] as string | undefined;
   const otherText = answers[question.id + "_other"] as string | undefined;
   const validationError = getValidationError(question, value);
@@ -98,13 +100,13 @@ export function QuestionScreen({
             {/* Language toggle */}
             <div className="flex rounded-full border border-border overflow-hidden text-xs font-bold">
               <button
-                onClick={() => setLang("th")}
+                onClick={() => onLangChange("th")}
                 className={`px-2.5 py-1 transition-colors ${lang === "th" ? "bg-accent text-white" : "text-muted hover:text-primary"}`}
               >
                 TH
               </button>
               <button
-                onClick={() => setLang("en")}
+                onClick={() => onLangChange("en")}
                 className={`px-2.5 py-1 transition-colors ${lang === "en" ? "bg-accent text-white" : "text-muted hover:text-primary"}`}
               >
                 EN
