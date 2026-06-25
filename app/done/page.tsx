@@ -32,7 +32,7 @@ export default function DonePage() {
           transition={{ delay: 0.1, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/approve.png" alt="approved" className="w-24 h-24 object-contain" />
+          <img src="/approve.png" alt="approved" className="w-40 h-40 object-contain" />
         </motion.div>
 
         {/* Headline */}
