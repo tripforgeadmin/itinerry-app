@@ -27,6 +27,28 @@ const variants = {
   exit: (d: number) => ({ x: d > 0 ? "-30%" : "30%", opacity: 0, scale: 0.96 }),
 };
 
+function getValidationError(question: Question, value: string | undefined): string | null {
+  if (!value || value === "") return null;
+
+  if (question.id === "fullName") {
+    const words = value.trim().split(/\s+/).filter(Boolean);
+    if (words.length < 2) return "กรุณากรอกชื่อและนามสกุล";
+  }
+
+  if (question.type === "tel") {
+    const digits = value.replace(/[\s\-\(\)]/g, "");
+    if (!/^(0[6-9]\d{8}|0[2-8]\d{7,8}|\+?66[6-9]\d{8})$/.test(digits))
+      return "รูปแบบเบอร์โทรไม่ถูกต้อง เช่น 0812345678";
+  }
+
+  if (question.type === "email") {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()))
+      return "รูปแบบอีเมลไม่ถูกต้อง เช่น name@email.com";
+  }
+
+  return null;
+}
+
 export function QuestionScreen({
   question,
   sectionTitle,
@@ -43,8 +65,11 @@ export function QuestionScreen({
   submitting,
 }: QuestionScreenProps) {
   const value = answers[question.id] as string | undefined;
+  const validationError = getValidationError(question, value);
   const isAnswered =
-    question.type === "consent" ? value === "true" : value !== undefined && value !== "";
+    question.type === "consent"
+      ? value === "true"
+      : value !== undefined && value !== "" && validationError === null;
   const pct = Math.round(((qIndex + 1) / totalQ) * 100);
 
   function handleSelect(v: string) {
@@ -119,8 +144,20 @@ export function QuestionScreen({
                     placeholder={question.placeholder}
                     autoFocus
                     onKeyDown={(e) => { if (e.key === "Enter" && isAnswered) onNext(); }}
-                    className="w-full px-4 py-4 rounded-2xl border-2 border-border bg-card text-primary placeholder:text-muted-soft text-base focus:outline-none focus:border-accent transition-colors"
+                    className={[
+                      "w-full px-4 py-4 rounded-2xl border-2 bg-card text-primary placeholder:text-muted-soft text-base focus:outline-none transition-colors",
+                      validationError && value ? "border-red-alert focus:border-red-alert" : "border-border focus:border-accent",
+                    ].join(" ")}
                   />
+                  {validationError && value && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-xs text-red-alert font-medium px-1"
+                    >
+                      {validationError}
+                    </motion.p>
+                  )}
                   {isAnswered && (
                     <motion.button
                       initial={{ opacity: 0, y: 6 }}
