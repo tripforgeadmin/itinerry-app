@@ -112,20 +112,24 @@ export function QuestionScreen({
                 EN
               </button>
             </div>
-            <span className="text-xs text-muted font-medium bg-surface px-2.5 py-1 rounded-full">
-              {qIndex + 1} / {totalQ}
-            </span>
           </div>
         </div>
-        {/* Progress */}
-        <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: "linear-gradient(90deg, #44a8db, #00c3ff)" }}
-            initial={false}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          />
+        {/* Power bar */}
+        <div className="flex items-center gap-1 mt-1">
+          {Array.from({ length: totalQ }).map((_, i) => (
+            <motion.div
+              key={i}
+              className="h-2 flex-1 rounded-full"
+              initial={false}
+              animate={{
+                background: i < qIndex + 1
+                  ? "linear-gradient(90deg, #44a8db, #00c3ff)"
+                  : "var(--color-border)",
+                opacity: i < qIndex + 1 ? 1 : 0.4,
+              }}
+              transition={{ duration: 0.3, delay: i * 0.02 }}
+            />
+          ))}
         </div>
         {/* Section tag */}
         <div className="flex items-center gap-1.5 mt-2.5">
@@ -167,7 +171,7 @@ export function QuestionScreen({
                     type={question.type}
                     value={value ?? ""}
                     onChange={(e) => onAnswer(question.id, e.target.value)}
-                    placeholder={question.placeholder}
+                    placeholder={lang === "en" && question.placeholderEn ? question.placeholderEn : question.placeholder}
                     autoFocus
                     onKeyDown={(e) => { if (e.key === "Enter" && isAnswered) onNext(); }}
                     className={[

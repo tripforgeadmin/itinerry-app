@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
-import { LINE_OA_URL, LINE_OA_QR, LINE_OA_ID } from "@/lib/constants";
 
 const TAGLINES = [
   "ประเมินความเสี่ยงล่วงหน้าก่อนยื่นวีซ่า",
@@ -20,7 +19,6 @@ const STEPS = [
 export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [taglineIndex, setTaglineIndex] = useState(0);
-  const [addedFriend, setAddedFriend] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -28,11 +26,6 @@ export default function AuthPage() {
     }, 2800);
     return () => clearInterval(t);
   }, []);
-
-  function handleAddFriend() {
-    window.open(LINE_OA_URL, "_blank");
-    setTimeout(() => setAddedFriend(true), 1500);
-  }
 
   function handleLineLogin() {
     setLoading(true);
@@ -118,76 +111,43 @@ export default function AuthPage() {
           ))}
         </motion.div>
 
-        {/* Step 1: Add Friend / Step 2: LINE Login */}
-        <AnimatePresence mode="wait">
-          {!addedFriend ? (
-            <motion.div
-              key="add-friend"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.35 }}
-              className="w-full flex flex-col items-center gap-3"
-            >
-              {/* QR */}
-              <div className="flex flex-col items-center gap-1.5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={LINE_OA_QR} alt="LINE QR" className="w-28 h-28 rounded-2xl" />
-                <span className="text-xs text-muted">{LINE_OA_ID}</span>
-              </div>
-
-              {/* Add Friend Button */}
-              <button
-                onClick={handleAddFriend}
-                className="w-full flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-bold text-base transition-all active:scale-95 shadow-lg"
-                style={{ backgroundColor: "#06c755", boxShadow: "0 4px 24px rgba(6,199,85,0.3)" }}
-              >
+        {/* LINE Login Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="w-full"
+        >
+          <button
+            onClick={handleLineLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-bold text-base transition-all active:scale-95 disabled:opacity-60 shadow-lg"
+            style={{ backgroundColor: "#06c755", boxShadow: "0 4px 24px rgba(6,199,85,0.3)" }}
+          >
+            {loading ? (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                className="w-5 h-5 rounded-full border-2 border-white border-t-transparent"
+              />
+            ) : (
+              <>
                 <LineIcon />
-                เพิ่มเพื่อน LINE ก่อนเริ่มใช้งาน
-              </button>
+                เริ่มประเมินฟรี
+              </>
+            )}
+          </button>
+        </motion.div>
 
-              <button
-                onClick={() => setAddedFriend(true)}
-                className="text-xs text-muted underline underline-offset-2"
-              >
-                เพิ่มเพื่อนแล้ว →
-              </button>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="login"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.35 }}
-              className="w-full flex flex-col gap-3"
-            >
-              <button
-                onClick={handleLineLogin}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-bold text-base transition-all active:scale-95 disabled:opacity-60 shadow-lg"
-                style={{ backgroundColor: "#06c755", boxShadow: "0 4px 24px rgba(6,199,85,0.3)" }}
-              >
-                {loading ? (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
-                    className="w-5 h-5 rounded-full border-2 border-white border-t-transparent"
-                  />
-                ) : (
-                  <>
-                    <LineIcon />
-                    เริ่มประเมินฟรี
-                  </>
-                )}
-              </button>
-              <p className="text-xs text-muted text-center leading-relaxed px-4">
-                โดยการเข้าสู่ระบบ คุณยินยอมให้ itinerry เก็บข้อมูลโปรไฟล์ LINE
-                เพื่อประกอบการให้บริการ
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-5 text-xs text-muted text-center leading-relaxed px-4"
+        >
+          โดยการเข้าสู่ระบบ คุณยินยอมให้ itinerry เก็บข้อมูลโปรไฟล์ LINE
+          เพื่อประกอบการให้บริการ
+        </motion.p>
       </div>
     </main>
   );

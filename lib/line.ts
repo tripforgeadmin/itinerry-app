@@ -23,7 +23,7 @@ export function buildLineAuthUrl(state: string): string {
     redirect_uri: LINE_CALLBACK_URL,
     scope: "profile openid",
     state,
-    bot_prompt: "aggressive",
+    prompt: "consent",
   });
   return `${LINE_AUTH_URL}?${params.toString()}`;
 }

@@ -20,6 +20,7 @@ export interface Question {
   question: string;
   questionEn?: string;
   placeholder?: string;
+  placeholderEn?: string;
   options?: Option[];
   required?: boolean;
   /** If true, shows a text input when the user selects the "other" option */
@@ -50,6 +51,7 @@ const personalInfoStep: Step = {
       question: "ชื่อ-นามสกุล",
       questionEn: "Full Name",
       placeholder: "กรอกชื่อ-นามสกุล",
+      placeholderEn: "Enter your full name",
       required: true,
     },
     {
@@ -69,6 +71,7 @@ const personalInfoStep: Step = {
       question: "เบอร์โทรศัพท์",
       questionEn: "Phone Number",
       placeholder: "0812345678",
+      placeholderEn: "0812345678",
       required: true,
     },
     {
@@ -77,6 +80,7 @@ const personalInfoStep: Step = {
       question: "อีเมล",
       questionEn: "Email Address",
       placeholder: "example@email.com",
+      placeholderEn: "example@email.com",
       required: true,
     },
     {
