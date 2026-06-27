@@ -187,6 +187,37 @@
   .occ.sel .tick{border-color:var(--accent);background:var(--accent)}
   .occ.sel .tick svg{opacity:1}
 
+  /* ties: 2-column obligation image grid (multi-select) */
+  .tie-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tie{aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;padding:12px 8px;border-radius:16px;cursor:pointer;position:relative;color:var(--primary);transition:all .14s}
+  .tie:active{transform:scale(.97)}
+  .tie-img{width:94px;height:94px;flex:none;display:flex;align-items:center;justify-content:center}
+  .tie-img img{width:100%;height:100%;object-fit:contain}
+  .tie-name{font-size:12.5px;font-weight:700;line-height:1.25;max-width:100%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .tie .tk{position:absolute;top:9px;right:9px;width:21px;height:21px;border-radius:50%;border:2px solid var(--border-mid);background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center}
+  .tie .tk svg{opacity:0;transition:opacity .15s}
+  .tie.sel .tk{border-color:var(--accent);background:var(--accent)}
+  .tie.sel .tk svg{opacity:1}
+
+  /* found: 2-column logo tiles (multi-select, optional) */
+  .found-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .found{display:flex;flex-direction:column;align-items:center;gap:8px;padding:11px;border-radius:16px;cursor:pointer;position:relative;color:var(--primary);transition:all .14s}
+  .found:active{transform:scale(.97)}
+  .found-img{width:100%;aspect-ratio:16/9;border-radius:11px;overflow:hidden;background:#eef1f5}
+  .found-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .found-name{font-size:13px;font-weight:700}
+  .found .tk{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;border:2px solid var(--border-mid);background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center}
+  .found .tk svg{opacity:0;transition:opacity .15s}
+  .found.sel .tk{border-color:var(--accent);background:var(--accent)}
+  .found.sel .tk svg{opacity:1}
+
+  /* summary review list */
+  .sum-card{border-radius:var(--r-card);padding:2px 6px;overflow:hidden}
+  .sum-row{display:flex;justify-content:space-between;gap:12px;padding:11px 8px;font-size:13.5px;border-bottom:1px solid rgba(27,61,92,.08)}
+  .sum-row:last-child{border-bottom:none}
+  .sum-row .k{color:var(--muted);font-weight:600;flex:none;max-width:44%}
+  .sum-row .v{color:var(--primary);font-weight:700;text-align:right}
+
   /* ---- Nationality · 2 horizontal cards (stacked) ----
      [Single-Option Aversion] two clear full-width options at the decision point.
      [Aesthetic-Usability] passport illustrations make a high-stakes choice feel approachable. */
@@ -376,13 +407,13 @@
   }
 
   /* ===== unified glassmorphism for all choice/card components (every screen) ===== */
-  .opt,.check,.chip,.seg3 .s,.yn .o,.consent-check,.trust .t,.nextcard,.pdpa,.trip-sum1,.cal-card,.occ{
+  .opt,.check,.chip,.seg3 .s,.yn .o,.consent-check,.trust .t,.nextcard,.pdpa,.trip-sum1,.cal-card,.occ,.tie,.found,.sum-card{
     background:rgba(255,255,255,.55);
     backdrop-filter:blur(11px) saturate(1.4);-webkit-backdrop-filter:blur(11px) saturate(1.4);
     border:1px solid rgba(255,255,255,.7);
     box-shadow:0 4px 16px rgba(27,61,92,.08);
   }
-  .opt.sel,.check.sel,.seg3 .s.sel,.yn .o.sel,.chip.sel,.occ.sel{
+  .opt.sel,.check.sel,.seg3 .s.sel,.yn .o.sel,.chip.sel,.occ.sel,.tie.sel,.found.sel{
     border-color:var(--accent);background:rgba(214,239,250,.66);
     box-shadow:0 0 0 3px rgba(68,168,219,.18),0 6px 18px rgba(27,61,92,.1);
   }
@@ -629,6 +660,7 @@
           <div class="s" onclick="pick3(this)">มีบางส่วน<small>ยังขาด</small></div>
           <div class="s" onclick="pick3(this)">ยังไม่มี<small>เริ่มเตรียม</small></div>
         </div>
+        <div class="prior-mascot"><img src="assets/mascot/itin_main.png" alt="" loading="lazy"></div>
       </section>
 
       <!-- 9 REFUSED (phase 3 · sensitive) -->
@@ -646,6 +678,7 @@
             <div class="field"><label>ปี</label><input type="number" inputmode="numeric" placeholder="2566"></div>
           </div>
         </div>
+        <div class="prior-mascot"><img src="assets/mascot/itin_main.png" alt="" loading="lazy"></div>
       </section>
 
       <!-- 10 OVERSTAY (phase 3 · sensitive) -->
@@ -660,6 +693,7 @@
         <div class="reveal" id="overstayReveal">
           <div class="field"><label>ระบุประเทศ ระยะเวลา และปี</label><input type="text" placeholder="เช่น ญี่ปุ่น 10 วัน ปี 2565"></div>
         </div>
+        <div class="prior-mascot"><img src="assets/mascot/itin_main.png" alt="" loading="lazy"></div>
       </section>
 
       <!-- 11 SAVINGS (phase 3 · sensitive) -->
@@ -672,6 +706,7 @@
         <button class="opt" onclick="pick(this,true)"><span><span class="ttl">150,000 – 300,000 บาท</span></span><span class="tick"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
         <button class="opt" onclick="pick(this,true)"><span><span class="ttl">มากกว่า 300,000 บาท</span></span><span class="tick"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
         <div class="privacy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2l8 3v6c0 5-3.4 8.5-8 11-4.6-2.5-8-6-8-11V5l8-3z" stroke="var(--muted-light)" stroke-width="1.8"/></svg>ข้อมูลการเงินถูกเข้ารหัสและเก็บเป็นความลับ</div>
+        <div class="prior-mascot"><img src="assets/mascot/itin_main.png" alt="" loading="lazy"></div>
       </section>
 
       <!-- 12 TIES (phase 3 · positive multi) -->
@@ -692,40 +727,44 @@
         </div>
       </section>
 
-      <!-- 14 CONTACT -->
+      <!-- 14 CONTACT + CHANNEL (merged: two questions on one page) -->
       <section class="screen" data-id="contact">
         <p class="q-eyebrow">ช่องทางรับผล</p>
         <h2 class="q-label">เราจะส่งผลให้คุณที่ไหนดี?</h2>
-        <div class="field"><label>ชื่อ–นามสกุล</label><input type="text" placeholder="ชื่อของคุณ" oninput="checkContact()"></div>
-        <div class="field"><label>เบอร์โทรศัพท์</label><input type="tel" inputmode="tel" placeholder="08X-XXX-XXXX" oninput="checkContact()"></div>
-        <div class="field"><label>อีเมล</label><input type="email" inputmode="email" placeholder="you@email.com" oninput="checkContact()">
+        <div class="field"><label>ชื่อ–นามสกุล</label><input type="text" placeholder="ชื่อของคุณ" oninput="validateContact()"></div>
+        <div class="field"><label>เบอร์โทรศัพท์</label><input type="tel" inputmode="tel" placeholder="08X-XXX-XXXX" oninput="validateContact()"></div>
+        <div class="field"><label>อีเมล</label><input type="email" inputmode="email" placeholder="you@email.com" oninput="validateContact()">
           <div class="hint">✉️ ใช้ส่งผลประเมินและเอกสาร — ไม่สแปม</div>
         </div>
-      </section>
-
-      <!-- 15 CHANNEL + TIME -->
-      <section class="screen" data-id="channel">
-        <p class="q-eyebrow">ช่องทางติดต่อกลับ</p>
-        <h2 class="q-label">อยากให้ติดต่อกลับทางไหน?</h2>
+        <h2 class="q-label" style="margin-top:20px">อยากให้ติดต่อกลับทางไหน?</h2>
         <button class="opt" id="optLine" onclick="pickChannel(this,false)"><span class="emoji">💬</span><span><span class="ttl" style="color:var(--line)">Add LINE OA</span><span class="sub">@itinerry — คุยกับทีมได้เลย</span></span><span class="tick"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
-        <button class="opt" onclick="pickChannel(this,true)"><span class="emoji">📞</span><span><span class="ttl">ให้เราโทรกลับ</span><span class="sub">เลือกช่วงเวลาที่สะดวก</span></span><span class="tick"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+        <button class="opt" data-call="1" onclick="pickChannel(this,true)"><span class="emoji">📞</span><span><span class="ttl">ให้เราโทรกลับ</span><span class="sub">เลือกช่วงเวลาที่สะดวก</span></span><span class="tick"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
         <div class="reveal" id="timeReveal">
           <p style="font-size:13px;font-weight:700;margin:6px 0 11px">ช่วงเวลาที่สะดวก</p>
           <div class="seg3">
-            <div class="s" onclick="pick3(this)">🌅<br>เช้า<small>9–12</small></div>
-            <div class="s" onclick="pick3(this)">☀️<br>บ่าย<small>12–15</small></div>
-            <div class="s" onclick="pick3(this)">🌆<br>เย็น<small>15–18</small></div>
+            <div class="s" onclick="pickTime(this)">🌅<br>เช้า<small>9–12</small></div>
+            <div class="s" onclick="pickTime(this)">☀️<br>บ่าย<small>12–15</small></div>
+            <div class="s" onclick="pickTime(this)">🌆<br>เย็น<small>15–18</small></div>
           </div>
         </div>
+        <div class="prior-mascot"><img src="assets/mascot/itin_main.png" alt="" loading="lazy"></div>
       </section>
 
-      <!-- 16 CERTIFY + SUBMIT -->
-      <section class="screen" data-id="certify" data-elephant="submit">
-        <p class="q-eyebrow">ขั้นตอนสุดท้าย</p>
+      <!-- 16 FOUND (how did you hear about us) -->
+      <section class="screen" data-id="found">
+        <p class="q-eyebrow">เกือบเสร็จ</p>
         <h2 class="q-label">รู้จัก itinerry จากช่องไหน?</h2>
-        <p class="q-help">ช่วยเราพัฒนาบริการ (ไม่บังคับ)</p>
-        <div class="chips" id="foundChips" style="margin-bottom:22px"></div>
-        <div class="consent-check" id="certBox" onclick="toggleCert()">
+        <p class="q-help">ช่วยเราพัฒนาบริการ (ไม่บังคับ · เลือกได้หลายข้อ)</p>
+        <div class="found-grid" id="foundGrid"></div>
+      </section>
+
+      <!-- 17 SUMMARY + CERTIFY + SUBMIT -->
+      <section class="screen" data-id="summary" data-elephant="submit">
+        <p class="q-eyebrow">ตรวจสอบก่อนส่ง</p>
+        <h2 class="q-label">สรุปข้อมูลของคุณ</h2>
+        <p class="q-help">ตรวจความถูกต้องก่อนส่งให้ทีมวีซ่า</p>
+        <div id="summaryList"></div>
+        <div class="consent-check" id="certBox" onclick="toggleCert()" style="margin-top:14px">
           <div class="box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <span>ข้าพเจ้าขอรับรองว่าข้อมูลทั้งหมดเป็นความจริงและถูกต้อง</span>
         </div>
@@ -845,8 +884,8 @@ const COUNTRIES = [
   ["โอมาน","Oman","Oman","om muscat"]
 ];
 const PRIOR = [["✓","ไม่เคย",""],["🇬🇧","UK","gb"],["🇪🇺","Schengen","eu"],["🇺🇸","USA","us"],["🇨🇦","Canada","ca"],["🇦🇺","Australia","au"],["🇳🇿","NZ","nz"],["🇯🇵","Japan","jp"],["🇰🇷","S.Korea","kr"],["🇨🇳","China","cn"],["🇦🇪","Dubai","ae"]];
-const TIES = [["💼","งานประจำ หรือธุรกิจในไทย"],["🏠","บ้าน / คอนโด / ที่ดินเป็นของตัวเอง"],["👨‍👩‍👧","คู่สมรส หรือบุตรอยู่ในไทย"],["🧓","พ่อแม่ หรือผู้ที่ต้องดูแลอยู่ในไทย"],["💰","เงินลงทุนหรือทรัพย์สินอื่น"],["—","ไม่มีข้อใดข้างต้น"]];
-const FOUND = [["📘","Facebook"],["📷","Instagram"],["🎵","TikTok"],["🔍","Google"],["🤝","เพื่อนแนะนำ"],["✨","อื่นๆ"]];
+const TIES = [["งานประจำ / ธุรกิจ ในไทย","itin-obligation-job"],["บ้าน / คอนโด / ที่ดิน ในไทย","itin-obligation-house"],["คู่สมรส / บุตร ในไทย","itin-obligation-wife-child"],["พ่อ–แม่ / ผู้ที่ต้องดูแล ในไทย","itin-obligation-elder"],["การลงทุน / ทรัพย์สินอื่น","itin-obligation-other-asset"],["ไม่มีข้อใดข้างต้น","itin-obligation-no"]];
+const FOUND = [["Facebook","logo-iso-facebook"],["Instagram","logo-iso-instagram"],["TikTok","logo-iso-tiktok"],["Google","logo-iso-google"],["เพื่อนแนะนำ","logo-iso-refer"],["อื่นๆ","logo-iso-other"]];
 
 /* ---------- round flag images (open-source Circle Flags via jsDelivr) ---------- */
 const FLAG_BASE="https://cdn.jsdelivr.net/gh/HatScripts/circle-flags/flags/";
@@ -862,13 +901,13 @@ function flagFallback(img){
 }
 
 /* ---------- flow ---------- */
-const flow = ["welcome","consent","nationality","country","visatype","dates","priorvisas","occupation","empdoc","refused","overstay","savings","ties","transition","contact","channel","certify","confirm"];
-const phaseOf = {nationality:1,country:1,visatype:1,dates:2,priorvisas:2,occupation:2,empdoc:3,refused:3,overstay:3,savings:3,ties:3,contact:3,channel:3,certify:3};
+const flow = ["welcome","consent","nationality","country","visatype","dates","priorvisas","occupation","empdoc","refused","overstay","savings","ties","transition","contact","found","summary","confirm"];
+const phaseOf = {nationality:1,country:1,visatype:1,dates:2,priorvisas:2,occupation:2,empdoc:3,refused:3,overstay:3,savings:3,ties:3,contact:3,found:3,summary:3};
 /* screens that count as "questions" inside each category — used to fill the water level */
 const phaseScreens = {
   1:["nationality","country","visatype"],
   2:["dates","priorvisas","occupation"],
-  3:["empdoc","refused","overstay","savings","ties","contact","channel","certify"]
+  3:["empdoc","refused","overstay","savings","ties","contact","found","summary"]
 };
 let idx = 0;
 
@@ -890,8 +929,8 @@ function footerFor(id){
     ties:      `<button class="btn btn-y" id="cta" disabled onclick="next()">ถัดไป</button>`,
     transition:`<button class="btn btn-y" onclick="next()">ใส่ข้อมูลติดต่อ <span class="latin">→</span></button>`,
     contact:   `<button class="btn btn-y" id="cta" disabled onclick="next()">ถัดไป</button>`,
-    channel:   `<button class="btn btn-y" id="cta" disabled onclick="next()">ถัดไป</button>`,
-    certify:   `<button class="btn btn-y" id="cta" disabled onclick="next()">ส่งแบบประเมิน <span class="latin">→</span></button>`,
+    found:     `<button class="btn btn-y" onclick="next()">ถัดไป <span class="latin">→</span></button>`,
+    summary:   `<button class="btn btn-y" id="cta" disabled onclick="next()">ส่งแบบประเมิน <span class="latin">→</span></button>`,
     confirm:   `<button class="btn btn-line" onclick="alert('เปิด LINE @itinerry')">💬 Add LINE @itinerry</button><button class="btn btn-ghost" onclick="restart()">เริ่มประเมินใหม่</button>`
   };
   // single-select screens auto-advance: minimal/no footer
@@ -940,6 +979,7 @@ function render(){
   tb.classList.toggle('bare', bare);
   document.getElementById('wm').style.display = bare ? 'block':'none';
   document.getElementById('back').classList.toggle('hide', id==='welcome' || id==='confirm');
+  if(id==='summary') buildSummary();
   updateProgress(id);
   footerFor(id);
 }
@@ -1020,8 +1060,11 @@ function pickChannel(el, isCall){
   el.parentElement.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
   el.classList.add('sel');
   document.getElementById('timeReveal').classList.toggle('open', isCall);
-  // LINE → ready immediately; Call → wait for time pick
-  if(!isCall) enableCTA(); else disableCTA();
+  validateContact();
+}
+function pickTime(el){
+  el.parentElement.querySelectorAll('.s').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel'); validateContact();
 }
 function toggleMulti(el){
   el.classList.toggle('sel');
@@ -1082,10 +1125,12 @@ function updateTrip(){
     else { dd.textContent='–'; warn.style.display='block'; warn.textContent='⚠️ วันกลับต้องหลังวันไป'; disableCTA(); }
   } else { dd.textContent='–'; warn.style.display='none'; disableCTA(); }
 }
-function checkContact(){
-  const ins=byId('contact').querySelectorAll('input');
-  const ok=[...ins].every(i=>i.value.trim().length>1);
-  document.getElementById('cta').disabled=!ok;
+function validateContact(){
+  const sec=byId('contact');
+  const okFields=[...sec.querySelectorAll('.field input')].every(i=>i.value.trim().length>1);
+  const ch=sec.querySelector('.opt.sel');
+  const okCh = !!ch && (ch.dataset.call!=='1' || !!document.querySelector('#timeReveal .s.sel'));
+  const c=document.getElementById('cta'); if(c) c.disabled=!(okFields&&okCh);
 }
 /* ---------- country picker: 2-column flag grid + search + typewriter ---------- */
 function flagSrc(slug){ return "assets/flag-countries/Flag_of_"+slug+"_Flat_Round_Corner-512x512.png"; }
@@ -1148,12 +1193,65 @@ function pickCheck(el){
   else { wrap.querySelector(`[data-i="${last}"]`).classList.remove('sel'); el.classList.toggle('sel'); }
   enableCTA();
 }
-function pickFound(el){ el.classList.toggle('sel'); } // optional, no gating
+function pickFound(el){ el.classList.toggle('sel'); } // optional multi-select, no gating
+/* found: 2-column logo tiles */
+function buildFound(){
+  document.getElementById('foundGrid').innerHTML = FOUND.map((d,i)=>`<button class="found" data-i="${i}" onclick="pickFound(this)"><span class="found-img"><img src="assets/icon-iso/${d[1]}-sm.png" alt="" loading="lazy"></span><span class="found-name">${d[0]}</span><span class="tk"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>`).join('');
+}
+
+/* ---------- summary: scan the DOM for every selection and list them ---------- */
+function summRow(k,v){ return v?`<div class="sum-row"><span class="k">${k}</span><span class="v">${v}</span></div>`:''; }
+function mainTxt(el){ if(!el) return ''; const n=el.childNodes[0]; return (n?n.textContent:el.textContent).trim(); }
+function buildSummary(){
+  const host=document.getElementById('summaryList'); host.className='sum-card';
+  const q=s=>document.querySelector(s), qa=s=>[...document.querySelectorAll(s)];
+  let h='';
+  h+=summRow('สัญชาติ', mainTxt(q('[data-id="nationality"] .nat-card.sel .ttl')));
+  h+=summRow('ประเทศปลายทาง', (q('#countryGrid .cc.sel .cc-name b')||{}).textContent||'');
+  let visa=mainTxt(q('#visaList .vopt.sel .ttl'));
+  const vo=document.getElementById('visaOtherInput');
+  if(visa==='วีซ่าประเภทอื่นๆ' && vo && vo.value.trim()) visa='อื่นๆ: '+vo.value.trim();
+  h+=summRow('ประเภทวีซ่า', visa);
+  if(CAL.go.sel||CAL.back.sel) h+=summRow('วันเดินทาง', (CAL.go.sel?fmtDate(CAL.go.sel):'?')+' – '+(CAL.back.sel?fmtDate(CAL.back.sel):'?'));
+  const dd=document.getElementById('sumDays'); if(dd && dd.textContent && dd.textContent!=='–') h+=summRow('จำนวนวัน', dd.textContent);
+  const prior=qa('#priorChips .chip.sel span').map(s=>s.textContent.trim()).filter(Boolean);
+  if(prior.length) h+=summRow('ประวัติวีซ่า', prior.join(', '));
+  h+=summRow('อาชีพ', mainTxt(q('#occList .occ.sel .ttl')));
+  h+=summRow('หนังสือรับรองงาน', mainTxt(q('[data-id="empdoc"] .seg3 .s.sel')));
+  const rf=q('[data-id="refused"] .yn .o.sel, [data-id="refused"] .yn .o.selwarn');
+  if(rf){ let v=rf.textContent.trim(); if(rf.classList.contains('selwarn')){ const ins=qa('#refusedReveal input').map(i=>i.value.trim()).filter(Boolean); if(ins.length) v+=' ('+ins.join(' ')+')'; } h+=summRow('เคยถูกปฏิเสธวีซ่า', v); }
+  const os=q('[data-id="overstay"] .yn .o.sel, [data-id="overstay"] .yn .o.selwarn');
+  if(os){ let v=os.textContent.trim(); if(os.classList.contains('selwarn')){ const iv=(q('#overstayReveal input')||{}).value; if(iv&&iv.trim()) v+=' ('+iv.trim()+')'; } h+=summRow('Overstay', v); }
+  h+=summRow('เงินออม', mainTxt(q('[data-id="savings"] .opt.sel .ttl')));
+  const ties=qa('#tiesList .tie.sel .tie-name').map(s=>s.textContent.trim());
+  if(ties.length) h+=summRow('ความผูกพันกับไทย', ties.join(', '));
+  const ci=qa('[data-id="contact"] .field input');
+  if(ci[0]&&ci[0].value.trim()) h+=summRow('ชื่อ', ci[0].value.trim());
+  if(ci[1]&&ci[1].value.trim()) h+=summRow('เบอร์โทร', ci[1].value.trim());
+  if(ci[2]&&ci[2].value.trim()) h+=summRow('อีเมล', ci[2].value.trim());
+  const ch=q('[data-id="contact"] .opt.sel');
+  if(ch){ let v=mainTxt(ch.querySelector('.ttl')); const tm=q('#timeReveal .s.sel'); if(tm){ const sm=tm.querySelector('small'); v+=' · '+(sm?sm.textContent:''); } h+=summRow('ติดต่อกลับ', v); }
+  const fnd=qa('#foundGrid .found.sel .found-name').map(s=>s.textContent.trim());
+  if(fnd.length) h+=summRow('รู้จักจาก', fnd.join(', '));
+  host.innerHTML = h || '<div class="sum-row"><span class="k">ยังไม่ได้เลือกข้อมูล</span></div>';
+}
+
+/* ties: 2-column obligation image grid (multi-select, last = "none" exclusive) */
+function buildTies(){
+  const host=document.getElementById('tiesList'); host.className='tie-grid';
+  host.innerHTML = TIES.map((t,i)=>`<button class="tie" data-i="${i}" onclick="pickTie(this)"><span class="tie-img"><img src="assets/mascot/${t[1]}-cut.png" alt="" loading="lazy"></span><span class="tie-name">${t[0]}</span><span class="tk"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>`).join('');
+}
+function pickTie(el){
+  const i=+el.dataset.i, wrap=el.parentElement, last=TIES.length-1;
+  if(i===last){ wrap.querySelectorAll('.tie').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); }
+  else { wrap.querySelector('[data-i="'+last+'"]').classList.remove('sel'); el.classList.toggle('sel'); }
+  enableCTA();
+}
 
 /* init */
 buildChips('priorChips', PRIOR, 'pickChip');
-buildChips('foundChips', FOUND, 'pickFound');
-buildChecklist('tiesList', TIES, true);
+buildFound();
+buildTies();
 buildCountryGrid();
 startTypewriter();
 calInit();
