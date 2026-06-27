@@ -33,6 +33,6 @@ export const useFormStore = create<FormStore>()(
       setLineProfile: (profile) => set({ lineProfile: profile }),
       reset: () => set({ history: [FIRST_QUESTION_ID], answers: {}, lineProfile: null }),
     }),
-    { name: "itinerry-visa-form-v2" }
+    { name: "itinerry-visa-form-v3" }
   )
 );
