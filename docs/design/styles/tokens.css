@@ -1,0 +1,106 @@
+@theme {
+  /* ─── Colors ─────────────────────────────────────────────────────────── */
+
+  /* Primary blues */
+  --color-primary: #1b3d5c;        /* Headings, dark backgrounds */
+  --color-primary-mid: #2e5573;    /* Body text, descriptions */
+
+  /* Accent blues */
+  --color-accent: #44a8db;         /* Links, interactive elements, borders */
+  --color-accent-hover: #2b86b5;   /* Link / button hover state */
+  --color-accent-tint: #d6effa;    /* Subtle accent borders */
+  --color-accent-bg: #f0f8fd;      /* Accent section backgrounds */
+  --color-accent-subtle: #e8f5fc;  /* Comparison card backgrounds */
+
+  /* Neutral / surface */
+  --color-card: #fdfeff;           /* Card backgrounds */
+  --color-muted: #64748b;          /* Secondary text, labels */
+  --color-navy: #0f172a;           /* Near-black navy (headers) */
+  --color-surface: #f8fafc;        /* Lightest neutral surface */
+  --color-surface-soft: #f3f4f6;   /* Soft gray surface */
+  --color-border: #e2e8f0;         /* Default subtle border */
+  --color-border-mid: #cbd5e1;     /* Medium border */
+  --color-muted-soft: #94a3b8;     /* Softest muted text */
+  --color-muted-mid: #6b7280;      /* Mid-weight muted text */
+  --color-muted-strong: #475569;   /* Strong muted text */
+  --color-slate-deep: #334155;     /* Deep slate */
+
+  /* CTA / yellow */
+  --color-yellow: #ffd166;         /* CTA buttons */
+  --color-yellow-hover: #f5c842;   /* CTA button hover */
+  --color-yellow-strong: #ffc533;  /* Strong/bright yellow */
+  --color-yellow-mid: #fed984;     /* Medium yellow */
+  --color-yellow-pale: #fff8e1;    /* Pale yellow background */
+  --color-on-yellow: var(--color-primary); /* Text on yellow buttons */
+
+  /* Special */
+  --color-logo-primary-color: #00c3ff; /* Logo "iti" color / bright cyan accent */
+
+  /* Sky / blue variants */
+  --color-sky-bg: #f0f9ff;         /* Very pale sky background */
+  --color-sky-border: #bae6fd;     /* Sky blue border */
+
+  /* Status / feedback */
+  --color-red-alert: #e32c2c;      /* Error / alert state */
+  --color-success: #4ade80;        /* Success green */
+  --color-success-mid: #2d7a5a;    /* Medium success green */
+  --color-success-deep: #1a6b47;   /* Deep success green */
+  --color-success-bg: #e6f7f0;     /* Success background */
+
+  /* Blue variants */
+  --color-blue-pale: #dbeafe;      /* Blue-100 background */
+
+  /* Green accent */
+  --color-mint: #a3e0c6;           /* Mint green */
+
+  /* UI variety (tabs, icons) */
+  --color-pink: #ec4899;           /* Pink accent */
+  --color-emerald: #10b981;        /* Emerald green */
+  --color-purple: #8b5cf6;         /* Purple accent */
+  --color-orange: #f97316;         /* Orange accent */
+
+  /* Brand partners */
+  --color-line: #06C755;           /* LINE app brand green */
+
+  /* Warning */
+  --color-warning: #f59e0b;        /* Warning amber */
+  --color-warning-deep: #b8860b;   /* Deep warning/gold */
+
+  /* ─── Typography ─────────────────────────────────────────────────────── */
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-thai: "Noto Sans Thai", sans-serif;
+
+  /* ─── Border Radius ──────────────────────────────────────────────────── */
+  --radius-card: 1rem;             /* Cards  (≈ rounded-2xl) */
+  --radius-container: 1.5rem;      /* Large containers (≈ rounded-3xl) */
+
+  /* ─── Shadows ────────────────────────────────────────────────────────── */
+  --shadow-card: 0px 2px 12px 0px rgba(68, 168, 219, 0.1);
+}
+
+/* ─── Dark Theme ─────────────────────────────────────────────────────── */
+.dark {
+  --color-surface: #0e1f2e;
+  --color-surface-soft: #0a1825;
+  --color-card: #1e2f3f;
+  --color-primary: #e2e8f0;
+  --color-primary-mid: #b8ccd9;
+  --color-navy: #f0f4f8;
+  --color-accent: #3a9cc8;
+  --color-accent-hover: #44a8db;
+  --color-accent-bg: #0f2233;
+  --color-accent-tint: #1a3a4f;
+  --color-accent-subtle: #152d3f;
+  --color-border: #2a4255;
+  --color-border-mid: #3a5570;
+  --color-muted: #8a9fb5;
+  --color-muted-soft: #6a8299;
+  --color-muted-mid: #7a94aa;
+  --color-muted-strong: #9ab0c5;
+  --color-slate-deep: #7a94aa;
+  --color-sky-bg: #0f2233;
+  --color-sky-border: #2a4a65;
+  --color-on-yellow: #1b3d5c;
+  --shadow-card: 0px 2px 12px 0px rgba(0, 0, 0, 0.3);
+  --color-red-alert: #ff6b6b;
+}

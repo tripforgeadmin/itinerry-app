@@ -1,0 +1,111 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+@theme {
+  --breakpoint-desktop: 1100px;
+}
+
+html, body {
+  scroll-behavior: smooth;
+  background-color: var(--color-surface);
+}
+
+/* Dark mode smooth color transitions */
+*, *::before, *::after {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+/* Suppress transitions on initial page load to prevent dark-mode flash */
+.no-transition * {
+  transition: none !important;
+}
+
+/* Dark mode: override hardcoded bg-white to use token */
+.dark .bg-white {
+  background-color: var(--color-card) !important;
+}
+.dark .border-border {
+  border-color: var(--color-border) !important;
+}
+
+/* Navy card — always stays dark regardless of theme */
+.bg-navy-card {
+  background-color: #1b3d5c;
+}
+
+/* Dark mode: yellow buttons — use on-yellow token so text stays readable */
+.dark .bg-yellow,
+.dark .bg-yellow-hover,
+.dark .bg-yellow-strong,
+.dark .bg-yellow-mid {
+  color: var(--color-on-yellow) !important;
+}
+
+/* Dark mode: CTA card glow so it pops against dark background */
+.dark .cta-card {
+  box-shadow: 0 0 0 1px rgba(58,156,200,0.25), 0 24px 60px rgba(0,0,0,0.5) !important;
+}
+
+/* theme-light: force light theme colors regardless of dark mode */
+.dark .theme-light {
+  --color-primary: #1b3d5c;
+  --color-primary-mid: #2e5573;
+  --color-card: #fdfeff;
+  --color-surface: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-border-mid: #cbd5e1;
+  --color-muted: #64748b;
+  --color-muted-soft: #94a3b8;
+  --color-navy: #0f172a;
+  --color-accent: #44a8db;
+  --color-accent-bg: #f0f8fd;
+  --color-accent-tint: #d6effa;
+  --color-accent-subtle: #e8f5fc;
+  --color-sky-bg: #f0f9ff;
+  --color-sky-border: #bae6fd;
+}
+.dark .theme-light .bg-white {
+  background-color: white !important;
+}
+
+/* Scroll hint — navy in light, white in dark */
+.scroll-hint {
+  color: var(--color-navy);
+}
+.dark .scroll-hint {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Bottom Nav custom properties — resolve before any React hydration */
+:root {
+  --nav-bg: rgba(255, 255, 255, 0.72);
+  --nav-border: rgba(255, 255, 255, 0.8);
+  --nav-shadow: 0 -8px 32px rgba(27, 61, 92, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+.dark {
+  --nav-bg: rgba(14, 31, 46, 0.88);
+  --nav-border: rgba(42, 66, 85, 0.8);
+  --nav-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.7s ease-out forwards;
+}
