@@ -1,18 +1,21 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/style.css";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
 import type { Question } from "@/lib/questions";
 import type { Answers } from "@/store/formStore";
 
 export type Lang = "th" | "en";
 
-function CircularProgress({ current, total }: { current: number; total: number }) {
+function CircularProgress({ current }: { current: number }) {
   const size = 36;
   const stroke = 3;
   const r = (size - stroke) / 2;
   const circumference = 2 * Math.PI * r;
-  const progress = circumference - (current / total) * circumference;
+  const MAX_VISIBLE = 20;
+  const progress = circumference - (Math.min(current, MAX_VISIBLE) / MAX_VISIBLE) * circumference;
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -41,7 +44,6 @@ interface QuestionScreenProps {
   sectionTitleEn?: string;
   sectionEmoji: string;
   qIndex: number;
-  totalQ: number;
   answers: Answers;
   lang: Lang;
   onLangChange: (l: Lang) => void;
@@ -63,7 +65,7 @@ const variants = {
 function getValidationError(question: Question, value: string | undefined): string | null {
   if (!value || value === "") return null;
 
-  if (question.id === "fullName") {
+  if (question.id === "q3") {
     const words = value.trim().split(/\s+/).filter(Boolean);
     if (words.length < 2) return "กรุณากรอกชื่อและนามสกุล";
   }
@@ -82,13 +84,18 @@ function getValidationError(question: Question, value: string | undefined): stri
   return null;
 }
 
+function formatDateDisplay(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  return `${parseInt(d)} ${months[parseInt(m) - 1]} ${parseInt(y) + 543}`;
+}
+
 export function QuestionScreen({
   question,
   sectionTitle,
   sectionTitleEn,
   sectionEmoji,
   qIndex,
-  totalQ,
   answers,
   lang,
   onLangChange,
@@ -100,22 +107,49 @@ export function QuestionScreen({
   direction,
   submitting,
 }: QuestionScreenProps) {
-  const value = answers[question.id] as string | undefined;
-  const otherText = answers[question.id + "_other"] as string | undefined;
+  const value = answers[question.id];
+  const otherText = answers[question.id + "_other"];
   const validationError = getValidationError(question, value);
-  const isAnswered =
-    question.type === "consent"
-      ? value === "true"
-      : value !== undefined && value !== "" && validationError === null &&
-        !(question.allowOtherText && value === "other" && !otherText?.trim());
-  const pct = Math.round(((qIndex + 1) / totalQ) * 100);
+
+  const selectedMulti = question.type === "multiCheckbox"
+    ? (value ? value.split(", ").filter(Boolean) : [])
+    : [];
+
+  const isAnswered = (() => {
+    if (question.type === "consent") return value === "true";
+    if (question.type === "multiCheckbox") return selectedMulti.length > 0;
+    if (question.type === "date") return Boolean(value);
+    if (question.allowOtherText && value === "other") return Boolean(otherText?.trim());
+    return value !== undefined && value !== "" && validationError === null;
+  })();
 
   function handleSelect(v: string) {
     onAnswer(question.id, v);
-    if (question.type === "radio" || question.type === "dropdown") {
+    const skipAutoAdvance = question.allowOtherText && v === "other";
+    if ((question.type === "radio" || question.type === "dropdown") && !skipAutoAdvance) {
       setTimeout(() => onNext(), 300);
     }
   }
+
+  function toggleMulti(optVal: string) {
+    const current = value ? value.split(", ").filter(Boolean) : [];
+    const next = current.includes(optVal)
+      ? current.filter((v) => v !== optVal)
+      : [...current, optVal];
+    onAnswer(question.id, next.join(", "));
+  }
+
+  const selectedDate = (() => {
+    if (!value) return undefined;
+    const [y, m, d] = value.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  })();
+
+  const nextBtnLabel = submitting
+    ? (lang === "en" ? "Submitting..." : "กำลังส่ง...")
+    : isLast
+      ? (lang === "en" ? "Submit ✓" : "ส่งข้อมูล ✓")
+      : (lang === "en" ? "Next →" : "ถัดไป →");
 
   return (
     <div className="min-h-screen flex flex-col bg-surface">
@@ -125,7 +159,6 @@ export function QuestionScreen({
         <div className="flex items-center justify-between mb-3">
           <ItinerryLogo size="sm" />
           <div className="flex items-center gap-2">
-            {/* Language toggle */}
             <div className="flex rounded-full border border-border overflow-hidden text-xs font-bold">
               <button
                 onClick={() => onLangChange("th")}
@@ -140,11 +173,13 @@ export function QuestionScreen({
                 EN
               </button>
             </div>
-            {/* Circular progress */}
-            <CircularProgress current={qIndex + 1} total={totalQ} />
+            {question.type === "consent" ? (
+              <span className="text-xl">📋</span>
+            ) : (
+              <CircularProgress current={qIndex} />
+            )}
           </div>
         </div>
-        {/* Section tag */}
         <div className="flex items-center gap-1.5 mt-2.5">
           <span className="text-sm">{sectionEmoji}</span>
           <span className="text-xs font-semibold text-accent">
@@ -154,7 +189,7 @@ export function QuestionScreen({
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-y-auto">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={question.id}
@@ -166,7 +201,7 @@ export function QuestionScreen({
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             className="flex-1 flex flex-col px-5 pt-6 pb-4 gap-5"
           >
-            {/* Question */}
+            {/* Question text */}
             <div>
               <h2 className="text-xl font-bold text-primary leading-snug">
                 {lang === "en" && question.questionEn ? question.questionEn : question.question}
@@ -209,13 +244,13 @@ export function QuestionScreen({
                       className="self-start px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95"
                       style={{ background: "#ffd166", color: "#1b3d5c" }}
                     >
-                      {lang === "en" ? "Next →" : "ถัดไป →"}
+                      {nextBtnLabel}
                     </motion.button>
                   )}
                 </>
               )}
 
-              {/* Radio / Dropdown as grid */}
+              {/* Radio / Dropdown */}
               {(question.type === "radio" || question.type === "dropdown") && (
                 <div className="grid grid-cols-2 gap-2">
                   {question.options?.map((opt, i) => (
@@ -253,13 +288,17 @@ export function QuestionScreen({
                       initial={{ opacity: 0, y: -6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="mt-1"
+                      className="col-span-2 mt-1"
                     >
                       <input
                         type="text"
                         value={otherText ?? ""}
                         onChange={(e) => onAnswer(question.id + "_other", e.target.value)}
-                        placeholder={lang === "en" ? "Enter destination country" : "ระบุประเทศปลายทาง"}
+                        placeholder={
+                          lang === "en" && question.otherPlaceholderEn
+                            ? question.otherPlaceholderEn
+                            : question.otherPlaceholder ?? "ระบุข้อมูล"
+                        }
                         autoFocus
                         onKeyDown={(e) => { if (e.key === "Enter" && isAnswered) onNext(); }}
                         className="w-full px-4 py-4 rounded-2xl border-2 border-accent bg-card text-primary placeholder:text-muted-soft text-base focus:outline-none focus:border-accent transition-colors"
@@ -267,18 +306,120 @@ export function QuestionScreen({
                     </motion.div>
                   )}
 
-                  {/* Next button for "other" with text */}
                   {question.allowOtherText && value === "other" && isAnswered && (
                     <motion.button
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       onClick={onNext}
-                      className="self-start px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95"
+                      className="col-span-2 self-start px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95"
                       style={{ background: "#ffd166", color: "#1b3d5c" }}
                     >
-                      {lang === "en" ? "Next →" : "ถัดไป →"}
+                      {nextBtnLabel}
                     </motion.button>
                   )}
+                </div>
+              )}
+
+              {/* Multi Checkbox */}
+              {question.type === "multiCheckbox" && (
+                <div className="flex flex-col gap-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {question.options?.map((opt, i) => {
+                      const checked = selectedMulti.includes(opt.value);
+                      return (
+                        <motion.button
+                          key={opt.value}
+                          initial={{ opacity: 0, scale: 0.92 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: i * 0.03, duration: 0.2 }}
+                          type="button"
+                          onClick={() => toggleMulti(opt.value)}
+                          className={[
+                            "flex flex-col items-center justify-center gap-1.5 px-3 py-3 rounded-2xl border-2 text-center transition-all active:scale-[0.97] font-medium",
+                            checked
+                              ? "border-accent bg-accent-bg text-primary shadow-card"
+                              : "border-border bg-card text-primary-mid hover:border-accent-tint",
+                          ].join(" ")}
+                        >
+                          {opt.emoji && <span className="text-xl">{opt.emoji}</span>}
+                          <span className="leading-tight text-xs">
+                            {lang === "en" && opt.labelEn ? opt.labelEn : opt.label}
+                          </span>
+                          {checked && (
+                            <motion.span
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="w-2 h-2 rounded-full bg-accent"
+                            />
+                          )}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                  <motion.button
+                    animate={{ opacity: isAnswered ? 1 : 0.4 }}
+                    onClick={() => { if (isAnswered) onNext(); }}
+                    disabled={!isAnswered || submitting}
+                    className="self-start px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 disabled:cursor-not-allowed"
+                    style={{ background: "#ffd166", color: "#1b3d5c" }}
+                  >
+                    {nextBtnLabel}
+                  </motion.button>
+                </div>
+              )}
+
+              {/* Date Picker */}
+              {question.type === "date" && (
+                <div className="flex flex-col gap-3">
+                  {value && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-bg border border-accent"
+                    >
+                      <span className="text-base">📅</span>
+                      <span className="text-sm font-semibold text-accent">{formatDateDisplay(value)}</span>
+                    </motion.div>
+                  )}
+                  <div className="rounded-2xl overflow-hidden border border-border bg-card">
+                    <style>{`
+                      .rdp-root {
+                        --rdp-accent-color: #44a8db;
+                        --rdp-accent-background-color: rgba(68,168,219,0.12);
+                        --rdp-font-family: inherit;
+                        width: 100%;
+                      }
+                      .rdp-month_caption { color: var(--color-primary); font-weight: 700; }
+                      .rdp-weekday { color: var(--color-muted); font-size: 0.7rem; }
+                      .rdp-day_button { color: var(--color-primary-mid); }
+                      .rdp-day_button:hover { background: var(--rdp-accent-background-color); }
+                      .rdp-nav button { color: var(--color-muted); }
+                      .rdp-day[data-outside] .rdp-day_button { color: var(--color-muted-soft); }
+                      .rdp-dropdown select { background: var(--color-card); color: var(--color-primary); border: 1px solid var(--color-border); border-radius: 8px; padding: 2px 6px; }
+                    `}</style>
+                    <DayPicker
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => {
+                        if (date) {
+                          const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+                          onAnswer(question.id, iso);
+                        }
+                      }}
+                      captionLayout="dropdown"
+                      startMonth={new Date(2025, 0)}
+                      endMonth={new Date(2029, 11)}
+                    />
+                  </div>
+                  <motion.button
+                    animate={{ opacity: isAnswered ? 1 : 0.4 }}
+                    onClick={() => { if (isAnswered) onNext(); }}
+                    disabled={!isAnswered || submitting}
+                    className="self-start px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 disabled:cursor-not-allowed"
+                    style={{ background: "#ffd166", color: "#1b3d5c" }}
+                  >
+                    {nextBtnLabel}
+                  </motion.button>
                 </div>
               )}
 
@@ -316,15 +457,12 @@ export function QuestionScreen({
                       className="self-start px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 disabled:opacity-60"
                       style={{ background: "#ffd166", color: "#1b3d5c" }}
                     >
-                      {submitting
-                        ? (lang === "en" ? "Submitting..." : "กำลังส่ง...")
-                        : isLast
-                          ? (lang === "en" ? "Submit ✓" : "ส่งข้อมูล ✓")
-                          : (lang === "en" ? "Next →" : "ถัดไป →")}
+                      {nextBtnLabel}
                     </motion.button>
                   )}
                 </div>
               )}
+
             </div>
           </motion.div>
         </AnimatePresence>

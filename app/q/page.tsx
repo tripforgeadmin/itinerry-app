@@ -5,46 +5,24 @@ import { useRouter } from "next/navigation";
 import { QuestionScreen } from "@/components/form/QuestionScreen";
 import type { Lang } from "@/components/form/QuestionScreen";
 import { useFormStore } from "@/store/formStore";
-import { getActiveSteps } from "@/lib/questions";
-import type { Question, Step } from "@/lib/questions";
-
-interface FlatQuestion {
-  question: Question;
-  step: Step;
-  stepIndex: number;
-}
-
-function flattenQuestions(answers: Record<string, string | string[]>): FlatQuestion[] {
-  const steps = getActiveSteps(answers);
-  return steps.flatMap((step, stepIndex) =>
-    step.questions.map((question) => ({ question, step, stepIndex }))
-  );
-}
+import { QUESTIONS_MAP } from "@/lib/questions";
 
 export default function QuestionnairePage() {
   const router = useRouter();
-  const { step, answers, setAnswer, nextStep, prevStep, setStep } = useFormStore();
+  const { history, answers, setAnswer, pushQuestion, popQuestion } = useFormStore();
   const [submitting, setSubmitting] = useState(false);
   const [direction, setDirection] = useState(1);
   const [mounted, setMounted] = useState(false);
   const [lang, setLang] = useState<Lang>("th");
-  const prevStepRef = useRef(step);
+  const prevLenRef = useRef(history.length);
 
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    setDirection(step > prevStepRef.current ? 1 : -1);
-    prevStepRef.current = step;
-  }, [step]);
-
-  const flat = flattenQuestions(answers);
-  const current = flat[step];
-
-  useEffect(() => {
-    if (mounted && step >= flat.length && flat.length > 0) {
-      setStep(flat.length - 1);
-    }
-  }, [mounted, flat.length, step, setStep]);
+    const dir = history.length >= prevLenRef.current ? 1 : -1;
+    setDirection(dir);
+    prevLenRef.current = history.length;
+  }, [history.length]);
 
   if (!mounted) return (
     <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -52,31 +30,44 @@ export default function QuestionnairePage() {
     </div>
   );
 
-  if (!current) return null;
+  const currentId = history[history.length - 1];
+  const question = QUESTIONS_MAP[currentId];
 
-  // Get unique steps to count sections
-  const uniqueSteps = [...new Map(flat.map((f) => [f.step.id, f.step])).values()];
-  const totalSections = uniqueSteps.length;
+  if (!question) return null;
 
-  async function handleNext() {
-    if (step < flat.length - 1) {
-      nextStep();
+  function getNextId(): string | undefined {
+    const freshAnswers = useFormStore.getState().answers;
+    const value = freshAnswers[currentId];
+    const selectedOption = question.options?.find((o) => o.value === value);
+    if (selectedOption && Object.prototype.hasOwnProperty.call(selectedOption, "nextId")) {
+      return selectedOption.nextId;
+    }
+    return question.defaultNextId;
+  }
+
+  const isLast = getNextId() === undefined;
+
+  function handleNext() {
+    const nextId = getNextId();
+    if (nextId) {
+      pushQuestion(nextId);
     } else {
-      await handleSubmit();
+      handleSubmit();
     }
   }
 
   function handleBack() {
-    prevStep();
+    popQuestion();
   }
 
   async function handleSubmit() {
     setSubmitting(true);
     try {
+      const freshAnswers = useFormStore.getState().answers;
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ answers: freshAnswers }),
       });
       if (!res.ok) throw new Error("Submit failed");
       router.push("/done");
@@ -88,20 +79,19 @@ export default function QuestionnairePage() {
 
   return (
     <QuestionScreen
-      question={current.question}
-      sectionTitle={current.step.title}
-      sectionTitleEn={current.step.titleEn}
-      qIndex={step}
-      totalQ={flat.length}
+      question={question}
+      sectionTitle={question.sectionTitle}
+      sectionTitleEn={question.sectionTitleEn}
+      sectionEmoji={question.sectionEmoji}
+      qIndex={history.filter((id) => QUESTIONS_MAP[id]?.type !== "consent").length}
       answers={answers}
       lang={lang}
       onLangChange={setLang}
-      sectionEmoji={current.step.emoji}
-      onAnswer={(key, value) => setAnswer(key, value)}
+      onAnswer={setAnswer}
       onNext={handleNext}
       onBack={handleBack}
-      isFirst={step === 0}
-      isLast={step === flat.length - 1}
+      isFirst={history.length === 1}
+      isLast={isLast}
       direction={direction}
       submitting={submitting}
     />

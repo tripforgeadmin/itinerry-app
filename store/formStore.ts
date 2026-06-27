@@ -3,17 +3,17 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { LineProfile } from "@/lib/line";
+import { FIRST_QUESTION_ID } from "@/lib/questions";
 
-export type Answers = Record<string, string | string[]>;
+export type Answers = Record<string, string>;
 
 interface FormStore {
-  step: number;
+  history: string[];
   answers: Answers;
   lineProfile: LineProfile | null;
-  setStep: (step: number) => void;
-  nextStep: () => void;
-  prevStep: () => void;
-  setAnswer: (key: string, value: string | string[]) => void;
+  pushQuestion: (id: string) => void;
+  popQuestion: () => void;
+  setAnswer: (key: string, value: string) => void;
   setLineProfile: (profile: LineProfile) => void;
   reset: () => void;
 }
@@ -21,17 +21,18 @@ interface FormStore {
 export const useFormStore = create<FormStore>()(
   persist(
     (set) => ({
-      step: 0,
+      history: [FIRST_QUESTION_ID],
       answers: {},
       lineProfile: null,
-      setStep: (step) => set({ step }),
-      nextStep: () => set((s) => ({ step: s.step + 1 })),
-      prevStep: () => set((s) => ({ step: Math.max(0, s.step - 1) })),
+      pushQuestion: (id) =>
+        set((s) => ({ history: [...s.history, id] })),
+      popQuestion: () =>
+        set((s) => ({ history: s.history.length > 1 ? s.history.slice(0, -1) : s.history })),
       setAnswer: (key, value) =>
         set((s) => ({ answers: { ...s.answers, [key]: value } })),
       setLineProfile: (profile) => set({ lineProfile: profile }),
-      reset: () => set({ step: 0, answers: {}, lineProfile: null }),
+      reset: () => set({ history: [FIRST_QUESTION_ID], answers: {}, lineProfile: null }),
     }),
-    { name: "itinerry-visa-form" }
+    { name: "itinerry-visa-form-v2" }
   )
 );

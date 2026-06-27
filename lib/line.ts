@@ -72,3 +72,16 @@ export async function verifySessionToken(
     return null;
   }
 }
+
+export async function checkLineFriendship(accessToken: string): Promise<boolean> {
+  try {
+    const res = await fetch("https://api.line.me/friendship/v1/status", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data.friendFlag === true;
+  } catch {
+    return false;
+  }
+}

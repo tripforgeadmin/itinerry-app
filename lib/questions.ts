@@ -3,8 +3,9 @@ export type FieldType =
   | "email"
   | "tel"
   | "radio"
-  | "checkbox"
   | "dropdown"
+  | "multiCheckbox"
+  | "date"
   | "consent";
 
 export interface Option {
@@ -12,6 +13,7 @@ export interface Option {
   label: string;
   labelEn?: string;
   emoji?: string;
+  nextId?: string;
 }
 
 export interface Question {
@@ -23,390 +25,671 @@ export interface Question {
   placeholderEn?: string;
   options?: Option[];
   required?: boolean;
-  /** If true, shows a text input when the user selects the "other" option */
+  defaultNextId?: string;
   allowOtherText?: boolean;
-  /** If set, this question only shows when answers[conditionKey] matches conditionValue */
-  conditionKey?: string;
-  conditionValue?: string | string[];
+  otherPlaceholder?: string;
+  otherPlaceholderEn?: string;
+  section: string;
+  sectionTitle: string;
+  sectionTitleEn?: string;
+  sectionEmoji: string;
 }
 
-export interface Step {
-  id: string;
-  title: string;
-  titleEn?: string;
-  emoji: string;
-  questions: Question[];
-}
+export const QUESTIONS: Question[] = [
+  // ── S0: Consent ──────────────────────────────────────────────
+  {
+    id: "q1",
+    type: "consent",
+    question:
+      "itinerry เก็บข้อมูลส่วนบุคคลของคุณ (ชื่อ ช่องทางติดต่อ ข้อมูลการเดินทาง อาชีพ และข้อมูลทางการเงินโดยสังเขป) เพื่อประเมินและให้บริการยื่นขอวีซ่า ข้าพเจ้าได้อ่านและยินยอมให้ itinerry เก็บและใช้ข้อมูลตามวัตถุประสงค์ข้างต้น",
+    questionEn:
+      "itinerry collects your personal data (name, contact, travel details, occupation, basic financial info) to assess and provide visa services. I have read and consent to itinerry collecting and using my data for the purposes above.",
+    required: true,
+    defaultNextId: "q3",
+    section: "S0",
+    sectionTitle: "ข้อตกลงและความยินยอม",
+    sectionTitleEn: "Consent",
+    sectionEmoji: "📋",
+  },
+  {
+    id: "q2",
+    type: "consent",
+    question:
+      "ข้าพเจ้าขอรับรองว่าข้อมูลทั้งหมดในแบบฟอร์มนี้เป็นความจริงและถูกต้องทุกประการ และเข้าใจว่าข้อมูลอันเป็นเท็จหรือไม่ครบถ้วนอาจส่งผลต่อผลการพิจารณาวีซ่าและการให้บริการ",
+    questionEn:
+      "I certify that all information in this form is true and accurate, and understand that false or incomplete information may affect the visa outcome and the services provided.",
+    required: true,
+    section: "S0",
+    sectionTitle: "ข้อตกลงและความยินยอม",
+    sectionTitleEn: "Consent",
+    sectionEmoji: "📋",
+  },
 
-// ─── Step 1: Personal Info ──────────────────────────────────────────────────
-const personalInfoStep: Step = {
-  id: "personal",
-  title: "ข้อมูลส่วนตัว",
-  titleEn: "Personal Information",
-  emoji: "👤",
-  questions: [
-    {
-      id: "fullName",
-      type: "text",
-      question: "ชื่อ-นามสกุล",
-      questionEn: "Full Name",
-      placeholder: "กรอกชื่อ-นามสกุล",
-      placeholderEn: "Enter your full name",
-      required: true,
-    },
-    {
-      id: "nationality",
-      type: "dropdown",
-      question: "สัญชาติ",
-      questionEn: "Nationality",
-      required: true,
-      options: [
-        { value: "thai", label: "ไทย", labelEn: "Thai" },
-        { value: "other", label: "อื่นๆ", labelEn: "Other" },
-      ],
-    },
-    {
-      id: "phone",
-      type: "tel",
-      question: "เบอร์โทรศัพท์",
-      questionEn: "Phone Number",
-      placeholder: "0812345678",
-      placeholderEn: "0812345678",
-      required: true,
-    },
-    {
-      id: "email",
-      type: "email",
-      question: "อีเมล",
-      questionEn: "Email Address",
-      placeholder: "example@email.com",
-      placeholderEn: "example@email.com",
-      required: true,
-    },
-    {
-      id: "source",
-      type: "radio",
-      question: "รู้จัก itinerry จากช่องทางไหน?",
-      questionEn: "How did you find us?",
-      required: true,
-      options: [
-        { value: "facebook", label: "Facebook", labelEn: "Facebook", emoji: "📘" },
-        { value: "instagram", label: "Instagram", labelEn: "Instagram", emoji: "📸" },
-        { value: "tiktok", label: "TikTok", labelEn: "TikTok", emoji: "🎵" },
-        { value: "google", label: "Google", labelEn: "Google", emoji: "🔍" },
-        { value: "referral", label: "เพื่อนแนะนำ", labelEn: "Friend referral", emoji: "👥" },
-        { value: "other", label: "อื่นๆ", labelEn: "Other", emoji: "✨" },
-      ],
-    },
-  ],
-};
+  // ── S1: Personal Info ─────────────────────────────────────────
+  {
+    id: "q3",
+    type: "text",
+    question: "ชื่อ-นามสกุล",
+    questionEn: "Full Name",
+    placeholder: "กรอกชื่อ-นามสกุล",
+    placeholderEn: "Enter your full name",
+    required: true,
+    defaultNextId: "q4",
+    section: "S1",
+    sectionTitle: "ข้อมูลส่วนตัว",
+    sectionTitleEn: "Personal Information",
+    sectionEmoji: "👤",
+  },
+  {
+    id: "q4",
+    type: "radio",
+    question: "สัญชาติ",
+    questionEn: "Nationality",
+    required: true,
+    allowOtherText: true,
+    otherPlaceholder: "ระบุสัญชาติ",
+    otherPlaceholderEn: "Enter your nationality",
+    defaultNextId: "q5",
+    section: "S1",
+    sectionTitle: "ข้อมูลส่วนตัว",
+    sectionTitleEn: "Personal Information",
+    sectionEmoji: "👤",
+    options: [
+      { value: "thai", label: "ไทย", labelEn: "Thai", emoji: "🇹🇭" },
+      { value: "other", label: "อื่นๆ", labelEn: "Other", emoji: "🌍" },
+    ],
+  },
+  {
+    id: "q5",
+    type: "tel",
+    question: "เบอร์โทรศัพท์",
+    questionEn: "Phone Number",
+    placeholder: "0812345678",
+    placeholderEn: "0812345678",
+    required: true,
+    defaultNextId: "q6",
+    section: "S1",
+    sectionTitle: "ข้อมูลส่วนตัว",
+    sectionTitleEn: "Personal Information",
+    sectionEmoji: "👤",
+  },
+  {
+    id: "q6",
+    type: "email",
+    question: "อีเมล (สำหรับรับเอกสารตอนให้บริการ)",
+    questionEn: "Email (for receiving documents)",
+    placeholder: "example@email.com",
+    placeholderEn: "example@email.com",
+    required: true,
+    defaultNextId: "q7",
+    section: "S1",
+    sectionTitle: "ข้อมูลส่วนตัว",
+    sectionTitleEn: "Personal Information",
+    sectionEmoji: "👤",
+  },
+  {
+    id: "q7",
+    type: "radio",
+    question: "รู้จัก itinerry จากช่องทางไหน?",
+    questionEn: "How did you find us?",
+    required: true,
+    allowOtherText: true,
+    otherPlaceholder: "ระบุช่องทาง",
+    otherPlaceholderEn: "Enter source",
+    defaultNextId: "q8",
+    section: "S1",
+    sectionTitle: "ข้อมูลส่วนตัว",
+    sectionTitleEn: "Personal Information",
+    sectionEmoji: "👤",
+    options: [
+      { value: "facebook", label: "Facebook", emoji: "📘" },
+      { value: "instagram", label: "Instagram", emoji: "📸" },
+      { value: "tiktok", label: "TikTok", emoji: "🎵" },
+      { value: "google", label: "Google", emoji: "🔍" },
+      { value: "referral", label: "เพื่อนแนะนำ", labelEn: "Referral", emoji: "👥" },
+      { value: "other", label: "อื่นๆ", labelEn: "Other", emoji: "✨" },
+    ],
+  },
 
-// ─── Step 2: Occupation + Visa Type (branching point) ──────────────────────
-const branchingStep: Step = {
-  id: "branching",
-  title: "ข้อมูลการทำงานและวีซ่า",
-  titleEn: "Work & Visa",
-  emoji: "✈️",
-  questions: [
-    {
-      id: "occupation",
-      type: "radio",
-      question: "อาชีพปัจจุบันของคุณคืออะไร?",
-      questionEn: "What is your current occupation?",
-      required: true,
-      options: [
-        { value: "employee", label: "พนักงานบริษัท / ลูกจ้าง", labelEn: "Employee", emoji: "💼" },
-        { value: "selfEmployed", label: "ธุรกิจส่วนตัว / เจ้าของกิจการ", labelEn: "Self-employed / Business owner", emoji: "🏪" },
-        { value: "freelance", label: "ฟรีแลนซ์", labelEn: "Freelance", emoji: "💻" },
-        { value: "student", label: "นักเรียน / นักศึกษา", labelEn: "Student", emoji: "🎓" },
-        { value: "retired", label: "เกษียณ / ไม่ได้ทำงาน", labelEn: "Retired / Not working", emoji: "🌿" },
-        { value: "other", label: "อื่นๆ", labelEn: "Other", emoji: "✨" },
-      ],
-    },
-    {
-      id: "visaType",
-      type: "radio",
-      question: "ประเภทวีซ่าที่ต้องการยื่น",
-      questionEn: "Visa Type",
-      required: true,
-      options: [
-        { value: "tourist", label: "ท่องเที่ยว", labelEn: "Tourist", emoji: "✈️" },
-        { value: "student", label: "นักเรียน", labelEn: "Student", emoji: "🎓" },
-        { value: "work", label: "ทำงาน", labelEn: "Work", emoji: "💼" },
-        { value: "business", label: "ธุรกิจ", labelEn: "Business", emoji: "🤝" },
-        { value: "family", label: "ติดตามครอบครัว", labelEn: "Family", emoji: "👨‍👩‍👧" },
-        { value: "other", label: "อื่นๆ", labelEn: "Other", emoji: "✨" },
-      ],
-    },
-    {
-      id: "destination",
-      type: "radio",
-      question: "ประเทศปลายทาง",
-      questionEn: "Destination Country",
-      required: true,
-      allowOtherText: true,
-      options: [
-        { value: "uk", label: "สหราชอาณาจักร 🇬🇧", labelEn: "United Kingdom 🇬🇧" },
-        { value: "schengen", label: "เชงเก้น / ยุโรป 🇪🇺", labelEn: "Schengen / Europe 🇪🇺" },
-        { value: "usa", label: "สหรัฐอเมริกา 🇺🇸", labelEn: "United States 🇺🇸" },
-        { value: "canada", label: "แคนาดา 🇨🇦", labelEn: "Canada 🇨🇦" },
-        { value: "australia", label: "ออสเตรเลีย 🇦🇺", labelEn: "Australia 🇦🇺" },
-        { value: "japan", label: "ญี่ปุ่น 🇯🇵", labelEn: "Japan 🇯🇵" },
-        { value: "other", label: "อื่นๆ", labelEn: "Other" },
-      ],
-    },
-  ],
-};
+  // ── S2: Destination + Visa Type ───────────────────────────────
+  {
+    id: "q8",
+    type: "dropdown",
+    question: "ประเทศที่ต้องการยื่นวีซ่า",
+    questionEn: "Destination Country",
+    required: true,
+    defaultNextId: "q9",
+    section: "S2",
+    sectionTitle: "ปลายทาง + ประเภทวีซ่า",
+    sectionTitleEn: "Destination + Visa Type",
+    sectionEmoji: "✈️",
+    options: [
+      { value: "schengen", label: "Schengen / ยุโรป", labelEn: "Schengen / Europe", emoji: "🇪🇺" },
+      { value: "uk", label: "United Kingdom", emoji: "🇬🇧" },
+      { value: "usa", label: "United States", emoji: "🇺🇸" },
+      { value: "canada", label: "Canada", emoji: "🇨🇦" },
+      { value: "australia", label: "Australia", emoji: "🇦🇺" },
+      { value: "nz", label: "New Zealand", emoji: "🇳🇿" },
+      { value: "japan", label: "Japan", emoji: "🇯🇵" },
+      { value: "korea", label: "South Korea", emoji: "🇰🇷" },
+      { value: "china", label: "China", emoji: "🇨🇳" },
+      { value: "taiwan", label: "Taiwan", emoji: "🇹🇼" },
+      { value: "india", label: "India", emoji: "🇮🇳" },
+      { value: "dubai", label: "Dubai / UAE", emoji: "🇦🇪" },
+      { value: "saudi", label: "Saudi Arabia", emoji: "🇸🇦" },
+      { value: "qatar", label: "Qatar", emoji: "🇶🇦" },
+      { value: "other", label: "อื่นๆ / Others", labelEn: "Others", emoji: "🌍" },
+    ],
+  },
+  {
+    id: "q9",
+    type: "radio",
+    question: "ประเภทวีซ่าที่ต้องการ",
+    questionEn: "Visa Type",
+    required: true,
+    section: "S2",
+    sectionTitle: "ปลายทาง + ประเภทวีซ่า",
+    sectionTitleEn: "Destination + Visa Type",
+    sectionEmoji: "✈️",
+    options: [
+      { value: "tourist", label: "วีซ่าท่องเที่ยว", labelEn: "Tourist", emoji: "🏖️", nextId: "q10" },
+      { value: "visitor", label: "วีซ่าเยี่ยมเยียน", labelEn: "Visitor", emoji: "👨‍👩‍👧", nextId: "q13" },
+      { value: "business", label: "วีซ่าธุรกิจ", labelEn: "Business", emoji: "🤝", nextId: "q17" },
+      { value: "student", label: "วีซ่านักเรียน", labelEn: "Student", emoji: "🎓", nextId: "q21" },
+    ],
+  },
 
-// ─── Step 3: Financial Info (all visa types) ────────────────────────────────
-const financialStep: Step = {
-  id: "financial",
-  title: "ข้อมูลทางการเงิน",
-  titleEn: "Financial Information",
-  emoji: "💰",
-  questions: [
-    {
-      id: "monthlyIncome",
-      type: "radio",
-      question: "รายได้ต่อเดือนโดยประมาณ (บาท)",
-      questionEn: "Approximate monthly income (THB)",
-      required: true,
-      options: [
-        { value: "under15k", label: "ต่ำกว่า 15,000", labelEn: "Under 15,000" },
-        { value: "15k-30k", label: "15,000 – 30,000", labelEn: "15,000 – 30,000" },
-        { value: "30k-60k", label: "30,000 – 60,000", labelEn: "30,000 – 60,000" },
-        { value: "60k-100k", label: "60,000 – 100,000", labelEn: "60,000 – 100,000" },
-        { value: "over100k", label: "มากกว่า 100,000", labelEn: "Over 100,000" },
-      ],
-    },
-    {
-      id: "bankBalance",
-      type: "radio",
-      question: "ยอดเงินในบัญชีธนาคาร (ประมาณ)",
-      questionEn: "Approximate bank account balance (THB)",
-      required: true,
-      options: [
-        { value: "under50k", label: "ต่ำกว่า 50,000", labelEn: "Under 50,000" },
-        { value: "50k-150k", label: "50,000 – 150,000", labelEn: "50,000 – 150,000" },
-        { value: "150k-500k", label: "150,000 – 500,000", labelEn: "150,000 – 500,000" },
-        { value: "over500k", label: "มากกว่า 500,000", labelEn: "Over 500,000" },
-      ],
-    },
-    {
-      id: "hasProperty",
-      type: "radio",
-      question: "มีทรัพย์สิน เช่น บ้าน รถ หรือที่ดิน ในไทยหรือไม่?",
-      questionEn: "Do you own property (house, car, land) in Thailand?",
-      required: true,
-      options: [
-        { value: "yes", label: "มี", labelEn: "Yes", emoji: "✅" },
-        { value: "no", label: "ไม่มี", labelEn: "No", emoji: "❌" },
-      ],
-    },
-  ],
-};
+  // ── S2A: Tourist ──────────────────────────────────────────────
+  {
+    id: "q10",
+    type: "date",
+    question: "วันที่วางแผนเดินทาง (วันแรกที่ถึงปลายทาง)",
+    questionEn: "Planned Arrival Date",
+    required: true,
+    defaultNextId: "q11",
+    section: "S2A",
+    sectionTitle: "วีซ่าท่องเที่ยว",
+    sectionTitleEn: "Tourist Visa",
+    sectionEmoji: "🏖️",
+  },
+  {
+    id: "q11",
+    type: "date",
+    question: "วันที่วางแผนกลับ (วันที่ออกจากประเทศปลายทาง)",
+    questionEn: "Planned Return Date",
+    required: true,
+    defaultNextId: "q12",
+    section: "S2A",
+    sectionTitle: "วีซ่าท่องเที่ยว",
+    sectionTitleEn: "Tourist Visa",
+    sectionEmoji: "🏖️",
+  },
+  {
+    id: "q12",
+    type: "multiCheckbox",
+    question: "เคยได้รับวีซ่าประเทศเหล่านี้ภายใน 5 ปีที่ผ่านมาไหม? (เลือกได้มากกว่า 1)",
+    questionEn: "Have you received any of these visas in the last 5 years? (select all that apply)",
+    required: true,
+    defaultNextId: "q24",
+    section: "S2A",
+    sectionTitle: "วีซ่าท่องเที่ยว",
+    sectionTitleEn: "Tourist Visa",
+    sectionEmoji: "🏖️",
+    options: [
+      { value: "never", label: "ไม่เคย", labelEn: "Never" },
+      { value: "uk", label: "UK", emoji: "🇬🇧" },
+      { value: "schengen", label: "Schengen", emoji: "🇪🇺" },
+      { value: "usa", label: "USA", emoji: "🇺🇸" },
+      { value: "canada", label: "Canada", emoji: "🇨🇦" },
+      { value: "australia", label: "Australia", emoji: "🇦🇺" },
+      { value: "nz", label: "New Zealand", emoji: "🇳🇿" },
+      { value: "japan", label: "Japan", emoji: "🇯🇵" },
+      { value: "korea", label: "S. Korea", emoji: "🇰🇷" },
+      { value: "china", label: "China", emoji: "🇨🇳" },
+      { value: "dubai", label: "Dubai / UAE", emoji: "🇦🇪" },
+    ],
+  },
 
-// ─── Step 4: Travel History ─────────────────────────────────────────────────
-const travelHistoryStep: Step = {
-  id: "travel",
-  title: "ประวัติการเดินทาง",
-  titleEn: "Travel History",
-  emoji: "🗺️",
-  questions: [
-    {
-      id: "prevVisaRefusal",
-      type: "radio",
-      question: "เคยถูกปฏิเสธวีซ่ามาก่อนหรือไม่?",
-      questionEn: "Have you ever been refused a visa before?",
-      required: true,
-      options: [
-        { value: "no", label: "ไม่เคย", labelEn: "Never", emoji: "✅" },
-        { value: "yes", label: "เคย", labelEn: "Yes, I have", emoji: "⚠️" },
-      ],
-    },
-    {
-      id: "prevTravel",
-      type: "radio",
-      question: "เคยเดินทางไปต่างประเทศมาก่อนหรือไม่?",
-      questionEn: "Have you traveled abroad before?",
-      required: true,
-      options: [
-        { value: "never", label: "ไม่เคย", labelEn: "Never" },
-        { value: "once_twice", label: "1-2 ครั้ง", labelEn: "1–2 times" },
-        { value: "several", label: "3-5 ครั้ง", labelEn: "3–5 times" },
-        { value: "frequent", label: "มากกว่า 5 ครั้ง", labelEn: "More than 5 times" },
-      ],
-    },
-  ],
-};
+  // ── S2B: Visitor ──────────────────────────────────────────────
+  {
+    id: "q13",
+    type: "date",
+    question: "วันที่วางแผนเดินทาง (วันแรกที่ถึงปลายทาง)",
+    questionEn: "Planned Arrival Date",
+    required: true,
+    defaultNextId: "q14",
+    section: "S2B",
+    sectionTitle: "วีซ่าเยี่ยมเยียน",
+    sectionTitleEn: "Visitor Visa",
+    sectionEmoji: "👨‍👩‍👧",
+  },
+  {
+    id: "q14",
+    type: "radio",
+    question: "คนที่คุณจะไปเยี่ยมมีสถานะอะไรในประเทศนั้น?",
+    questionEn: "What is the immigration status of the person you are visiting?",
+    required: true,
+    defaultNextId: "q15",
+    section: "S2B",
+    sectionTitle: "วีซ่าเยี่ยมเยียน",
+    sectionTitleEn: "Visitor Visa",
+    sectionEmoji: "👨‍👩‍👧",
+    options: [
+      { value: "citizen_pr", label: "Citizen / PR", emoji: "🏠" },
+      { value: "work_visa", label: "Work Visa", emoji: "💼" },
+      { value: "student_visa", label: "Student Visa", emoji: "🎓" },
+      { value: "not_sure", label: "ไม่แน่ใจ", labelEn: "Not sure", emoji: "❓" },
+    ],
+  },
+  {
+    id: "q15",
+    type: "radio",
+    question: "ผู้เชิญมีความสัมพันธ์รูปแบบใดกับคุณ?",
+    questionEn: "What is your relationship with the person you are visiting?",
+    required: true,
+    defaultNextId: "q16",
+    section: "S2B",
+    sectionTitle: "วีซ่าเยี่ยมเยียน",
+    sectionTitleEn: "Visitor Visa",
+    sectionEmoji: "👨‍👩‍👧",
+    options: [
+      { value: "family", label: "ครอบครัว", labelEn: "Family", emoji: "👨‍👩‍👧" },
+      { value: "relative", label: "ญาติ", labelEn: "Relative", emoji: "👪" },
+      { value: "married", label: "คู่สมรส (จดทะเบียน)", labelEn: "Spouse (married)", emoji: "💍" },
+      { value: "partner", label: "แฟน", labelEn: "Partner", emoji: "❤️" },
+      { value: "friend", label: "เพื่อน", labelEn: "Friend", emoji: "👥" },
+    ],
+  },
+  {
+    id: "q16",
+    type: "multiCheckbox",
+    question: "เอกสารที่ผู้เชิญสามารถส่งให้คุณได้ (เลือกได้มากกว่า 1)",
+    questionEn: "Documents the inviter can provide (select all that apply)",
+    required: true,
+    defaultNextId: "q24",
+    section: "S2B",
+    sectionTitle: "วีซ่าเยี่ยมเยียน",
+    sectionTitleEn: "Visitor Visa",
+    sectionEmoji: "👨‍👩‍👧",
+    options: [
+      { value: "invitation_letter", label: "จดหมายเชิญ", labelEn: "Invitation Letter", emoji: "📝" },
+      { value: "house_cert", label: "หลักฐานที่พัก", labelEn: "House Certificate", emoji: "🏠" },
+      { value: "job_cert", label: "จดหมายรับรองงาน", labelEn: "Job Certificate", emoji: "💼" },
+      { value: "bank_stmt", label: "รายการเดินบัญชี 6 เดือน", labelEn: "Bank Statement 6m", emoji: "💳" },
+      { value: "none", label: "ไม่มีเลย", labelEn: "None", emoji: "➖" },
+    ],
+  },
 
-// ─── Step 5: Tourist visa specific ─────────────────────────────────────────
-const touristStep: Step = {
-  id: "tourist_specific",
-  title: "รายละเอียดการท่องเที่ยว",
-  titleEn: "Trip Details",
-  emoji: "🏖️",
-  questions: [
-    {
-      id: "tripDuration",
-      type: "radio",
-      question: "ระยะเวลาที่ต้องการอยู่",
-      questionEn: "Intended stay duration",
-      required: true,
-      conditionKey: "visaType",
-      conditionValue: "tourist",
-      options: [
-        { value: "under1m", label: "น้อยกว่า 1 เดือน", labelEn: "Less than 1 month" },
-        { value: "1_3m", label: "1–3 เดือน", labelEn: "1–3 months" },
-        { value: "over3m", label: "มากกว่า 3 เดือน", labelEn: "More than 3 months" },
-      ],
-    },
-    {
-      id: "travelPurpose",
-      type: "radio",
-      question: "จุดประสงค์หลักในการเดินทาง",
-      questionEn: "Main purpose of travel",
-      required: true,
-      conditionKey: "visaType",
-      conditionValue: "tourist",
-      options: [
-        { value: "vacation", label: "พักผ่อน / ท่องเที่ยว", labelEn: "Holiday / Tourism", emoji: "🏖️" },
-        { value: "visit_family", label: "เยี่ยมครอบครัว / เพื่อน", labelEn: "Visit family / friends", emoji: "👨‍👩‍👧" },
-        { value: "medical", label: "รักษาพยาบาล", labelEn: "Medical treatment", emoji: "🏥" },
-        { value: "transit", label: "แวะพัก (Transit)", labelEn: "Transit", emoji: "✈️" },
-      ],
-    },
-  ],
-};
+  // ── S2C: Business ─────────────────────────────────────────────
+  {
+    id: "q17",
+    type: "date",
+    question: "วันที่วางแผนเดินทาง (วันแรกที่ถึงปลายทาง)",
+    questionEn: "Planned Arrival Date",
+    required: true,
+    defaultNextId: "q18",
+    section: "S2C",
+    sectionTitle: "วีซ่าธุรกิจ",
+    sectionTitleEn: "Business Visa",
+    sectionEmoji: "🤝",
+  },
+  {
+    id: "q18",
+    type: "date",
+    question: "วันที่วางแผนกลับ (วันที่ออกจากประเทศปลายทาง)",
+    questionEn: "Planned Return Date",
+    required: true,
+    defaultNextId: "q19",
+    section: "S2C",
+    sectionTitle: "วีซ่าธุรกิจ",
+    sectionTitleEn: "Business Visa",
+    sectionEmoji: "🤝",
+  },
+  {
+    id: "q19",
+    type: "radio",
+    question: "มีหนังสือเชิญ (Invitation Letter) จากบริษัทในประเทศปลายทางไหม?",
+    questionEn: "Do you have an Invitation Letter from a company in the destination country?",
+    required: true,
+    defaultNextId: "q20",
+    section: "S2C",
+    sectionTitle: "วีซ่าธุรกิจ",
+    sectionTitleEn: "Business Visa",
+    sectionEmoji: "🤝",
+    options: [
+      { value: "yes", label: "มีแล้ว", labelEn: "Yes", emoji: "✅" },
+      { value: "requesting", label: "กำลังจะขอ", labelEn: "Requesting soon", emoji: "⏳" },
+      { value: "not_required", label: "ไม่ต้องการ", labelEn: "Not required", emoji: "➖" },
+    ],
+  },
+  {
+    id: "q20",
+    type: "multiCheckbox",
+    question: "เคยได้รับวีซ่าประเทศเหล่านี้ภายใน 5 ปีที่ผ่านมาไหม? (เลือกได้มากกว่า 1)",
+    questionEn: "Have you received any of these visas in the last 5 years? (select all that apply)",
+    required: true,
+    defaultNextId: "q24",
+    section: "S2C",
+    sectionTitle: "วีซ่าธุรกิจ",
+    sectionTitleEn: "Business Visa",
+    sectionEmoji: "🤝",
+    options: [
+      { value: "never", label: "ไม่เคย", labelEn: "Never" },
+      { value: "uk", label: "UK", emoji: "🇬🇧" },
+      { value: "schengen", label: "Schengen", emoji: "🇪🇺" },
+      { value: "usa", label: "USA", emoji: "🇺🇸" },
+      { value: "canada", label: "Canada", emoji: "🇨🇦" },
+      { value: "australia", label: "Australia", emoji: "🇦🇺" },
+      { value: "nz", label: "New Zealand", emoji: "🇳🇿" },
+      { value: "japan", label: "Japan", emoji: "🇯🇵" },
+      { value: "korea", label: "S. Korea", emoji: "🇰🇷" },
+      { value: "china", label: "China", emoji: "🇨🇳" },
+      { value: "dubai", label: "Dubai / UAE", emoji: "🇦🇪" },
+    ],
+  },
 
-// ─── Step 5: Student visa specific ─────────────────────────────────────────
-const studentStep: Step = {
-  id: "student_specific",
-  title: "รายละเอียดการศึกษา",
-  titleEn: "Study Details",
-  emoji: "🎓",
-  questions: [
-    {
-      id: "hasAcceptanceLetter",
-      type: "radio",
-      question: "มี Acceptance Letter / CAS จากสถาบันหรือยัง?",
-      questionEn: "Do you have an Acceptance Letter / CAS from the institution?",
-      required: true,
-      conditionKey: "visaType",
-      conditionValue: "student",
-      options: [
-        { value: "yes", label: "มีแล้ว", labelEn: "Yes, I have it", emoji: "✅" },
-        { value: "applied", label: "กำลังรอ", labelEn: "Waiting / Applied", emoji: "⏳" },
-        { value: "no", label: "ยังไม่มี", labelEn: "Not yet", emoji: "❌" },
-      ],
-    },
-    {
-      id: "studyDuration",
-      type: "radio",
-      question: "ระยะเวลาที่ต้องการศึกษา",
-      questionEn: "Intended study duration",
-      required: true,
-      conditionKey: "visaType",
-      conditionValue: "student",
-      options: [
-        { value: "under6m", label: "น้อยกว่า 6 เดือน", labelEn: "Less than 6 months (Short course)" },
-        { value: "6m_1y", label: "6 เดือน – 1 ปี", labelEn: "6 months – 1 year" },
-        { value: "1_3y", label: "1–3 ปี (ป.ตรี / ป.โท)", labelEn: "1–3 years (Bachelor's / Master's)" },
-        { value: "over3y", label: "มากกว่า 3 ปี", labelEn: "More than 3 years" },
-      ],
-    },
-  ],
-};
+  // ── S2D: Student ──────────────────────────────────────────────
+  {
+    id: "q21",
+    type: "date",
+    question: "วันที่วางแผนเริ่มเรียน (วันแรกที่เริ่มเรียน)",
+    questionEn: "Planned Study Start Date",
+    required: true,
+    defaultNextId: "q22",
+    section: "S2D",
+    sectionTitle: "วีซ่านักเรียน",
+    sectionTitleEn: "Student Visa",
+    sectionEmoji: "🎓",
+  },
+  {
+    id: "q22",
+    type: "radio",
+    question: "ได้รับ Acceptance Letter จากสถาบันแล้วไหม?",
+    questionEn: "Have you received an Acceptance Letter from the institution?",
+    required: true,
+    defaultNextId: "q23",
+    section: "S2D",
+    sectionTitle: "วีซ่านักเรียน",
+    sectionTitleEn: "Student Visa",
+    sectionEmoji: "🎓",
+    options: [
+      { value: "received", label: "ได้รับแล้ว", labelEn: "Yes, received", emoji: "✅" },
+      { value: "in_progress", label: "อยู่ระหว่างสมัคร", labelEn: "Application in progress", emoji: "⏳" },
+      { value: "not_applied", label: "ยังไม่ได้สมัคร", labelEn: "Not yet applied", emoji: "📝" },
+    ],
+  },
+  {
+    id: "q23",
+    type: "radio",
+    question: "ใครเป็นผู้รับผิดชอบค่าใช้จ่ายในการเรียน?",
+    questionEn: "Who is responsible for study expenses?",
+    required: true,
+    defaultNextId: "q24",
+    section: "S2D",
+    sectionTitle: "วีซ่านักเรียน",
+    sectionTitleEn: "Student Visa",
+    sectionEmoji: "🎓",
+    options: [
+      { value: "self", label: "ตัวเอง", labelEn: "Self", emoji: "👤" },
+      { value: "parents", label: "พ่อแม่", labelEn: "Parents", emoji: "👨‍👩‍👧" },
+      { value: "scholarship", label: "ทุนการศึกษา", labelEn: "Scholarship", emoji: "🏆" },
+      { value: "other", label: "อื่นๆ", labelEn: "Other", emoji: "✨" },
+    ],
+  },
 
-// ─── Step 5: Work visa specific ─────────────────────────────────────────────
-const workStep: Step = {
-  id: "work_specific",
-  title: "รายละเอียดการทำงาน",
-  titleEn: "Work Details",
-  emoji: "💼",
-  questions: [
-    {
-      id: "hasJobOffer",
-      type: "radio",
-      question: "มี Job Offer / Certificate of Sponsorship (CoS) แล้วหรือยัง?",
-      questionEn: "Do you have a Job Offer / CoS?",
-      required: true,
-      conditionKey: "visaType",
-      conditionValue: "work",
-      options: [
-        { value: "yes", label: "มีแล้ว", labelEn: "Yes, I have it", emoji: "✅" },
-        { value: "no", label: "ยังไม่มี", labelEn: "Not yet", emoji: "❌" },
-      ],
-    },
-    {
-      id: "englishLevel",
-      type: "radio",
-      question: "ระดับภาษาอังกฤษ (สำหรับ UK/Schengen/USA/Canada)",
-      questionEn: "English proficiency level",
-      required: true,
-      conditionKey: "visaType",
-      conditionValue: "work",
-      options: [
-        { value: "none", label: "ไม่มีผลสอบ", labelEn: "No certificate" },
-        { value: "ielts_below6", label: "IELTS < 6.0", labelEn: "IELTS < 6.0" },
-        { value: "ielts_6_7", label: "IELTS 6.0–7.0", labelEn: "IELTS 6.0–7.0" },
-        { value: "ielts_above7", label: "IELTS > 7.0", labelEn: "IELTS > 7.0" },
-        { value: "other_cert", label: "มีผลสอบอื่น (TOEFL/OET)", labelEn: "Other certificate (TOEFL/OET)" },
-      ],
-    },
-  ],
-};
+  // ── S3: Occupation ────────────────────────────────────────────
+  {
+    id: "q24",
+    type: "radio",
+    question: "อาชีพปัจจุบันของคุณคืออะไร?",
+    questionEn: "What is your current occupation?",
+    required: true,
+    section: "S3",
+    sectionTitle: "อาชีพปัจจุบัน",
+    sectionTitleEn: "Current Occupation",
+    sectionEmoji: "💼",
+    options: [
+      { value: "employee", label: "พนักงานประจำ", labelEn: "Employee", emoji: "🏢", nextId: "q25" },
+      { value: "government", label: "ข้าราชการ", labelEn: "Government Officer", emoji: "🏛️", nextId: "q25" },
+      { value: "freelance", label: "Freelance / อิสระ", labelEn: "Freelance", emoji: "💻", nextId: "q26" },
+      { value: "business_owner", label: "เจ้าของธุรกิจ", labelEn: "Business Owner", emoji: "🏪", nextId: "q28" },
+      { value: "retired", label: "เกษียณอายุ", labelEn: "Retired", emoji: "🌿", nextId: "q29" },
+      { value: "homemaker", label: "แม่บ้าน", labelEn: "Homemaker", emoji: "🏠", nextId: "q29" },
+      { value: "student_occ", label: "นักเรียน/นักศึกษา", labelEn: "Student", emoji: "🎓", nextId: "q29" },
+    ],
+  },
 
-// ─── Step 6: Consent ────────────────────────────────────────────────────────
-const consentStep: Step = {
-  id: "consent",
-  title: "ยืนยันและส่งข้อมูล",
-  titleEn: "Review & Submit",
-  emoji: "✅",
-  questions: [
-    {
-      id: "consentAccuracy",
-      type: "consent",
-      question:
-        "ข้าพเจ้าขอรับรองว่าข้อมูลทั้งหมดในแบบฟอร์มนี้เป็นความจริง และข้าพเจ้ายินยอมรับผิดชอบหากข้อมูลไม่ถูกต้อง",
-      questionEn:
-        "I hereby confirm that all information provided in this form is accurate and true. I accept full responsibility if any information is found to be incorrect.",
-      required: true,
-    },
-  ],
-};
+  // ── S4A: Employee ─────────────────────────────────────────────
+  {
+    id: "q25",
+    type: "radio",
+    question: "มีหนังสือรับรองงานที่ระบุ ตำแหน่ง + เงินเดือน + วันลาไหม?",
+    questionEn: "Do you have an Employment Letter specifying position, salary, and approved leave?",
+    required: true,
+    defaultNextId: "q30",
+    section: "S4A",
+    sectionTitle: "พนักงานประจำ / ข้าราชการ",
+    sectionTitleEn: "Employee / Government Officer",
+    sectionEmoji: "🏢",
+    options: [
+      { value: "complete", label: "มีครบ", labelEn: "Yes, complete", emoji: "✅" },
+      { value: "partial", label: "มีแต่ไม่ครบ", labelEn: "Partial", emoji: "⚠️" },
+      { value: "none", label: "ยังไม่มี", labelEn: "Not yet", emoji: "❌" },
+    ],
+  },
 
-// ─── All steps in order ─────────────────────────────────────────────────────
-export const ALL_STEPS: Step[] = [
-  personalInfoStep,
-  branchingStep,
-  financialStep,
-  travelHistoryStep,
-  touristStep,
-  studentStep,
-  workStep,
-  consentStep,
+  // ── S4B: Freelance ────────────────────────────────────────────
+  {
+    id: "q26",
+    type: "radio",
+    question: "มีเอกสารพิสูจน์รายได้ไหม? (สัญญา / Invoice / Bank Transfer)",
+    questionEn: "Do you have income proof? (Contract / Invoice / Bank Transfer)",
+    required: true,
+    defaultNextId: "q27",
+    section: "S4B",
+    sectionTitle: "Freelance / อาชีพอิสระ",
+    sectionTitleEn: "Freelance",
+    sectionEmoji: "💻",
+    options: [
+      { value: "all_three", label: "มีครบทั้งสามอย่าง", labelEn: "Have all three", emoji: "✅" },
+      { value: "partial", label: "มีบางส่วน", labelEn: "Partial", emoji: "⚠️" },
+      { value: "none", label: "ไม่มีเลย", labelEn: "None", emoji: "❌" },
+    ],
+  },
+  {
+    id: "q27",
+    type: "radio",
+    question: "มีเอกสารชำระภาษีย้อนหลัง 3 ปีไหม?",
+    questionEn: "Do you have tax documents for the last 3 years?",
+    required: true,
+    defaultNextId: "q30",
+    section: "S4B",
+    sectionTitle: "Freelance / อาชีพอิสระ",
+    sectionTitleEn: "Freelance",
+    sectionEmoji: "💻",
+    options: [
+      { value: "all_3y", label: "มีครบ 3 ปี", labelEn: "Have all 3 years", emoji: "✅" },
+      { value: "partial", label: "มีบางส่วน", labelEn: "Partial", emoji: "⚠️" },
+      { value: "none", label: "ไม่มีเลย", labelEn: "None", emoji: "❌" },
+    ],
+  },
+
+  // ── S4C: Business Owner ───────────────────────────────────────
+  {
+    id: "q28",
+    type: "radio",
+    question: "มีหนังสือรับรองบริษัท (DBD) หรือเอกสารจดทะเบียนธุรกิจไหม?",
+    questionEn: "Do you have a Company Registration Certificate (DBD or equivalent)?",
+    required: true,
+    defaultNextId: "q30",
+    section: "S4C",
+    sectionTitle: "เจ้าของธุรกิจ",
+    sectionTitleEn: "Business Owner",
+    sectionEmoji: "🏪",
+    options: [
+      { value: "yes", label: "มีแล้ว", labelEn: "Yes", emoji: "✅" },
+      { value: "no", label: "ยังไม่มี", labelEn: "Not yet", emoji: "❌" },
+    ],
+  },
+
+  // ── S4D: Retired / Homemaker / Student Occ ───────────────────
+  {
+    id: "q29",
+    type: "radio",
+    question: "ใครเป็นผู้รับผิดชอบค่าใช้จ่ายในการเดินทาง?",
+    questionEn: "Who is responsible for your travel expenses?",
+    required: true,
+    defaultNextId: "q30",
+    section: "S4D",
+    sectionTitle: "ผู้รับผิดชอบค่าใช้จ่าย",
+    sectionTitleEn: "Travel Expenses",
+    sectionEmoji: "💰",
+    options: [
+      { value: "parents", label: "พ่อแม่", labelEn: "Parents", emoji: "👨‍👩‍👧" },
+      { value: "spouse", label: "คู่สมรส", labelEn: "Spouse", emoji: "💍" },
+      { value: "self_savings", label: "ตัวเอง (มีเงินออม)", labelEn: "Self (savings)", emoji: "💰" },
+      { value: "employer", label: "บริษัท", labelEn: "Employer", emoji: "🏢" },
+      { value: "other", label: "อื่นๆ", labelEn: "Other", emoji: "✨" },
+    ],
+  },
+
+  // ── S5: Core Qualification ────────────────────────────────────
+  {
+    id: "q30",
+    type: "radio",
+    question: "เคยถูกปฏิเสธวีซ่าจากประเทศใดไหม?",
+    questionEn: "Have you ever been refused a visa from any country?",
+    required: true,
+    section: "S5",
+    sectionTitle: "คัดกรองหลัก",
+    sectionTitleEn: "Core Qualification",
+    sectionEmoji: "🔍",
+    options: [
+      { value: "never", label: "ไม่เคย", labelEn: "Never", emoji: "✅", nextId: "q32" },
+      { value: "yes", label: "เคย", labelEn: "Yes", emoji: "⚠️", nextId: "q31" },
+    ],
+  },
+  {
+    id: "q31",
+    type: "text",
+    question: "ระบุประเทศและปีที่ถูกปฏิเสธวีซ่า",
+    questionEn: "Specify country and year of visa refusal",
+    placeholder: "เช่น UK 2022, Japan 2023",
+    placeholderEn: "e.g. UK 2022, Japan 2023",
+    required: true,
+    defaultNextId: "q32",
+    section: "S5",
+    sectionTitle: "คัดกรองหลัก",
+    sectionTitleEn: "Core Qualification",
+    sectionEmoji: "🔍",
+  },
+  {
+    id: "q32",
+    type: "radio",
+    question: "เคยอยู่ในประเทศใดเกินกำหนดวีซ่า (Overstay) ไหม?",
+    questionEn: "Have you ever overstayed a visa in any country?",
+    required: true,
+    section: "S5",
+    sectionTitle: "คัดกรองหลัก",
+    sectionTitleEn: "Core Qualification",
+    sectionEmoji: "🔍",
+    options: [
+      { value: "never", label: "ไม่เคย", labelEn: "Never", emoji: "✅", nextId: "q34" },
+      { value: "yes", label: "เคย", labelEn: "Yes", emoji: "⚠️", nextId: "q33" },
+    ],
+  },
+  {
+    id: "q33",
+    type: "text",
+    question: "ระบุประเทศ ระยะเวลา และปีที่เกิด Overstay",
+    questionEn: "Specify country, duration, and year of overstay",
+    placeholder: "เช่น UK 2 สัปดาห์ 2021",
+    placeholderEn: "e.g. UK 2 weeks 2021",
+    required: true,
+    defaultNextId: "q34",
+    section: "S5",
+    sectionTitle: "คัดกรองหลัก",
+    sectionTitleEn: "Core Qualification",
+    sectionEmoji: "🔍",
+  },
+  {
+    id: "q34",
+    type: "radio",
+    question: "ยอดเงินในบัญชีออมทรัพย์ปัจจุบันประมาณเท่าไหร่? (ของตัวเองหรือผู้รับผิดชอบค่าใช้จ่าย)",
+    questionEn: "Approximate savings account balance? (Self or sponsor)",
+    required: true,
+    defaultNextId: "q35",
+    section: "S5",
+    sectionTitle: "คัดกรองหลัก",
+    sectionTitleEn: "Core Qualification",
+    sectionEmoji: "🔍",
+    options: [
+      { value: "under50k", label: "น้อยกว่า 50,000 บาท", labelEn: "< 50K THB", emoji: "💸" },
+      { value: "50k_150k", label: "50,000–150,000 บาท", labelEn: "50–150K THB", emoji: "💰" },
+      { value: "150k_300k", label: "150,000–300,000 บาท", labelEn: "150–300K THB", emoji: "💰" },
+      { value: "over300k", label: "มากกว่า 300,000 บาท", labelEn: "> 300K THB", emoji: "💎" },
+    ],
+  },
+  {
+    id: "q35",
+    type: "multiCheckbox",
+    question: "ความผูกพันกับประเทศไทย (เลือกได้มากกว่า 1)",
+    questionEn: "Ties to Thailand (select all that apply)",
+    required: true,
+    defaultNextId: "q36",
+    section: "S5",
+    sectionTitle: "คัดกรองหลัก",
+    sectionTitleEn: "Core Qualification",
+    sectionEmoji: "🔍",
+    options: [
+      { value: "job", label: "งานประจำหรือธุรกิจในไทย", labelEn: "Job or business in Thailand", emoji: "💼" },
+      { value: "property", label: "บ้าน/คอนโด/ที่ดินในไทย", labelEn: "Own property in Thailand", emoji: "🏠" },
+      { value: "spouse_children", label: "คู่สมรสหรือบุตรอยู่ในไทย", labelEn: "Spouse or children in Thailand", emoji: "👨‍👩‍👧" },
+      { value: "dependents", label: "พ่อแม่หรือผู้ที่ต้องดูแลในไทย", labelEn: "Dependents in Thailand", emoji: "👴" },
+      { value: "investments", label: "เงินลงทุนหรือทรัพย์สินอื่น", labelEn: "Investments or other assets", emoji: "📈" },
+      { value: "none", label: "ไม่มีข้อใดข้างต้น", labelEn: "None of the above", emoji: "➖" },
+    ],
+  },
+
+  // ── S6: Contact Preference ────────────────────────────────────
+  {
+    id: "q36",
+    type: "radio",
+    question: "ต้องการให้เราติดต่อกลับทางไหน?",
+    questionEn: "How would you like us to contact you?",
+    required: true,
+    section: "S6",
+    sectionTitle: "นัดรับการติดต่อ",
+    sectionTitleEn: "Schedule Callback",
+    sectionEmoji: "📞",
+    options: [
+      { value: "line", label: "ผ่าน LINE OA @itinerry", labelEn: "Via LINE OA @itinerry", emoji: "💬", nextId: "q2" },
+      { value: "call", label: "ให้โทรกลับ", labelEn: "Call me back", emoji: "📱", nextId: "q37" },
+    ],
+  },
+
+  // ── S7: Callback Time ─────────────────────────────────────────
+  {
+    id: "q37",
+    type: "radio",
+    question: "ช่วงเวลาที่ต้องการให้ติดต่อกลับ",
+    questionEn: "Preferred callback time",
+    required: true,
+    section: "S7",
+    sectionTitle: "ช่วงเวลาโทรกลับ",
+    sectionTitleEn: "Callback Time",
+    sectionEmoji: "⏰",
+    options: [
+      { value: "morning", label: "เช้า 9:00–12:00", labelEn: "Morning 9:00–12:00", emoji: "🌅" },
+      { value: "afternoon", label: "บ่าย 12:00–15:00", labelEn: "Afternoon 12:00–15:00", emoji: "☀️" },
+      { value: "evening", label: "เย็น 15:00–18:00", labelEn: "Evening 15:00–18:00", emoji: "🌆" },
+    ],
+    defaultNextId: "q2",
+  },
 ];
 
-/** Returns the steps that are relevant given current answers */
-export function getActiveSteps(answers: Record<string, string | string[]>): Step[] {
-  const visaType = answers["visaType"] as string | undefined;
+export const QUESTIONS_MAP: Record<string, Question> = Object.fromEntries(
+  QUESTIONS.map((q) => [q.id, q])
+);
 
-  const visaSpecificIds: Record<string, string> = {
-    tourist: "tourist_specific",
-    student: "student_specific",
-    work: "work_specific",
-    business: "work_specific",
-    family: "tourist_specific",
-  };
-
-  const relevantVisaStepId = visaType ? visaSpecificIds[visaType] : null;
-
-  return ALL_STEPS.filter((step) => {
-    // Skip visa-specific steps that don't match current visa type
-    if (["tourist_specific", "student_specific", "work_specific"].includes(step.id)) {
-      return step.id === relevantVisaStepId;
-    }
-    return true;
-  });
-}
+export const FIRST_QUESTION_ID = "q1";

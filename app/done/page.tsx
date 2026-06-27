@@ -1,15 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useFormStore } from "@/store/formStore";
 import { LINE_OA_URL, LINE_OA_QR } from "@/lib/constants";
 
+function getCookie(name: string): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  return document.cookie.split("; ").find((r) => r.startsWith(name + "="))?.split("=")[1];
+}
+
 export default function DonePage() {
   const { reset } = useFormStore();
+  const [isFriend, setIsFriend] = useState<boolean | null>(null);
 
   useEffect(() => {
     reset();
+    setIsFriend(getCookie("isFriend") === "1");
   }, [reset]);
 
   return (
@@ -54,40 +61,53 @@ export default function DonePage() {
           className="w-full rounded-3xl overflow-hidden"
           style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
         >
-          <div className="px-6 pt-6 pb-4 text-center space-y-1">
-            <p className="text-white font-bold text-base">รับผลประเมินของคุณ</p>
-            <p className="text-white/50 text-xs leading-relaxed">
-              เพิ่มเพื่อน LINE เพื่อรับผลประเมินและ<br />
-              คำแนะนำจากผู้เชี่ยวชาญภายใน 24 ชม.
-            </p>
-          </div>
+          {isFriend ? (
+            <div className="px-6 py-6 text-center space-y-2">
+              <span className="text-3xl">💬</span>
+              <p className="text-white font-bold text-base">พร้อมติดต่อคุณแล้ว!</p>
+              <p className="text-white/50 text-sm leading-relaxed">
+                ทีม itinerry จะติดต่อคุณผ่าน LINE<br />
+                และเบอร์โทรที่ให้ไว้ภายใน 24 ชม.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="px-6 pt-6 pb-4 text-center space-y-1">
+                <p className="text-white font-bold text-base">รับผลประเมินของคุณ</p>
+                <p className="text-white/50 text-xs leading-relaxed">
+                  เพิ่มเพื่อน LINE เพื่อรับผลประเมินและ<br />
+                  คำแนะนำจากผู้เชี่ยวชาญภายใน 24 ชม.
+                </p>
+              </div>
 
-          {/* QR */}
-          <div className="flex justify-center pb-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={LINE_OA_QR}
-              alt="LINE QR @448yxrvh"
-              width={140}
-              height={140}
-              className="rounded-2xl"
-            />
-          </div>
-          <p className="text-center text-white/30 text-xs pb-3">@448yxrvh</p>
+              {/* QR */}
+              <div className="flex justify-center pb-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={LINE_OA_QR}
+                  alt="LINE QR @448yxrvh"
+                  width={140}
+                  height={140}
+                  className="rounded-2xl"
+                />
+              </div>
+              <p className="text-center text-white/30 text-xs pb-3">@448yxrvh</p>
 
-          {/* Add Friend Button */}
-          <div className="px-4 pb-5">
-            <a
-              href={LINE_OA_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-white font-bold text-base transition-all active:scale-[0.98]"
-              style={{ backgroundColor: "#06c755" }}
-            >
-              <LineIcon />
-              เพิ่มเพื่อนรับผลประเมิน
-            </a>
-          </div>
+              {/* Add Friend Button */}
+              <div className="px-4 pb-5">
+                <a
+                  href={LINE_OA_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-white font-bold text-base transition-all active:scale-[0.98]"
+                  style={{ backgroundColor: "#06c755" }}
+                >
+                  <LineIcon />
+                  เพิ่มเพื่อนรับผลประเมิน
+                </a>
+              </div>
+            </>
+          )}
         </motion.div>
 
         {/* Steps */}
