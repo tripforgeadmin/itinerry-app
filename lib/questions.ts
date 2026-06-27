@@ -38,20 +38,6 @@ export interface Question {
 export const QUESTIONS: Question[] = [
   // ── S0: Consent ──────────────────────────────────────────────
   {
-    id: "q1",
-    type: "consent",
-    question:
-      "itinerry เก็บข้อมูลส่วนบุคคลของคุณ (ชื่อ ช่องทางติดต่อ ข้อมูลการเดินทาง อาชีพ และข้อมูลทางการเงินโดยสังเขป) เพื่อประเมินและให้บริการยื่นขอวีซ่า ข้าพเจ้าได้อ่านและยินยอมให้ itinerry เก็บและใช้ข้อมูลตามวัตถุประสงค์ข้างต้น",
-    questionEn:
-      "itinerry collects your personal data (name, contact, travel details, occupation, basic financial info) to assess and provide visa services. I have read and consent to itinerry collecting and using my data for the purposes above.",
-    required: true,
-    defaultNextId: "q3",
-    section: "S0",
-    sectionTitle: "ข้อตกลงและความยินยอม",
-    sectionTitleEn: "Consent",
-    sectionEmoji: "📋",
-  },
-  {
     id: "q2",
     type: "consent",
     question:
@@ -692,4 +678,4 @@ export const QUESTIONS_MAP: Record<string, Question> = Object.fromEntries(
   QUESTIONS.map((q) => [q.id, q])
 );
 
-export const FIRST_QUESTION_ID = "q1";
+export const FIRST_QUESTION_ID = "q3";
