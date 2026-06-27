@@ -7,6 +7,34 @@ import type { Answers } from "@/store/formStore";
 
 export type Lang = "th" | "en";
 
+function CircularProgress({ current, total }: { current: number; total: number }) {
+  const size = 36;
+  const stroke = 3;
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const progress = circumference - (current / total) * circumference;
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke="var(--color-border)" strokeWidth={stroke} />
+        <motion.circle cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke="#44a8db" strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          initial={false}
+          animate={{ strokeDashoffset: progress }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-accent">
+        {current}
+      </span>
+    </div>
+  );
+}
+
 interface QuestionScreenProps {
   question: Question;
   sectionTitle: string;
@@ -112,24 +140,9 @@ export function QuestionScreen({
                 EN
               </button>
             </div>
+            {/* Circular progress */}
+            <CircularProgress current={qIndex + 1} total={totalQ} />
           </div>
-        </div>
-        {/* Power bar */}
-        <div className="flex items-center gap-1 mt-1">
-          {Array.from({ length: totalQ }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="h-2 flex-1 rounded-full"
-              initial={false}
-              animate={{
-                background: i < qIndex + 1
-                  ? "linear-gradient(90deg, #44a8db, #00c3ff)"
-                  : "var(--color-border)",
-                opacity: i < qIndex + 1 ? 1 : 0.4,
-              }}
-              transition={{ duration: 0.3, delay: i * 0.02 }}
-            />
-          ))}
         </div>
         {/* Section tag */}
         <div className="flex items-center gap-1.5 mt-2.5">
@@ -202,38 +215,35 @@ export function QuestionScreen({
                 </>
               )}
 
-              {/* Radio / Dropdown as cards */}
+              {/* Radio / Dropdown as grid */}
               {(question.type === "radio" || question.type === "dropdown") && (
-                <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {question.options?.map((opt, i) => (
                     <motion.button
                       key={opt.value}
-                      initial={{ opacity: 0, x: 16 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, scale: 0.92 }}
+                      animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: i * 0.04, duration: 0.2 }}
                       type="button"
                       onClick={() => handleSelect(opt.value)}
                       className={[
-                        "w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 text-left transition-all active:scale-[0.98] font-medium text-sm",
+                        "flex flex-col items-center justify-center gap-1.5 px-3 py-4 rounded-2xl border-2 text-center transition-all active:scale-[0.97] font-medium text-sm",
                         value === opt.value
                           ? "border-accent bg-accent-bg text-primary shadow-card"
                           : "border-border bg-card text-primary-mid hover:border-accent-tint",
                       ].join(" ")}
                     >
-                      <span className={[
-                        "w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all",
-                        value === opt.value ? "border-accent" : "border-border",
-                      ].join(" ")}>
-                        {value === opt.value && (
-                          <motion.span
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="w-2.5 h-2.5 rounded-full bg-accent"
-                          />
-                        )}
+                      {opt.emoji && <span className="text-2xl">{opt.emoji}</span>}
+                      <span className="leading-tight text-xs">
+                        {lang === "en" && opt.labelEn ? opt.labelEn : opt.label}
                       </span>
-                      {opt.emoji && <span className="text-lg">{opt.emoji}</span>}
-                      <span>{lang === "en" && opt.labelEn ? opt.labelEn : opt.label}</span>
+                      {value === opt.value && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="w-2 h-2 rounded-full bg-accent mt-0.5"
+                        />
+                      )}
                     </motion.button>
                   ))}
 
