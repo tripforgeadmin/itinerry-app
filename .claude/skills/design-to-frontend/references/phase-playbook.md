@@ -11,6 +11,9 @@ ends at a **STOP** (see Checkpoint protocol in SKILL.md). Keep
 **Goal:** a shared, written understanding of as-is vs to-be, and an agreed plan. No production
 code is written in this phase.
 
+0. **Read `docs/design/DESIGN_RECONCILIATION.md` first** — it carries the decided project facts
+   (locked surfaces, token/data deltas, flow-shape decision) and overrides the raw design where
+   they conflict. Everything below *extends* it; don't re-derive what it already settles.
 1. **Read to-be** (apply precedence): skim `design_spec` §1–§11, `screens_detail` `## 0` + the
    screens in scope, and the relevant parts of `prototype_v2.html`. Note §9 production guidance
    and §11 open items.
@@ -20,11 +23,13 @@ code is written in this phase.
    reports tokens missing/added/changed between `docs/design/styles/tokens.css` and
    `app/globals.css`, and flags the missing `.dark` theme.
 4. **Write the gap report** in `IMPLEMENTATION_PLAN.md`:
+   - **As-is locked surfaces:** carry the **keep** list from `DESIGN_RECONCILIATION.md` so they're
+     explicitly out of the reskin scope (don't re-decide which are locked).
    - **Tokens:** drift list + reconciliation proposal.
-   - **Primitives/components:** for each (glass card, footer CTA, top bar + progress boxes,
-     loader, transition wrapper, field types) → *reuse / migrate / build-fresh* + why.
-   - **Screens:** table of the 18 screens → *exists & ok / exists-needs-migration / missing*,
-     judged against `screens_detail.md`.
+   - **Primitives/components:** for each (glass card, footer CTA, progress boxes, loader,
+     transition wrapper, field types) → *reuse / migrate / build-fresh / as-is locked* + why.
+   - **Screens:** table of the 18 screens → *exists & ok / exists-needs-migration / missing /
+     as-is locked (welcome 0, confirm 17)*, judged against `screens_detail.md`.
    - **Data & services:** Supabase columns + submit payload vs §9 field map; LINE/phone routing.
    - **Open questions:** anything from §11 or genuine ambiguities, phrased as decisions.
 5. **Propose the phased plan** (which screens per checkpoint, recommended order).
@@ -57,7 +62,9 @@ no screen-specific logic, no hardcoded colors.
 Build (default location `components/ui/`, matching existing conventions):
 - **Glass choice card** — the frosted card shared by all choice/summary cards (§2 glass recipe).
 - **Sticky footer / CTA pill** — yellow primary CTA with enabled/disabled states + hint variant.
-- **Top bar + 3 liquid progress boxes** — per-phase active state + animated water fill (§3, §4).
+- **Top bar progress** — the 3 liquid progress boxes, per-phase active state + animated water
+  fill (§3, §4). The progress visual is reskinnable, but **reuse the locked top-bar elements**
+  (logo + language toggle; see `DESIGN_RECONCILIATION.md`) rather than re-creating them.
 - **Elephant loader overlay** — full-screen friendly loader for phase transitions (§3).
 - **Screen transition wrapper** — fade + `translateY 8→0`, ~0.28s, scroll-reset on enter (§0 chrome).
 - **Form field primitives** — for each `FieldType` in `lib/questions.ts` (text/email/tel/radio/
@@ -77,7 +84,11 @@ Per screen, translate the fixed blocks (see [design-docs-guide.md](design-docs-g
 - **GATING boolean** → the CTA `disabled` / validation condition, exactly.
 - **ON ENTER** → mount effect. **INTERACTIONS** → handlers. **EXIT** → loader + next-screen.
 - **EDGE CASES** → explicit guards (back-nav state, returning-checkbox, auto-advance vs gated).
-- **Bare screens** (`welcome`, `transition`, `confirm`) → wordmark chrome, no progress boxes.
+- **Bare screen** (`transition`) → wordmark chrome, no progress boxes.
+
+**Skip the as-is locked screens** (per `DESIGN_RECONCILIATION.md`) — they stay as source code and
+their design screens are reference-only. Build only the in-flow question screens (and the
+`transition` interstitial).
 
 Wire data through the existing `QUESTIONS` model + store — don't introduce parallel state.
 Default to **one logical group per checkpoint**; the user may request a single screen or a whole
