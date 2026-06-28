@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import AdminTable from "./AdminTable";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminPage() {
   const { data: submissions, error } = await supabase
     .from("visa_assessments")
