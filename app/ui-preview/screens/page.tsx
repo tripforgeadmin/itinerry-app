@@ -12,7 +12,8 @@ import { PriorVisasScreen } from "@/components/screens/PriorVisasScreen";
 import { OccupationScreen } from "@/components/screens/OccupationScreen";
 import { SegmentedScreen } from "@/components/screens/SegmentedScreen";
 import { ExpensesScreen } from "@/components/screens/ExpensesScreen";
-import { SensitiveYesNoScreen } from "@/components/screens/SensitiveYesNoScreen";
+import { RefusedScreen } from "@/components/screens/RefusedScreen";
+import { OverstayScreen } from "@/components/screens/OverstayScreen";
 import { SavingsScreen } from "@/components/screens/SavingsScreen";
 import { TiesScreen } from "@/components/screens/TiesScreen";
 import { ContactScreen } from "@/components/screens/ContactScreen";
@@ -24,7 +25,7 @@ import { computeBoxes } from "@/lib/categories";
 import type { Lang } from "@/components/ui/LangToggle";
 import type { ScreenComponent } from "@/components/screens/types";
 
-const ORDER = ["q4", "q8", "q9", "q10", "q12", "q14", "q24", "q25", "q29", "q30", "q34", "q35", "q3", "q7", "q2"] as const;
+const ORDER = ["q4", "q8", "q9", "q10", "q12", "q14", "q24", "q25", "q29", "q30", "q32", "q34", "q35", "q3", "q7", "q2"] as const;
 const COMPS: Record<string, ScreenComponent> = {
   q4: NationalityScreen,
   q8: CountryScreen,
@@ -35,7 +36,8 @@ const COMPS: Record<string, ScreenComponent> = {
   q24: OccupationScreen,
   q25: SegmentedScreen,
   q29: ExpensesScreen,
-  q30: SensitiveYesNoScreen,
+  q30: RefusedScreen,
+  q32: OverstayScreen,
   q34: SavingsScreen,
   q35: TiesScreen,
   q3: ContactScreen,
@@ -44,12 +46,12 @@ const COMPS: Record<string, ScreenComponent> = {
 };
 
 export default function ScreensPreview() {
-  const [which, setWhich] = useState<(typeof ORDER)[number]>("q4");
+  const [which, setWhich] = useState<(typeof ORDER)[number]>("q32");
   const [lang, setLang] = useState<Lang>("th");
   const [answers, setAnswers] = useState<Record<string, string>>({
     q3: "สมชาย ใจดี", q5: "0812345678", q6: "somchai@email.com",
     q4: "thai", q8: "japan", q9: "tourist", q10: "2026-07-15", q11: "2026-07-25",
-    q12: "uk, usa", q24: "employee", q25: "complete", q30: "never", q32: "never",
+    q12: "uk, usa", q24: "employee", q25: "complete", q30: "never", q32: "yes",
     q34: "50k_150k", q35: "job, property", q36: "line", q7: "facebook",
   });
   const [showLoader, setShowLoader] = useState(false);

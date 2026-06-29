@@ -41,7 +41,7 @@ export function DateCalendar({ value, onChange }: DateCalendarProps) {
         startMonth={new Date(2025, 0)}
         endMonth={new Date(2029, 11)}
         disabled={{ before: new Date() }}
-        formatters={{ formatCaption: (m) => `${TH_MONTHS[m.getMonth()]} ${m.getFullYear() + 543}` }}
+        formatters={{ formatCaption: (m) => `${TH_MONTHS[m.getMonth()]} ${m.getFullYear()}` }}
       />
     </div>
   );

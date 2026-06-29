@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
-import { TextField } from "@/components/ui/TextField";
+import { CountrySelect } from "@/components/ui/CountrySelect";
 import { RevealBlock } from "@/components/ui/RevealBlock";
 import { QuestionShell } from "@/components/screens/QuestionShell";
 import type { ScreenProps } from "@/components/screens/types";
@@ -106,11 +106,7 @@ export function PriorVisasScreen({
 
       <RevealBlock open={otherOn}>
         <div className="pt-3">
-          <TextField
-            value={otherValue}
-            onChange={(e) => onOther(e.target.value)}
-            placeholder={lang === "th" ? "ระบุประเทศ / วีซ่าอื่นๆ" : "Other country / visa"}
-          />
+          <CountrySelect value={otherValue} onChange={(v) => onOther(v)} lang={lang} />
         </div>
       </RevealBlock>
 

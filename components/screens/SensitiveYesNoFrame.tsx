@@ -1,28 +1,35 @@
 "use client";
 
+import { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
-import { TextField } from "@/components/ui/TextField";
 import { RevealBlock } from "@/components/ui/RevealBlock";
 import { QuestionShell } from "@/components/screens/QuestionShell";
-import { QUESTIONS_MAP } from "@/lib/questions";
-import type { ScreenProps } from "@/components/screens/types";
+import type { Question } from "@/lib/questions";
+import type { Lang } from "@/components/ui/LangToggle";
+import type { ProgressBox } from "@/components/ui/ProgressTopBar";
 
-// Blue reassurance banner copy per screen.
-const BANNER: Record<string, string> = {
-  q30: "ตอบตามจริงช่วยให้เราเตรียมเคสได้แม่นขึ้น — เราไม่ตัดสิน และทุกอย่างเก็บเป็นความลับ",
-  q32: "ข้อมูลนี้ช่วยให้ทีมวางแผนรับมือล่วงหน้าได้ ไม่มีผลต่อการให้บริการของเรา",
-};
+interface FrameProps {
+  question: Question;
+  value: string;
+  onAnswer: (key: string, value: string) => void;
+  advanceTo: (id: string) => void;
+  onBack: () => void;
+  isFirst: boolean;
+  lang: Lang;
+  onLangChange: (l: Lang) => void;
+  boxes: ProgressBox[];
+  activeIndex: number;
+  banner: string;
+  gateOk: boolean;
+  children: ReactNode; // reveal content (shown when "เคย")
+}
 
-/**
- * Sensitive Yes/No screens (refused q30, overstay q32). Combines the design's Y/N + inline detail
- * reveal: "ไม่เคย" = accent, "เคย" = warning and reveals the detail field (the as-is detail question
- * q31/q33, written via its own key). On Next we `advanceTo` the post-detail question, so the
- * separate detail screen is skipped while its value is still captured for submit.
- */
-export function SensitiveYesNoScreen({
+/** Shared frame for the sensitive Y/N screens (refused, overstay): blue reassurance banner, Y/N
+ * buttons (accent / warning), an inline reveal, mascot, and a Next that `advanceTo`s past the
+ * separate detail question. */
+export function SensitiveYesNoFrame({
   question,
   value,
-  answers,
   onAnswer,
   advanceTo,
   onBack,
@@ -31,16 +38,13 @@ export function SensitiveYesNoScreen({
   onLangChange,
   boxes,
   activeIndex,
-}: ScreenProps) {
+  banner,
+  gateOk,
+  children,
+}: FrameProps) {
   const opts = question.options ?? [];
-  const yesOpt = opts.find((o) => o.value === "yes");
-  const neverOpt = opts.find((o) => o.value === "never");
-  const detailId = yesOpt?.nextId; // q31 / q33
-  const target = neverOpt?.nextId ?? ""; // q32 / q34 — both Y/N paths converge here
-  const detailQ = detailId ? QUESTIONS_MAP[detailId] : undefined;
-  const detailVal = detailId ? answers[detailId] ?? "" : "";
+  const target = opts.find((o) => o.value === "never")?.nextId ?? "";
   const isYes = value === "yes";
-  const gateOk = !!value && (!isYes || detailVal.trim().length > 0);
 
   return (
     <QuestionShell
@@ -60,7 +64,7 @@ export function SensitiveYesNoScreen({
     >
       <div className="mb-4 flex items-start gap-2 rounded-xl bg-accent-bg px-4 py-3 text-sm font-medium text-primary-mid">
         <span aria-hidden>💙</span>
-        <span>{BANNER[question.id]}</span>
+        <span>{banner}</span>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -87,17 +91,7 @@ export function SensitiveYesNoScreen({
         })}
       </div>
 
-      {detailQ && detailId && (
-        <RevealBlock open={isYes}>
-          <div className="pt-3">
-            <TextField
-              value={detailVal}
-              onChange={(e) => onAnswer(detailId, e.target.value)}
-              placeholder={lang === "th" ? detailQ.placeholder : detailQ.placeholderEn}
-            />
-          </div>
-        </RevealBlock>
-      )}
+      <RevealBlock open={isYes}>{children}</RevealBlock>
 
       <div className="mt-6 flex justify-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}

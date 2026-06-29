@@ -16,7 +16,8 @@ import { PriorVisasScreen } from "@/components/screens/PriorVisasScreen";
 import { OccupationScreen } from "@/components/screens/OccupationScreen";
 import { SegmentedScreen } from "@/components/screens/SegmentedScreen";
 import { ExpensesScreen } from "@/components/screens/ExpensesScreen";
-import { SensitiveYesNoScreen } from "@/components/screens/SensitiveYesNoScreen";
+import { RefusedScreen } from "@/components/screens/RefusedScreen";
+import { OverstayScreen } from "@/components/screens/OverstayScreen";
 import { SavingsScreen } from "@/components/screens/SavingsScreen";
 import { TiesScreen } from "@/components/screens/TiesScreen";
 import { ContactScreen } from "@/components/screens/ContactScreen";
@@ -42,7 +43,7 @@ const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
   q25: SegmentedScreen, q26: SegmentedScreen, q27: SegmentedScreen, q28: SegmentedScreen,
   q29: ExpensesScreen,
   // Group C · คุณสมบัติ (q30 refused + q32 overstay combine their detail q31/q33 via advanceTo)
-  q30: SensitiveYesNoScreen, q32: SensitiveYesNoScreen,
+  q30: RefusedScreen, q32: OverstayScreen,
   q34: SavingsScreen,
   q35: TiesScreen,
   // Group C · ข้อมูลติดต่อ (contact merges q3/q5/q6/q36/q37 via advanceTo → q7 found → q2 summary)
