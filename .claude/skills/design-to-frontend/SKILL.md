@@ -184,6 +184,10 @@ the user has eyeballed beats a fast full build they have to unwind.
   screen or top-bar chrome.
 - **`design-system.md` is the Astro marketing site, not this app.** Use it for token values and
   brand intent only — never copy its `src/styles/...` paths, Sanity references, or Astro stack.
+- **Look at the wireframe for every screen.** The QUESTIONS data encodes options, not decoration.
+  Before building a screen, open its `docs/design/wireframe/NN.png` — mascots, positive banners,
+  helper lines, and chip-vs-card styling live there, and generic field renderers silently drop
+  them. Building from prose + data alone loses the picture.
 - **Prototype shortcuts ≠ production.** The summary is DOM-scanned in the mock; the spec's §9
   says derive it from state. Always prefer the spec's production guidance.
 - **Token drift is real.** The design token copy and `app/globals.css` have diverged (names,

@@ -9,15 +9,24 @@ import { QUESTIONS_MAP } from "@/lib/questions";
 import { NationalityScreen } from "@/components/screens/NationalityScreen";
 import { CountryScreen } from "@/components/screens/CountryScreen";
 import { VisatypeScreen } from "@/components/screens/VisatypeScreen";
+import { DateScreen } from "@/components/screens/DateScreen";
+import { ChoiceScreen } from "@/components/screens/ChoiceScreen";
+import { MultiSelectScreen } from "@/components/screens/MultiSelectScreen";
+import { PriorVisasScreen } from "@/components/screens/PriorVisasScreen";
 import { computeBoxes } from "@/lib/categories";
 import type { ScreenComponent } from "@/components/screens/types";
 
 // Screens reskinned to the new design (Phase 3). Anything not listed falls back to the legacy
 // QuestionScreen, so the flow stays end-to-end during the screen-by-screen migration.
 const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
+  // Group A · พื้นฐาน (bespoke layouts)
   q4: NationalityScreen,
   q8: CountryScreen,
   q9: VisatypeScreen,
+  // Group B · เดินทาง (visa-branch questions q10–q23, generic by field type)
+  q10: DateScreen, q11: DateScreen, q13: DateScreen, q17: DateScreen, q18: DateScreen, q21: DateScreen,
+  q14: ChoiceScreen, q15: ChoiceScreen, q19: ChoiceScreen, q22: ChoiceScreen, q23: ChoiceScreen,
+  q12: PriorVisasScreen, q16: MultiSelectScreen, q20: PriorVisasScreen,
 };
 
 export default function QuestionnairePage() {

@@ -4,7 +4,9 @@
 > **Authority:** `DESIGN_RECONCILIATION.md` is read first and overrides the raw design.
 > **Branch policy:** backend / admin / services **follow `main`** — not edited on `ruth` (this branch
 > does frontend/design transformation only).
-> **Status:** ✅ Phase 0 · ✅ Phase 1 · ✅ Phase 2 · 🟡 **Phase 3 — Group A (พื้นฐาน) DONE: NationalityScreen q4 · CountryScreen q8 · VisatypeScreen q9 wired + render-verified (progress 15→48→82%). Group B (เดินทาง: dates·priorvisas) next — needs DateCalendar.** Dark mode skipped. Temp `app/ui-preview/` to delete before merge.
+> **Status:** ✅ Phase 0 · ✅ Phase 1 · ✅ Phase 2 · 🟡 **Phase 3 — Group A (พื้นฐาน q4·q8·q9) ✅ · Group B (เดินทาง q10–q23) ✅ via generic-by-type screens (DateScreen·ChoiceScreen·MultiSelectScreen + DateCalendar). Group C (อาชีพ·คุณสมบัติ·ข้อมูลติดต่อ) next — mostly registration on the generics + bespoke summary/contact.** Dark mode skipped. Temp `app/ui-preview/` to delete before merge.
+>
+> **Generic screens** (`components/screens/{DateScreen,ChoiceScreen,MultiSelectScreen}.tsx`) render any date/radio/multiCheckbox question from data; bespoke screens (nationality, country, visatype) override in the registry. Note: design's combined depart+return "dates" screen is kept as separate per-question screens for now (cross-field return>arrival validation deferred to Phase 4).
 >
 > **Phase 3 architecture:** screen registry in `app/q/page.tsx` (`RESKINNED_SCREENS`) routes reskinned ids to presentational screen components (`components/screens/*`) that compose `QuestionShell`; unlisted ids fall back to the legacy `QuestionScreen`, so migration is screen-by-screen and the flow never breaks. Progress fills via `lib/categories.ts` `computeBoxes` (positional Goal-Gradient).
 >

@@ -6,20 +6,26 @@ import { useState } from "react";
 import { NationalityScreen } from "@/components/screens/NationalityScreen";
 import { CountryScreen } from "@/components/screens/CountryScreen";
 import { VisatypeScreen } from "@/components/screens/VisatypeScreen";
+import { DateScreen } from "@/components/screens/DateScreen";
+import { ChoiceScreen } from "@/components/screens/ChoiceScreen";
+import { PriorVisasScreen } from "@/components/screens/PriorVisasScreen";
 import { QUESTIONS_MAP } from "@/lib/questions";
 import { computeBoxes } from "@/lib/categories";
 import type { Lang } from "@/components/ui/LangToggle";
 import type { ScreenComponent } from "@/components/screens/types";
 
-const ORDER = ["q4", "q8", "q9"] as const;
+const ORDER = ["q4", "q8", "q9", "q10", "q12", "q14"] as const;
 const COMPS: Record<string, ScreenComponent> = {
   q4: NationalityScreen,
   q8: CountryScreen,
   q9: VisatypeScreen,
+  q10: DateScreen,
+  q12: PriorVisasScreen,
+  q14: ChoiceScreen,
 };
 
 export default function ScreensPreview() {
-  const [which, setWhich] = useState<(typeof ORDER)[number]>("q8");
+  const [which, setWhich] = useState<(typeof ORDER)[number]>("q12");
   const [lang, setLang] = useState<Lang>("th");
   const [value, setValue] = useState("");
   const [other, setOther] = useState("");

@@ -79,6 +79,13 @@ Reuse what exists (`ProgressBar`, parts of `QuestionScreen`) — migrate rather 
 
 **Goal:** assemble screens from `screens_detail.md`, composing Phase-2 primitives.
 
+**Before building each screen, OPEN its wireframe PNG** (`docs/design/wireframe/NN.png`, matched by
+content) and re-read its `screens_detail` block. The wireframe shows per-screen visuals the
+QUESTIONS data does **not** encode — mascots, positive banners, helper lines, illustrations, and
+whether options are chips vs cards. **Generic field renderers strip these**; a screen that needs
+them must be bespoke (or extend the generic). Don't build a screen from prose + data alone — look
+at the picture, or you'll silently drop the mascot/banner.
+
 Per screen, translate the fixed blocks (see [design-docs-guide.md](design-docs-guide.md)):
 - **CONTENT order** → JSX structure (match the element table top→bottom).
 - **GATING boolean** → the CTA `disabled` / validation condition, exactly.
