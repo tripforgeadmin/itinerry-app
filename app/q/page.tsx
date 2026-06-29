@@ -6,6 +6,17 @@ import { QuestionScreen } from "@/components/form/QuestionScreen";
 import type { Lang } from "@/components/form/QuestionScreen";
 import { useFormStore } from "@/store/formStore";
 import { QUESTIONS_MAP } from "@/lib/questions";
+import { NationalityScreen } from "@/components/screens/NationalityScreen";
+import { VisatypeScreen } from "@/components/screens/VisatypeScreen";
+import { computeBoxes } from "@/lib/categories";
+import type { ScreenComponent } from "@/components/screens/types";
+
+// Screens reskinned to the new design (Phase 3). Anything not listed falls back to the legacy
+// QuestionScreen, so the flow stays end-to-end during the screen-by-screen migration.
+const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
+  q4: NationalityScreen,
+  q9: VisatypeScreen,
+};
 
 export default function QuestionnairePage() {
   const router = useRouter();
@@ -75,6 +86,27 @@ export default function QuestionnairePage() {
       alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
       setSubmitting(false);
     }
+  }
+
+  const Reskinned = RESKINNED_SCREENS[currentId];
+  if (Reskinned) {
+    const { boxes, activeIndex } = computeBoxes(currentId);
+    return (
+      <Reskinned
+        question={question}
+        value={answers[currentId] ?? ""}
+        otherValue={answers[`${currentId}_other`] ?? ""}
+        onAnswer={setAnswer}
+        onOther={(v) => setAnswer(`${currentId}_other`, v)}
+        onNext={handleNext}
+        onBack={handleBack}
+        isFirst={history.length === 1}
+        lang={lang}
+        onLangChange={setLang}
+        boxes={boxes}
+        activeIndex={activeIndex}
+      />
+    );
   }
 
   return (
