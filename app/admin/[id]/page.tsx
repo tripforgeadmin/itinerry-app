@@ -77,13 +77,13 @@ type OverstayEntry = { country?: string; year?: string; days?: string };
 function refusedText(s: Dict): string {
   const entries = s.visa_refused_entries as RefusedEntry[] | null;
   if (Array.isArray(entries) && entries.length)
-    return "ใช่ — " + entries.map((e) => `${(e.country ?? "").toUpperCase()} ${e.year ?? ""}`.trim()).join(", ");
+    return "ใช่ — " + entries.map((e) => `${e.country ?? ""} ${e.year ?? ""}`.trim()).join(", ");
   return s.visa_refused ? `ใช่ — ${s.visa_refused_details ?? ""}` : "ไม่เคย";
 }
 function overstayText(s: Dict): string {
   const entries = s.overstay_entries as OverstayEntry[] | null;
   if (Array.isArray(entries) && entries.length)
-    return "ใช่ — " + entries.map((e) => `${(e.country ?? "").toUpperCase()} ${e.year ?? ""} · ${e.days ?? "?"} วัน`.trim()).join(", ");
+    return "ใช่ — " + entries.map((e) => `${e.country ?? ""} ${e.year ?? ""} · ${e.days ?? "?"} วัน`.trim()).join(", ");
   return s.overstayed ? `ใช่ — ${s.overstay_details ?? ""}` : "ไม่เคย";
 }
 
