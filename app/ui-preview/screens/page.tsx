@@ -4,25 +4,34 @@
 
 import { useState } from "react";
 import { NationalityScreen } from "@/components/screens/NationalityScreen";
+import { CountryScreen } from "@/components/screens/CountryScreen";
 import { VisatypeScreen } from "@/components/screens/VisatypeScreen";
 import { QUESTIONS_MAP } from "@/lib/questions";
 import { computeBoxes } from "@/lib/categories";
 import type { Lang } from "@/components/ui/LangToggle";
+import type { ScreenComponent } from "@/components/screens/types";
+
+const ORDER = ["q4", "q8", "q9"] as const;
+const COMPS: Record<string, ScreenComponent> = {
+  q4: NationalityScreen,
+  q8: CountryScreen,
+  q9: VisatypeScreen,
+};
 
 export default function ScreensPreview() {
-  const [which, setWhich] = useState<"q4" | "q9">("q4");
+  const [which, setWhich] = useState<(typeof ORDER)[number]>("q8");
   const [lang, setLang] = useState<Lang>("th");
   const [value, setValue] = useState("");
   const [other, setOther] = useState("");
 
-  const Comp = which === "q4" ? NationalityScreen : VisatypeScreen;
+  const Comp = COMPS[which];
   const { boxes, activeIndex } = computeBoxes(which);
 
   return (
     <>
       <button
         onClick={() => {
-          setWhich((w) => (w === "q4" ? "q9" : "q4"));
+          setWhich((w) => ORDER[(ORDER.indexOf(w) + 1) % ORDER.length]);
           setValue("");
           setOther("");
         }}

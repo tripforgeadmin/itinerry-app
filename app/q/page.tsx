@@ -7,6 +7,7 @@ import type { Lang } from "@/components/form/QuestionScreen";
 import { useFormStore } from "@/store/formStore";
 import { QUESTIONS_MAP } from "@/lib/questions";
 import { NationalityScreen } from "@/components/screens/NationalityScreen";
+import { CountryScreen } from "@/components/screens/CountryScreen";
 import { VisatypeScreen } from "@/components/screens/VisatypeScreen";
 import { computeBoxes } from "@/lib/categories";
 import type { ScreenComponent } from "@/components/screens/types";
@@ -15,6 +16,7 @@ import type { ScreenComponent } from "@/components/screens/types";
 // QuestionScreen, so the flow stays end-to-end during the screen-by-screen migration.
 const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
   q4: NationalityScreen,
+  q8: CountryScreen,
   q9: VisatypeScreen,
 };
 

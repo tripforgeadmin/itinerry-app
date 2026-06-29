@@ -4,7 +4,7 @@
 > **Authority:** `DESIGN_RECONCILIATION.md` is read first and overrides the raw design.
 > **Branch policy:** backend / admin / services **follow `main`** — not edited on `ruth` (this branch
 > does frontend/design transformation only).
-> **Status:** ✅ Phase 0 · ✅ Phase 1 · ✅ Phase 2 · 🟡 **Phase 3 Group A in progress — A1 done (screen-registry architecture + `QuestionShell` + NationalityScreen q4 + VisatypeScreen q9 wired into `app/q/page.tsx`, tsc + render verified). A2 = country (q8) next.** Dark mode skipped. DateCalendar → dates. Temp `app/ui-preview/` to delete before merge.
+> **Status:** ✅ Phase 0 · ✅ Phase 1 · ✅ Phase 2 · 🟡 **Phase 3 — Group A (พื้นฐาน) DONE: NationalityScreen q4 · CountryScreen q8 · VisatypeScreen q9 wired + render-verified (progress 15→48→82%). Group B (เดินทาง: dates·priorvisas) next — needs DateCalendar.** Dark mode skipped. Temp `app/ui-preview/` to delete before merge.
 >
 > **Phase 3 architecture:** screen registry in `app/q/page.tsx` (`RESKINNED_SCREENS`) routes reskinned ids to presentational screen components (`components/screens/*`) that compose `QuestionShell`; unlisted ids fall back to the legacy `QuestionScreen`, so migration is screen-by-screen and the flow never breaks. Progress fills via `lib/categories.ts` `computeBoxes` (positional Goal-Gradient).
 >
