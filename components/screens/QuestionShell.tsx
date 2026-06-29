@@ -68,7 +68,7 @@ export function QuestionShell({
           className={`sticky z-20 bg-surface px-5 ${compactTitle ? "pb-2 pt-6" : "pb-3 pt-4"} ${hideTitleDivider ? "" : "border-b border-border"}`}
           style={{ top: "var(--topbar-h, 128px)" }}
         >
-          <h2 className={`leading-snug ${compactTitle ? "text-xl font-bold text-navy" : "text-2xl font-extrabold text-primary"}`}>{title}</h2>
+          <h2 className={`leading-snug ${compactTitle ? "text-xl font-bold text-logo-primary" : "text-2xl font-extrabold text-primary"}`}>{title}</h2>
           {subtitle && <p className="mt-1.5 text-sm text-muted">{subtitle}</p>}
         </div>
         <ScreenTransition screenKey={screenKey}>

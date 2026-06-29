@@ -118,7 +118,7 @@ export function IntentFoundScreen({
               <span className="flex-1 font-semibold text-primary">{lang === "th" ? foundOpt.label : foundOpt.labelEn ?? foundOpt.label}</span>
             </>
           ) : (
-            <span className="flex-1 px-1 text-muted-soft">{lang === "th" ? "เลือกช่องทาง…" : "Select a source…"}</span>
+            <span className="flex-1 px-1 text-muted-soft">{lang === "th" ? "โปรดระบุช่องทาง" : "Select a source…"}</span>
           )}
           <svg
             width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
