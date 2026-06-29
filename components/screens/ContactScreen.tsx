@@ -71,7 +71,47 @@ export function ContactScreen({
         </Button>
       }
     >
-      {/* name — first + last */}
+      {/* channel — the primary choice, at the top */}
+      <h3 className="mb-2 font-bold text-primary">
+        {lang === "th" ? "อยากให้รับผลประเมินวีซ่าทางไหน?" : "How should we send your result?"}
+      </h3>
+      <div className="grid grid-cols-2 gap-3">
+        {q36.options?.map((o) => {
+          const on = channel === o.value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onAnswer("q36", o.value)}
+              className={
+                "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-5 text-center transition-colors " +
+                (on ? "border-accent bg-accent-subtle text-primary" : "border-border bg-card text-muted hover:border-border-mid")
+              }
+            >
+              {CHANNEL_IMG[o.value] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={CHANNEL_IMG[o.value]} alt="" className="h-12 w-12 object-contain" />
+              ) : (
+                <span className="text-3xl leading-none">{o.emoji ?? "•"}</span>
+              )}
+              <span className="text-sm font-bold">{lang === "th" ? o.label : o.labelEn ?? o.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <RevealBlock open={isCall}>
+        <div className="pt-3">
+          <SegmentedControl
+            segments={(q37.options ?? []).map((o) => ({ value: o.value, label: lang === "th" ? o.label : o.labelEn ?? o.label }))}
+            value={time || null}
+            onChange={(v) => onAnswer("q37", v)}
+          />
+        </div>
+      </RevealBlock>
+
+      {/* contact details — below */}
+      <h3 className="mb-2 mt-7 font-bold text-primary">{lang === "th" ? "ข้อมูลสำหรับติดต่อกลับ" : "Your contact details"}</h3>
       <div className="grid grid-cols-2 gap-3">
         <TextField
           label={lang === "th" ? "ชื่อ" : "First name"}
@@ -131,44 +171,6 @@ export function ContactScreen({
       <p className="mt-2 text-xs text-muted-soft">
         {lang === "th" ? "✉️ ใช้ส่งผลประเมินและเอกสาร — ไม่สแปม" : "✉️ Used to send your result — no spam"}
       </p>
-
-      <h3 className="mb-2 mt-6 font-bold text-primary">
-        {lang === "th" ? "อยากให้รับผลประเมินวีซ่าทางไหน?" : "How should we send your result?"}
-      </h3>
-      <div className="grid grid-cols-2 gap-3">
-        {q36.options?.map((o) => {
-          const on = channel === o.value;
-          return (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() => onAnswer("q36", o.value)}
-              className={
-                "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-5 text-center transition-colors " +
-                (on ? "border-accent bg-accent-subtle text-primary" : "border-border bg-card text-muted hover:border-border-mid")
-              }
-            >
-              {CHANNEL_IMG[o.value] ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={CHANNEL_IMG[o.value]} alt="" className="h-12 w-12 object-contain" />
-              ) : (
-                <span className="text-3xl leading-none">{o.emoji ?? "•"}</span>
-              )}
-              <span className="text-sm font-bold">{lang === "th" ? o.label : o.labelEn ?? o.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <RevealBlock open={isCall}>
-        <div className="pt-3">
-          <SegmentedControl
-            segments={(q37.options ?? []).map((o) => ({ value: o.value, label: lang === "th" ? o.label : o.labelEn ?? o.label }))}
-            value={time || null}
-            onChange={(v) => onAnswer("q37", v)}
-          />
-        </div>
-      </RevealBlock>
     </QuestionShell>
   );
 }
