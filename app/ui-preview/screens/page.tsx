@@ -9,12 +9,15 @@ import { VisatypeScreen } from "@/components/screens/VisatypeScreen";
 import { DateScreen } from "@/components/screens/DateScreen";
 import { ChoiceScreen } from "@/components/screens/ChoiceScreen";
 import { PriorVisasScreen } from "@/components/screens/PriorVisasScreen";
+import { OccupationScreen } from "@/components/screens/OccupationScreen";
+import { SegmentedScreen } from "@/components/screens/SegmentedScreen";
+import { ExpensesScreen } from "@/components/screens/ExpensesScreen";
 import { QUESTIONS_MAP } from "@/lib/questions";
 import { computeBoxes } from "@/lib/categories";
 import type { Lang } from "@/components/ui/LangToggle";
 import type { ScreenComponent } from "@/components/screens/types";
 
-const ORDER = ["q4", "q8", "q9", "q10", "q12", "q14"] as const;
+const ORDER = ["q4", "q8", "q9", "q10", "q12", "q14", "q24", "q25", "q29"] as const;
 const COMPS: Record<string, ScreenComponent> = {
   q4: NationalityScreen,
   q8: CountryScreen,
@@ -22,10 +25,13 @@ const COMPS: Record<string, ScreenComponent> = {
   q10: DateScreen,
   q12: PriorVisasScreen,
   q14: ChoiceScreen,
+  q24: OccupationScreen,
+  q25: SegmentedScreen,
+  q29: ExpensesScreen,
 };
 
 export default function ScreensPreview() {
-  const [which, setWhich] = useState<(typeof ORDER)[number]>("q12");
+  const [which, setWhich] = useState<(typeof ORDER)[number]>("q25");
   const [lang, setLang] = useState<Lang>("th");
   const [value, setValue] = useState("");
   const [other, setOther] = useState("");

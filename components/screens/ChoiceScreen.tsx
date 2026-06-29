@@ -23,7 +23,8 @@ export function ChoiceScreen({
   onLangChange,
   boxes,
   activeIndex,
-}: ScreenProps) {
+  hideIcons = false,
+}: ScreenProps & { hideIcons?: boolean }) {
   const advancing = useRef(false);
   const isOther = !!question.allowOtherText && value === "other";
 
@@ -64,7 +65,7 @@ export function ChoiceScreen({
             key={o.value}
             selected={value === o.value}
             onSelect={() => select(o.value)}
-            icon={o.emoji ? <span className="text-2xl">{o.emoji}</span> : undefined}
+            icon={hideIcons || !o.emoji ? undefined : <span className="text-2xl">{o.emoji}</span>}
             title={lang === "th" ? o.label : o.labelEn ?? o.label}
           />
         ))}

@@ -13,6 +13,9 @@ import { DateScreen } from "@/components/screens/DateScreen";
 import { ChoiceScreen } from "@/components/screens/ChoiceScreen";
 import { MultiSelectScreen } from "@/components/screens/MultiSelectScreen";
 import { PriorVisasScreen } from "@/components/screens/PriorVisasScreen";
+import { OccupationScreen } from "@/components/screens/OccupationScreen";
+import { SegmentedScreen } from "@/components/screens/SegmentedScreen";
+import { ExpensesScreen } from "@/components/screens/ExpensesScreen";
 import { computeBoxes } from "@/lib/categories";
 import type { ScreenComponent } from "@/components/screens/types";
 
@@ -27,6 +30,10 @@ const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
   q10: DateScreen, q11: DateScreen, q13: DateScreen, q17: DateScreen, q18: DateScreen, q21: DateScreen,
   q14: ChoiceScreen, q15: ChoiceScreen, q19: ChoiceScreen, q22: ChoiceScreen, q23: ChoiceScreen,
   q12: PriorVisasScreen, q16: MultiSelectScreen, q20: PriorVisasScreen,
+  // Group C · อาชีพ (occupation + employment-document branches q24–q29)
+  q24: OccupationScreen,
+  q25: SegmentedScreen, q26: SegmentedScreen, q27: SegmentedScreen, q28: SegmentedScreen,
+  q29: ExpensesScreen,
 };
 
 export default function QuestionnairePage() {
