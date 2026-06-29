@@ -21,6 +21,8 @@ interface QuestionShellProps {
   footerHint?: string;
   /** A CTA (e.g. <Button/>) for gated screens. */
   footer?: ReactNode;
+  /** Drop the divider line under the sticky title. */
+  hideTitleDivider?: boolean;
   children: ReactNode;
 }
 
@@ -41,6 +43,7 @@ export function QuestionShell({
   subtitle,
   footerHint,
   footer,
+  hideTitleDivider,
   children,
 }: QuestionShellProps) {
   return (
@@ -59,7 +62,7 @@ export function QuestionShell({
         {/* Sticky headline — a sibling of (never inside) ScreenTransition, since sticky breaks
             inside a transformed/animated ancestor. Pins right below the measured top bar. */}
         <div
-          className="sticky z-20 border-b border-border bg-surface px-5 pb-3 pt-4"
+          className={`sticky z-20 bg-surface px-5 pb-3 pt-4 ${hideTitleDivider ? "" : "border-b border-border"}`}
           style={{ top: "var(--topbar-h, 128px)" }}
         >
           <h2 className="text-2xl font-extrabold leading-snug text-primary">{title}</h2>

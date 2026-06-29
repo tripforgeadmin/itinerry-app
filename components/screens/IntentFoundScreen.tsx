@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChoiceRow } from "@/components/ui/ChoiceRow";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { RevealBlock } from "@/components/ui/RevealBlock";
@@ -68,37 +67,44 @@ export function IntentFoundScreen({
       onLangChange={onLangChange}
       screenKey={question.id}
       title={lang === "th" ? "ขั้นตอนสุดท้าย" : "Final step"}
+      hideTitleDivider
       footer={
         <Button disabled={!gateOk} onClick={onNext}>
           {lang === "th" ? "ถัดไป" : "Next"}
         </Button>
       }
     >
-      <div className="mb-5 flex items-start gap-2 rounded-2xl bg-accent-bg px-4 py-3 text-sm font-medium text-primary-mid">
-        <span aria-hidden>💙</span>
-        <span>
-          {lang === "th"
-            ? "เพื่อให้คำแนะนำของเราช่วยเหลือคุณได้มากที่สุด เราขอสอบถามคุณในขั้นตอนสุดท้าย"
-            : "So our advice can help you best, one last question."}
-        </span>
-      </div>
-
-      {/* Q1 · intent (q38) */}
-      <h3 className="font-bold text-primary">{lang === "th" ? q38.question : q38.questionEn ?? q38.question}</h3>
-      <p className="mb-3 mt-1 text-xs text-muted">{lang === "th" ? "(ตอบคำถามที่ตรงที่สุด)" : "(pick the closest)"}</p>
-      <div className="flex flex-col gap-3">
-        {q38.options?.map((o) => (
-          <ChoiceRow
-            key={o.value}
-            selected={intent === o.value}
-            onSelect={() => onAnswer("q38", o.value)}
-            title={lang === "th" ? o.label : o.labelEn ?? o.label}
-          />
-        ))}
+      {/* Q1 · intent (q38) — same heading size as a step question */}
+      <h2 className="text-2xl font-extrabold leading-snug text-primary">
+        {lang === "th" ? q38.question : q38.questionEn ?? q38.question}{" "}
+        <span className="text-xs font-medium text-muted">{lang === "th" ? "(ตอบคำถามที่ตรงที่สุด)" : "(pick the closest)"}</span>
+      </h2>
+      <div className="mt-4 flex flex-col gap-3">
+        {q38.options?.map((o) => {
+          const on = intent === o.value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onAnswer("q38", o.value)}
+              className={
+                "flex items-center gap-3 rounded-2xl border-2 px-4 py-3.5 text-left text-sm font-semibold leading-snug transition-colors " +
+                (on ? "border-accent bg-accent-subtle text-primary" : "border-border bg-card text-primary-mid hover:border-border-mid")
+              }
+            >
+              <span className={"grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 transition-colors " + (on ? "border-accent bg-accent text-white" : "border-border-mid text-transparent")}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m5 13 4 4L19 7" />
+                </svg>
+              </span>
+              <span className="flex-1">{lang === "th" ? o.label : o.labelEn ?? o.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Q2 · source (q7) as an icon dropdown */}
-      <h3 className="mb-2 mt-6 font-bold text-primary">{lang === "th" ? "รู้จัก itinerry จากช่องไหน?" : "How did you find itinerry?"}</h3>
+      <h3 className="mb-2 mt-6 font-bold text-primary">{lang === "th" ? "คุณรู้จัก itinerry จากช่องไหน?" : "How did you find itinerry?"}</h3>
       <div ref={ddRef} className="relative">
         <button
           type="button"
@@ -121,7 +127,7 @@ export function IntentFoundScreen({
           </svg>
         </button>
         {open && (
-          <ul className="absolute z-50 mt-1 w-full overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+          <ul className="absolute bottom-full z-50 mb-1 max-h-[55vh] w-full overflow-y-auto rounded-2xl border border-border bg-card shadow-card">
             {question.options?.map((o) => (
               <li key={o.value}>
                 <button

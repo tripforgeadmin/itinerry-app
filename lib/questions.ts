@@ -716,7 +716,7 @@ export const QUESTIONS: Question[] = [
     sectionTitleEn: "Final step",
     sectionEmoji: "🎯",
     options: [
-      { value: "explore", label: "ตรวจความพร้อม-โปรไฟล์ก่อนยื่นวีซ่า / กำลังศึกษาข้อมูล / แผนคร่าวๆ", labelEn: "Check readiness & profile / still researching / rough plan" },
+      { value: "explore", label: "กำลังศึกษาข้อมูล / ตรวจความพร้อม-โปรไฟล์ก่อนยื่นวีซ่า / มีแผนคร่าวๆ", labelEn: "Researching / checking readiness & profile / rough plan" },
       { value: "ready", label: "เลือกประเทศปลายทาง-วันเดินทางได้แล้ว / กำลังหาบริการทำวีซ่าที่เหมาะสม", labelEn: "Destination & dates set / looking for the right visa service" },
       { value: "execute", label: "ช่วยดำเนินการทำวีซ่า / วีซ่าเร่งด่วน / ปิดจุดอ่อนและความเสี่ยง / อยากได้คนช่วยแก้เคส", labelEn: "Handle my visa / urgent / fix weaknesses & risks / want hands-on help" },
     ],
