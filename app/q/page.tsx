@@ -21,10 +21,10 @@ import { OverstayScreen } from "@/components/screens/OverstayScreen";
 import { SavingsScreen } from "@/components/screens/SavingsScreen";
 import { TiesScreen } from "@/components/screens/TiesScreen";
 import { ContactScreen } from "@/components/screens/ContactScreen";
-import { FoundScreen } from "@/components/screens/FoundScreen";
+import { IntentFoundScreen } from "@/components/screens/IntentFoundScreen";
 import { SummaryScreen } from "@/components/screens/SummaryScreen";
 import { ElephantLoader } from "@/components/ui/ElephantLoader";
-import { computeBoxes, categoryIndexOf, firstVisitedIdOfCategory } from "@/lib/categories";
+import { computeBoxes, categoryIndexOf } from "@/lib/categories";
 import { NavContext } from "@/lib/navContext";
 import type { ScreenComponent } from "@/components/screens/types";
 
@@ -49,7 +49,7 @@ const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
   q35: TiesScreen,
   // Group C · ข้อมูลติดต่อ (contact merges q3/q5/q6/q36/q37 via advanceTo → q7 found → q2 summary)
   q3: ContactScreen,
-  q7: FoundScreen,
+  q7: IntentFoundScreen,
   q2: SummaryScreen,
 };
 
@@ -67,22 +67,21 @@ const PHASE_END_LOADER: Record<string, { cap: string; sub?: string }> = {
 
 export default function QuestionnairePage() {
   const router = useRouter();
-  const { history, answers, setAnswer, pushQuestion, popQuestion, truncateTo } = useFormStore();
+  const { history, pos, answers, setAnswer, pushQuestion, popQuestion, goToIndex } = useFormStore();
   const [submitting, setSubmitting] = useState(false);
   const [direction, setDirection] = useState(1);
   const [mounted, setMounted] = useState(false);
   const [lang, setLang] = useState<Lang>("th");
   const [loaderState, setLoaderState] = useState<{ cap: string; sub?: string } | null>(null);
-  const prevLenRef = useRef(history.length);
+  const prevPosRef = useRef(pos);
   const loaderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    const dir = history.length >= prevLenRef.current ? 1 : -1;
-    setDirection(dir);
-    prevLenRef.current = history.length;
-  }, [history.length]);
+    setDirection(pos >= prevPosRef.current ? 1 : -1);
+    prevPosRef.current = pos;
+  }, [pos]);
 
   if (!mounted) return (
     <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -90,7 +89,7 @@ export default function QuestionnairePage() {
     </div>
   );
 
-  const currentId = history[history.length - 1];
+  const currentId = history[pos];
   const question = QUESTIONS_MAP[currentId];
 
   if (!question) return null;
@@ -114,7 +113,8 @@ export default function QuestionnairePage() {
       return;
     }
     const loader = PHASE_END_LOADER[currentId];
-    if (loader) {
+    const reWalking = pos < history.length - 1 && history[pos + 1] === nextId;
+    if (loader && !reWalking) {
       setLoaderState(loader);
       loaderTimer.current = setTimeout(() => {
         setLoaderState(null);
@@ -129,14 +129,13 @@ export default function QuestionnairePage() {
     popQuestion();
   }
 
-  // Clicking a past category box jumps back to its first visited question.
+  // Clicking a category box moves the cursor to that category's first visited question (both ways).
   function handleJump(categoryIndex: number) {
-    if (categoryIndex >= categoryIndexOf(currentId)) return;
-    const targetId = firstVisitedIdOfCategory(categoryIndex, history);
-    if (!targetId || targetId === currentId) return;
+    const idx = history.findIndex((id) => categoryIndexOf(id) === categoryIndex);
+    if (idx < 0 || idx === pos) return;
     if (loaderTimer.current) clearTimeout(loaderTimer.current);
     setLoaderState(null);
-    truncateTo(targetId);
+    goToIndex(idx);
   }
 
   async function handleSubmit() {
@@ -163,8 +162,9 @@ export default function QuestionnairePage() {
   const Reskinned = RESKINNED_SCREENS[currentId];
   if (Reskinned) {
     const { boxes, activeIndex } = computeBoxes(currentId);
+    const reachedMax = Math.max(0, ...history.map((id) => categoryIndexOf(id)));
     return (
-      <NavContext.Provider value={{ onJump: handleJump }}>
+      <NavContext.Provider value={{ onJump: handleJump, reachedMax }}>
         <Reskinned
           question={question}
           value={answers[currentId] ?? ""}
@@ -175,7 +175,7 @@ export default function QuestionnairePage() {
           onNext={handleNext}
           advanceTo={(id) => pushQuestion(id)}
           onBack={handleBack}
-          isFirst={history.length === 1}
+          isFirst={pos === 0}
           lang={lang}
           onLangChange={setLang}
           boxes={boxes}
@@ -201,7 +201,7 @@ export default function QuestionnairePage() {
         onAnswer={setAnswer}
         onNext={handleNext}
         onBack={handleBack}
-        isFirst={history.length === 1}
+        isFirst={pos === 0}
         isLast={isLast}
         direction={direction}
         submitting={submitting}

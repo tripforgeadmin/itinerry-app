@@ -12,6 +12,7 @@ const LABELS: Record<string, Record<string, string>> = {
   source: { facebook: "Facebook", instagram: "Instagram", tiktok: "TikTok", google: "Google", referral: "เพื่อนแนะนำ", other: "อื่นๆ" },
   nationality: { thai: "ไทย", other: "อื่นๆ" },
   contact_preference: { line: "LINE OA", call: "โทรกลับ" },
+  intent: { explore: "ตรวจความพร้อม / ศึกษาข้อมูล", ready: "เลือกปลายทางแล้ว / หาบริการ", execute: "ช่วยดำเนินการ / เร่งด่วน / แก้เคส" },
   callback_time: { morning: "เช้า 9:00–12:00", afternoon: "บ่าย 12:00–15:00", evening: "เย็น 15:00–18:00" },
   // branch labels
   q14: { citizen_pr: "Citizen / PR", work_visa: "Work Visa", student_visa: "Student Visa", not_sure: "ไม่แน่ใจ" },
@@ -194,9 +195,10 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         </Section>
 
         {/* Contact */}
-        <Section title="S6–S7 · ช่องทางติดต่อ">
+        <Section title="S6–S8 · ช่องทางติดต่อ + ความต้องการ">
           <Row title="ติดต่อผ่าน" value={label("contact_preference", s.contact_preference)} />
           <Row title="ช่วงเวลาโทร" value={label("callback_time", s.callback_time)} />
+          <Row title="ความต้องการ" value={label("intent", s.intent)} />
         </Section>
       </div>
     </main>

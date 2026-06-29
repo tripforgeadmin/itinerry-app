@@ -3,8 +3,10 @@
 import { createContext } from "react";
 
 export interface NavContextValue {
-  /** Jump back to the first visited question of a progress category. */
+  /** Jump the cursor to the first visited question of a progress category (forward or back). */
   onJump?: (categoryIndex: number) => void;
+  /** Highest category index the user has reached — boxes ≤ this are clickable. */
+  reachedMax?: number;
 }
 
 /** Lets the (deeply nested) ProgressTopBar trigger category navigation without threading a callback

@@ -190,7 +190,7 @@ export function ProgressTopBar({
   onLangChange,
 }: ProgressTopBarProps) {
   const reduced = useReducedMotion();
-  const { onJump } = useContext(NavContext);
+  const { onJump, reachedMax = -1 } = useContext(NavContext);
   const headerRef = useRef<HTMLElement>(null);
 
   useLayoutEffect(() => {
@@ -211,7 +211,7 @@ export function ProgressTopBar({
       index={i}
       active={i === activeIndex}
       reduced={reduced}
-      clickable={!!onJump && i < activeIndex}
+      clickable={!!onJump && i <= reachedMax && i !== activeIndex}
       onClick={() => onJump?.(i)}
     />
   ));

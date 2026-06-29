@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
     trip_id:              trip.id,
     account_id:           account.id,
     occupation:           answers.q24 ?? "",
+    intent:               toNull(answers.q38),
     visa_refused:         answers.q30 === "yes",
     visa_refused_details: answers.q30 === "yes" ? toNull(answers.q31) : null,
     visa_refused_entries: answers.q30 === "yes" ? toJson(answers.q31_entries) : null,
