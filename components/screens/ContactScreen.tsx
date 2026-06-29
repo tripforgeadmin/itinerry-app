@@ -64,7 +64,7 @@ export function ContactScreen({
       lang={lang}
       onLangChange={onLangChange}
       screenKey={question.id}
-      title={lang === "th" ? "ส่งผลประเมินให้คุณที่ไหนดี?" : "Where should we send your result?"}
+      title={lang === "th" ? "ข้อมูลติดต่อ" : "Contact info"}
       footer={
         <Button disabled={!gateOk} onClick={() => advanceTo("q7")}>
           {lang === "th" ? "ถัดไป" : "Next"}
