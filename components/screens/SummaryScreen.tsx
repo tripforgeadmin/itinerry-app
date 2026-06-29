@@ -4,6 +4,7 @@ import { ConsentCheck } from "@/components/ui/ConsentCheck";
 import { Button } from "@/components/ui/Button";
 import { QuestionShell } from "@/components/screens/QuestionShell";
 import { QUESTIONS_MAP } from "@/lib/questions";
+import { CATEGORIES, categoryIndexOf } from "@/lib/categories";
 import type { ScreenProps } from "@/components/screens/types";
 
 // Curated review order (label, question id). Only answered rows are shown.
@@ -47,7 +48,12 @@ export function SummaryScreen({
   submitting,
 }: ScreenProps) {
   const certified = value === "true";
-  const rows = ROWS.map(([label, qid]) => [label, display(qid, answers, lang)] as const).filter(([, v]) => v);
+  // Group the curated rows by their category so the review reads as labeled sub-tables.
+  const answered = ROWS.map(([label, qid]) => ({ label, qid, value: display(qid, answers, lang) })).filter((r) => r.value);
+  const groups = CATEGORIES.map((cat, i) => ({
+    cat,
+    items: answered.filter((r) => categoryIndexOf(r.qid) === i),
+  })).filter((g) => g.items.length > 0);
 
   return (
     <QuestionShell
@@ -66,18 +72,27 @@ export function SummaryScreen({
         </Button>
       }
     >
-      <div className="divide-y divide-border overflow-hidden rounded-card border border-border bg-card">
-        {rows.length === 0 ? (
-          <p className="p-4 text-sm text-muted-soft">{lang === "th" ? "ยังไม่ได้เลือกข้อมูล" : "No info yet"}</p>
-        ) : (
-          rows.map(([label, v], i) => (
-            <div key={`${label}-${i}`} className="flex items-start justify-between gap-4 px-4 py-2.5">
-              <span className="shrink-0 text-sm text-muted">{label}</span>
-              <span className="text-right text-sm font-semibold text-primary">{v}</span>
+      {groups.length === 0 ? (
+        <p className="rounded-card border border-border bg-card p-4 text-sm text-muted-soft">
+          {lang === "th" ? "ยังไม่ได้เลือกข้อมูล" : "No info yet"}
+        </p>
+      ) : (
+        <div className="space-y-5">
+          {groups.map(({ cat, items }) => (
+            <div key={cat.label}>
+              <h3 className="mb-2 text-sm font-semibold text-primary">{lang === "th" ? cat.label : cat.labelEn}</h3>
+              <div className="divide-y divide-border overflow-hidden rounded-card border border-border bg-card">
+                {items.map((r) => (
+                  <div key={r.qid} className="flex items-start justify-between gap-4 px-4 py-2.5">
+                    <span className="shrink-0 text-sm text-muted">{r.label}</span>
+                    <span className="text-right text-sm font-semibold text-primary">{r.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       <div className="mt-4">
         <ConsentCheck checked={certified} onToggle={() => onAnswer(question.id, certified ? "" : "true")}>

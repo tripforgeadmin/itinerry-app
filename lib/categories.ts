@@ -24,16 +24,17 @@ const CATEGORY_INDEX_BY_ID: Record<string, number> = {
   q3: 4, q5: 4, q6: 4, q7: 4, q36: 4, q37: 4, q2: 4,
 };
 
-// Ordered "primary" screens per category — drives within-category fill (Goal-Gradient: never 0%).
-// Accurate for category 0 now; later categories are refined as their screens are reskinned (Phase 4).
-const CATEGORY_ORDER: string[][] = [
-  ["q4", "q8", "q9"],
-  ["q10", "q13", "q17", "q21"],
-  ["q24"],
-  ["q30", "q32", "q34", "q35"],
-  // contact merges q3/q5/q6/q36/q37 into one ContactScreen, so the cat-4 screens are: contact, found, summary.
-  ["q3", "q7", "q2"],
-];
+// Screens captured by another screen (contact-merge on q3; advanceTo on refused q30/overstay q32)
+// and therefore never rendered as the current screen — excluded so the active box's denominator
+// counts only real steps.
+const NON_RENDERED = new Set(["q5", "q6", "q36", "q37", "q31", "q33"]);
+
+// Ordered rendered screens per category, derived from CATEGORY_INDEX_BY_ID (single source of truth)
+// so EVERY visited screen gets a distinct position → the active box fills gradually in all 5
+// categories. Relies on CATEGORY_INDEX_BY_ID keys being in flow order within each category.
+const CATEGORY_ORDER: string[][] = CATEGORIES.map((_, ci) =>
+  Object.keys(CATEGORY_INDEX_BY_ID).filter((id) => CATEGORY_INDEX_BY_ID[id] === ci && !NON_RENDERED.has(id))
+);
 
 export function categoryIndexOf(id: string): number {
   return CATEGORY_INDEX_BY_ID[id] ?? -1;

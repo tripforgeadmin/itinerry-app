@@ -5,7 +5,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { QuestionShell } from "@/components/screens/QuestionShell";
 import type { ScreenProps } from "@/components/screens/types";
 
-/** Savings (q34) — plain glass rows (no icons; financial/screening range), encrypted-info privacy
+/** Savings (q34) — plain glass rows (no icons; financial/screening range), cost-of-living rationale
  * note + mascot, auto-advance. */
 export function SavingsScreen({
   question,
@@ -57,7 +57,7 @@ export function SavingsScreen({
 
       <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-soft">
         <span aria-hidden>🛡</span>
-        <span>{lang === "th" ? "ข้อมูลการเงินถูกเข้ารหัสและเก็บเป็นความลับ" : "Financial info is encrypted & confidential"}</span>
+        <span>{lang === "th" ? "ข้อมูลการเงินของคุณช่วยทำให้เราพิจารณาร่วมกับระยะเวลาพำนักเพื่อคำนวณค่าครองชีพที่เหมาะสมให้" : "Your savings help us estimate suitable living costs for your length of stay"}</span>
       </div>
 
       <div className="mt-5 flex justify-center">

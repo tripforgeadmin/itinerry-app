@@ -173,7 +173,7 @@ export function ProgressTopBar({
             <div className="flex items-center gap-3">
               {back}
               <div className="flex-1">
-                <ItinerryLogo size="sm" />
+                <ItinerryLogo height={26} />
               </div>
               <LangToggle lang={lang} onLangChange={onLangChange} />
             </div>
