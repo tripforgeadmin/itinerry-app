@@ -11,7 +11,7 @@ import { flagEmoji } from "@/lib/countries";
 import type { ScreenProps } from "@/components/screens/types";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const CHANNEL_ICON: Record<string, string> = { line: "💬", call: "📞" };
+const CHANNEL_IMG: Record<string, string> = { line: "/icons/line.png", call: "/icons/phone.png" };
 
 /**
  * Contact (rendered at q3) — first/last name (q3_first/q3_last + combined q3), phone with a country
@@ -133,7 +133,7 @@ export function ContactScreen({
       </p>
 
       <h3 className="mb-2 mt-6 font-bold text-primary">
-        {lang === "th" ? "อยากให้ติดต่อกลับทางไหน?" : "How should we contact you?"}
+        {lang === "th" ? "อยากให้รับผลประเมินวีซ่าทางไหน?" : "How should we send your result?"}
       </h3>
       <div className="grid grid-cols-2 gap-3">
         {q36.options?.map((o) => {
@@ -148,7 +148,12 @@ export function ContactScreen({
                 (on ? "border-accent bg-accent-subtle text-primary" : "border-border bg-card text-muted hover:border-border-mid")
               }
             >
-              <span className="text-3xl leading-none">{CHANNEL_ICON[o.value] ?? o.emoji ?? "•"}</span>
+              {CHANNEL_IMG[o.value] ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={CHANNEL_IMG[o.value]} alt="" className="h-12 w-12 object-contain" />
+              ) : (
+                <span className="text-3xl leading-none">{o.emoji ?? "•"}</span>
+              )}
               <span className="text-sm font-bold">{lang === "th" ? o.label : o.labelEn ?? o.label}</span>
             </button>
           );
