@@ -15,13 +15,16 @@ import { ExpensesScreen } from "@/components/screens/ExpensesScreen";
 import { SensitiveYesNoScreen } from "@/components/screens/SensitiveYesNoScreen";
 import { SavingsScreen } from "@/components/screens/SavingsScreen";
 import { TiesScreen } from "@/components/screens/TiesScreen";
+import { ContactScreen } from "@/components/screens/ContactScreen";
+import { FoundScreen } from "@/components/screens/FoundScreen";
+import { SummaryScreen } from "@/components/screens/SummaryScreen";
 import { ElephantLoader } from "@/components/ui/ElephantLoader";
 import { QUESTIONS_MAP } from "@/lib/questions";
 import { computeBoxes } from "@/lib/categories";
 import type { Lang } from "@/components/ui/LangToggle";
 import type { ScreenComponent } from "@/components/screens/types";
 
-const ORDER = ["q4", "q8", "q9", "q10", "q12", "q14", "q24", "q25", "q29", "q30", "q34", "q35"] as const;
+const ORDER = ["q4", "q8", "q9", "q10", "q12", "q14", "q24", "q25", "q29", "q30", "q34", "q35", "q3", "q7", "q2"] as const;
 const COMPS: Record<string, ScreenComponent> = {
   q4: NationalityScreen,
   q8: CountryScreen,
@@ -35,12 +38,20 @@ const COMPS: Record<string, ScreenComponent> = {
   q30: SensitiveYesNoScreen,
   q34: SavingsScreen,
   q35: TiesScreen,
+  q3: ContactScreen,
+  q7: FoundScreen,
+  q2: SummaryScreen,
 };
 
 export default function ScreensPreview() {
-  const [which, setWhich] = useState<(typeof ORDER)[number]>("q35");
+  const [which, setWhich] = useState<(typeof ORDER)[number]>("q4");
   const [lang, setLang] = useState<Lang>("th");
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>({
+    q3: "สมชาย ใจดี", q5: "0812345678", q6: "somchai@email.com",
+    q4: "thai", q8: "japan", q9: "tourist", q10: "2026-07-15", q11: "2026-07-25",
+    q12: "uk, usa", q24: "employee", q25: "complete", q30: "never", q32: "never",
+    q34: "50k_150k", q35: "job, property", q36: "line", q7: "facebook",
+  });
   const [showLoader, setShowLoader] = useState(false);
 
   const Comp = COMPS[which];
@@ -83,6 +94,7 @@ export default function ScreensPreview() {
         onLangChange={setLang}
         boxes={boxes}
         activeIndex={activeIndex}
+        submitting={false}
       />
     </>
   );

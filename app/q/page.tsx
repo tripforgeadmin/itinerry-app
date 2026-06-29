@@ -19,6 +19,9 @@ import { ExpensesScreen } from "@/components/screens/ExpensesScreen";
 import { SensitiveYesNoScreen } from "@/components/screens/SensitiveYesNoScreen";
 import { SavingsScreen } from "@/components/screens/SavingsScreen";
 import { TiesScreen } from "@/components/screens/TiesScreen";
+import { ContactScreen } from "@/components/screens/ContactScreen";
+import { FoundScreen } from "@/components/screens/FoundScreen";
+import { SummaryScreen } from "@/components/screens/SummaryScreen";
 import { ElephantLoader } from "@/components/ui/ElephantLoader";
 import { computeBoxes } from "@/lib/categories";
 import type { ScreenComponent } from "@/components/screens/types";
@@ -42,6 +45,10 @@ const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
   q30: SensitiveYesNoScreen, q32: SensitiveYesNoScreen,
   q34: SavingsScreen,
   q35: TiesScreen,
+  // Group C · ข้อมูลติดต่อ (contact merges q3/q5/q6/q36/q37 via advanceTo → q7 found → q2 summary)
+  q3: ContactScreen,
+  q7: FoundScreen,
+  q2: SummaryScreen,
 };
 
 // Elephant loader (itin-hold-ipad) plays when advancing OUT of these screens — the 5-category
@@ -160,6 +167,7 @@ export default function QuestionnairePage() {
           onLangChange={setLang}
           boxes={boxes}
           activeIndex={activeIndex}
+          submitting={submitting}
         />
         {loaderEl}
       </>

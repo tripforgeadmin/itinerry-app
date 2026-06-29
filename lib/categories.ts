@@ -21,7 +21,7 @@ const CATEGORY_INDEX_BY_ID: Record<string, number> = {
   q10: 1, q11: 1, q12: 1, q13: 1, q14: 1, q15: 1, q16: 1, q17: 1, q18: 1, q19: 1, q20: 1, q21: 1, q22: 1, q23: 1,
   q24: 2, q25: 2, q26: 2, q27: 2, q28: 2, q29: 2,
   q30: 3, q31: 3, q32: 3, q33: 3, q34: 3, q35: 3,
-  q3: 4, q5: 4, q6: 4, q7: 4, q36: 4, q37: 4,
+  q3: 4, q5: 4, q6: 4, q7: 4, q36: 4, q37: 4, q2: 4,
 };
 
 // Ordered "primary" screens per category — drives within-category fill (Goal-Gradient: never 0%).
@@ -31,7 +31,8 @@ const CATEGORY_ORDER: string[][] = [
   ["q10", "q13", "q17", "q21"],
   ["q24"],
   ["q30", "q32", "q34", "q35"],
-  ["q3", "q5", "q6", "q36", "q7"],
+  // contact merges q3/q5/q6/q36/q37 into one ContactScreen, so the cat-4 screens are: contact, found, summary.
+  ["q3", "q7", "q2"],
 ];
 
 export function categoryIndexOf(id: string): number {

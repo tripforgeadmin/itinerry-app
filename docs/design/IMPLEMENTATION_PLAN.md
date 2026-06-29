@@ -4,7 +4,7 @@
 > **Authority:** `DESIGN_RECONCILIATION.md` is read first and overrides the raw design.
 > **Branch policy:** backend / admin / services **follow `main`** — not edited on `ruth` (this branch
 > does frontend/design transformation only).
-> **Status:** ✅ Phase 0 · ✅ Phase 1 · ✅ Phase 2 · 🟡 **Phase 3 — Group A (พื้นฐาน q4·q8·q9) ✅ · Group B (เดินทาง q10–q23) ✅ via generic-by-type screens (DateScreen·ChoiceScreen·MultiSelectScreen + DateCalendar). Group C (อาชีพ·คุณสมบัติ·ข้อมูลติดต่อ) next — mostly registration on the generics + bespoke summary/contact.** Dark mode skipped. Temp `app/ui-preview/` to delete before merge.
+> **Status:** ✅ Phase 0 · ✅ Phase 1 · ✅ Phase 2 · ✅ **Phase 3 COMPLETE** — every in-flow screen reskinned + wired into `app/q/page.tsx` (registry), flow re-sequenced to design order, 5-category Goal-Gradient progress, elephant-iPad phase loaders. tsc clean; all screens render-verified. **Next: Phase 4 (wiring/verify) + cleanup** — delete temp `app/ui-preview/`, real-flow run-through (needs auth/env), return>arrival date validation + live trip-days, optional combined depart+return dates screen. Dark mode skipped.
 >
 > **Generic screens** (`components/screens/{DateScreen,ChoiceScreen,MultiSelectScreen,SegmentedScreen}.tsx`) render any date/radio/multiCheckbox question from data; bespoke screens (nationality, country, visatype, priorvisas, occupation) override in the registry. Note: design's combined depart+return "dates" screen is kept as separate per-question screens for now (cross-field return>arrival validation deferred to Phase 4).
 >

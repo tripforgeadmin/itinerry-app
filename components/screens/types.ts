@@ -21,6 +21,8 @@ export interface ScreenProps {
   onLangChange: (l: Lang) => void;
   boxes: ProgressBox[];
   activeIndex: number;
+  /** True while the final submit is in flight (summary screen). */
+  submitting: boolean;
 }
 
 export type ScreenComponent = (props: ScreenProps) => ReactElement;
