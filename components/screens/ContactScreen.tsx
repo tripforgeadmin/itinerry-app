@@ -64,17 +64,15 @@ export function ContactScreen({
       lang={lang}
       onLangChange={onLangChange}
       screenKey={question.id}
-      title={lang === "th" ? "ข้อมูลติดต่อ" : "Contact info"}
+      title={lang === "th" ? "อยากให้รับผลประเมินวีซ่าทางไหน?" : "How should we send your result?"}
+      hideTitleDivider
       footer={
         <Button disabled={!gateOk} onClick={() => advanceTo("q7")}>
           {lang === "th" ? "ถัดไป" : "Next"}
         </Button>
       }
     >
-      {/* channel — the primary choice, at the top */}
-      <h3 className="mb-2 font-bold text-primary">
-        {lang === "th" ? "อยากให้รับผลประเมินวีซ่าทางไหน?" : "How should we send your result?"}
-      </h3>
+      {/* channel — the primary choice (the screen header asks it), at the top */}
       <div className="grid grid-cols-2 gap-3">
         {q36.options?.map((o) => {
           const on = channel === o.value;
