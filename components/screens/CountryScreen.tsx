@@ -1,21 +1,20 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { QuestionShell } from "@/components/screens/QuestionShell";
+import { COUNTRIES, flagEmoji, type Country } from "@/lib/countries";
 import type { ScreenProps } from "@/components/screens/types";
 
-// q8 values that have a flag in /public/flags (everything except "other").
-const HAS_FLAG = new Set([
-  "schengen", "uk", "usa", "canada", "australia", "nz", "japan",
-  "korea", "china", "taiwan", "india", "dubai", "saudi", "qatar",
-]);
+const OTHER = "other";
 
-/** Screen 3 · country (q8) — searchable flag grid; auto-advance on pick (defaultNextId → visatype). */
+/** Screen 3 · country (q8) — searchable flag grid (ISO-coded cards). Tapping "อื่นๆ" reveals a
+ * searchable list of every remaining country (Thai/English search). Auto-advance on pick. */
 export function CountryScreen({
   question,
   value,
   onAnswer,
+  onOther,
   onNext,
   onBack,
   isFirst,
@@ -25,15 +24,25 @@ export function CountryScreen({
   activeIndex,
 }: ScreenProps) {
   const [query, setQuery] = useState("");
+  const [otherMode, setOtherMode] = useState(false);
   const advancing = useRef(false);
 
   const opts = question.options ?? [];
+  const cardCodes = useMemo(
+    () => new Set(opts.filter((o) => o.value !== OTHER).map((o) => o.value.toUpperCase())),
+    [opts]
+  );
+  const otherList = useMemo(() => COUNTRIES.filter((c) => !cardCodes.has(c.code)), [cardCodes]);
+
   const q = query.trim().toLowerCase();
-  const filtered = q
+  const filteredCards = q
     ? opts.filter((o) => `${o.label} ${o.labelEn ?? ""} ${o.value}`.toLowerCase().includes(q))
     : opts;
+  const filteredOther = q
+    ? otherList.filter((c) => `${c.th} ${c.en} ${c.code}`.toLowerCase().includes(q))
+    : otherList;
 
-  function select(v: string) {
+  function advance(v: string) {
     onAnswer(question.id, v);
     if (!advancing.current) {
       advancing.current = true;
@@ -42,6 +51,20 @@ export function CountryScreen({
         onNext();
       }, 360);
     }
+  }
+
+  function onCardTap(v: string) {
+    if (v === OTHER) {
+      setOtherMode(true);
+      setQuery("");
+    } else {
+      advance(v);
+    }
+  }
+
+  function pickOther(c: Country) {
+    onOther(lang === "th" ? c.th : c.en);
+    advance(c.code.toLowerCase());
   }
 
   return (
@@ -72,20 +95,49 @@ export function CountryScreen({
         />
       </div>
 
-      {filtered.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-soft">
-          {lang === "th" ? "ไม่พบประเทศที่ค้นหา" : "No country found"}
-        </p>
+      {otherMode ? (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setOtherMode(false);
+              setQuery("");
+            }}
+            className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-accent"
+          >
+            ← {lang === "th" ? "กลับไปประเทศแนะนำ" : "Back to suggested"}
+          </button>
+          {filteredOther.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-soft">{lang === "th" ? "ไม่พบประเทศที่ค้นหา" : "No country found"}</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filteredOther.map((c) => (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => pickOther(c)}
+                  className="flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left transition-colors hover:border-accent active:scale-[0.99]"
+                >
+                  <span className="text-2xl leading-none">{flagEmoji(c.code)}</span>
+                  <span className="font-semibold text-primary">{lang === "th" ? c.th : c.en}</span>
+                  <span className="truncate text-sm text-muted-soft">{lang === "th" ? c.en : c.th}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      ) : filteredCards.length === 0 ? (
+        <p className="py-10 text-center text-sm text-muted-soft">{lang === "th" ? "ไม่พบประเทศที่ค้นหา" : "No country found"}</p>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {filtered.map((o) => (
-            <GlassCard key={o.value} selected={value === o.value} onSelect={() => select(o.value)}>
+          {filteredCards.map((o) => (
+            <GlassCard key={o.value} selected={value === o.value} onSelect={() => onCardTap(o.value)}>
               <div className="flex flex-col items-center gap-2 p-3 text-center">
-                {HAS_FLAG.has(o.value) ? (
+                {o.value === OTHER ? (
+                  <span className="grid h-14 w-14 place-items-center rounded-full bg-accent-bg text-3xl">🌍</span>
+                ) : (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={`/flags/${o.value}.png`} alt="" className="h-14 w-14 rounded-full object-cover" />
-                ) : (
-                  <span className="grid h-14 w-14 place-items-center rounded-full bg-accent-bg text-3xl">🌍</span>
                 )}
                 <p className="line-clamp-2 text-sm font-bold leading-tight text-primary">
                   {lang === "th" ? o.label : o.labelEn ?? o.label}
