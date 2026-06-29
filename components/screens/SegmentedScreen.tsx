@@ -50,7 +50,7 @@ export function SegmentedScreen({
       title={lang === "th" ? question.question : question.questionEn ?? question.question}
       footerHint="แตะเพื่อเลือกและไปต่อ"
     >
-      <SegmentedControl segments={segments} value={value || null} onChange={choose} />
+      <SegmentedControl segments={segments} value={value || null} onChange={choose} square={question.id === "q25"} />
       <div className="mt-8 flex justify-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/mascot/itin_main.png" alt="" className="h-32 w-32 object-contain" />

@@ -25,7 +25,7 @@ export function RefusedScreen(p: ScreenProps) {
   const gateOk = !!p.value && (p.value !== "yes" || (country.trim().length > 0 && yearOk));
 
   return (
-    <SensitiveYesNoFrame {...p} banner={BANNER} gateOk={gateOk}>
+    <SensitiveYesNoFrame {...p} banner={BANNER} gateOk={gateOk} squareOptions>
       <div className="flex flex-col gap-3 pt-3">
         <div>
           <span className="mb-1.5 block text-sm font-semibold text-primary">

@@ -21,6 +21,8 @@ interface FrameProps {
   activeIndex: number;
   banner: string;
   gateOk: boolean;
+  /** Render the Y/N options as 1:1 square cards. */
+  squareOptions?: boolean;
   children: ReactNode; // reveal content (shown when "เคย")
 }
 
@@ -40,6 +42,7 @@ export function SensitiveYesNoFrame({
   activeIndex,
   banner,
   gateOk,
+  squareOptions = false,
   children,
 }: FrameProps) {
   const opts = question.options ?? [];
@@ -77,7 +80,8 @@ export function SensitiveYesNoFrame({
               type="button"
               onClick={() => onAnswer(question.id, o.value)}
               className={
-                "rounded-2xl border-2 px-4 py-5 text-center text-base font-bold transition-colors " +
+                "rounded-2xl border-2 text-center text-base font-bold transition-colors " +
+                (squareOptions ? "flex aspect-square flex-col items-center justify-center p-3 " : "px-4 py-5 ") +
                 (on
                   ? warn
                     ? "border-warning bg-yellow-pale text-warning-deep"

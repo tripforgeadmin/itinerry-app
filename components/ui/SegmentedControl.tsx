@@ -14,10 +14,12 @@ interface SegmentedControlProps {
   columns?: number;
   /** Selected color: "accent" (default) or "warning" for sensitive "เคย"-style answers. */
   tone?: "accent" | "warning";
+  /** Render each cell as a 1:1 square card. */
+  square?: boolean;
 }
 
 /** Equal-cell selector: Y/N (refused/overstay), 3-cell (empdoc), time slots (contact). */
-export function SegmentedControl({ segments, value, onChange, columns, tone = "accent" }: SegmentedControlProps) {
+export function SegmentedControl({ segments, value, onChange, columns, tone = "accent", square = false }: SegmentedControlProps) {
   const cols = columns ?? segments.length;
   const selectedCls =
     tone === "warning"
@@ -34,7 +36,8 @@ export function SegmentedControl({ segments, value, onChange, columns, tone = "a
             type="button"
             onClick={() => onChange(s.value)}
             className={
-              "flex flex-col items-center justify-center gap-0.5 rounded-2xl border-2 px-3 py-4 text-center transition-colors " +
+              "flex flex-col items-center justify-center gap-0.5 rounded-2xl border-2 text-center transition-colors " +
+              (square ? "aspect-square p-2 " : "px-3 py-4 ") +
               (active ? selectedCls : "border-border bg-card text-muted hover:border-border-mid")
             }
           >

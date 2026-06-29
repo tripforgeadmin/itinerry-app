@@ -69,13 +69,13 @@ export function OccupationScreen({
     >
       <div className="flex flex-col gap-3">
         {question.options?.map((o, i) => (
-          <GlassCard key={o.value} selected={value === o.value} onSelect={() => select(o.value)}>
-            <div className={`flex items-center gap-4 p-3 ${i % 2 === 1 ? "flex-row-reverse text-right" : ""}`}>
+          <GlassCard key={o.value} selected={value === o.value} onSelect={() => select(o.value)} className="overflow-hidden">
+            <div className={`flex items-center ${i % 2 === 1 ? "flex-row-reverse text-right" : ""}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={MASCOT[o.value]} alt="" className="h-[72px] w-[72px] shrink-0 rounded-xl object-cover" />
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-primary">{lang === "th" ? o.label : o.labelEn ?? o.label}</p>
-                {SUB[o.value] && <p className="text-xs text-muted">{SUB[o.value]}</p>}
+              <img src={MASCOT[o.value]} alt="" className="h-[116px] w-[116px] shrink-0 object-cover" />
+              <div className="min-w-0 flex-1 px-4">
+                <p className="text-lg font-bold text-primary">{lang === "th" ? o.label : o.labelEn ?? o.label}</p>
+                {SUB[o.value] && <p className="text-sm text-muted">{SUB[o.value]}</p>}
               </div>
             </div>
           </GlassCard>

@@ -1,6 +1,6 @@
 "use client";
 
-import { GlassCard } from "@/components/ui/GlassCard";
+import { ChoiceRow } from "@/components/ui/ChoiceRow";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { RevealBlock } from "@/components/ui/RevealBlock";
@@ -16,8 +16,8 @@ const LOGO: Record<string, string> = {
   other: "/social/other.png",
 };
 
-/** Found (q7) — 2-col logo tiles, single-select (kept single per decision), optional Next,
- * "อื่นๆ" reveals a free-text field. */
+/** Found (q7) — simple single-select list (ChoiceRow) with the per-channel logo as the row icon;
+ * optional Next (kept), "อื่นๆ" reveals a free-text field. */
 export function FoundScreen({
   question,
   value,
@@ -52,15 +52,18 @@ export function FoundScreen({
         </Button>
       }
     >
-      <div className="grid grid-cols-2 gap-3">
+      <div className="flex flex-col gap-3">
         {question.options?.map((o) => (
-          <GlassCard key={o.value} selected={value === o.value} onSelect={() => onAnswer(question.id, o.value)}>
-            <div className="flex flex-col items-center gap-2 p-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={LOGO[o.value]} alt="" className="h-11 w-11 object-contain" />
-              <p className="text-sm font-bold text-primary">{lang === "th" ? o.label : o.labelEn ?? o.label}</p>
-            </div>
-          </GlassCard>
+          <ChoiceRow
+            key={o.value}
+            selected={value === o.value}
+            onSelect={() => onAnswer(question.id, o.value)}
+            icon={
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={LOGO[o.value]} alt="" className="h-full w-full object-contain p-1.5" />
+            }
+            title={lang === "th" ? o.label : o.labelEn ?? o.label}
+          />
         ))}
       </div>
 

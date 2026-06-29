@@ -3,6 +3,7 @@
 import { ReactNode } from "react";
 import { ProgressTopBar, type ProgressBox } from "@/components/ui/ProgressTopBar";
 import { StickyFooter } from "@/components/ui/StickyFooter";
+import { ScrollMoreHint } from "@/components/ui/ScrollMoreHint";
 import { ScreenTransition } from "@/components/ui/ScreenTransition";
 import type { Lang } from "@/components/ui/LangToggle";
 
@@ -63,6 +64,7 @@ export function QuestionShell({
           </div>
         </ScreenTransition>
       </div>
+      <ScrollMoreHint resetKey={screenKey} />
       <StickyFooter hint={footer ? undefined : footerHint}>{footer}</StickyFooter>
     </main>
   );

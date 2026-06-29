@@ -16,33 +16,48 @@ interface DateCalendarProps {
   onChange: (iso: string) => void;
 }
 
-/** Inline month picker (design spec §5): Thai month + Buddhist year caption, past days disabled.
- * Wraps react-day-picker, tokenized to the design palette. */
+/** Inline date picker (design spec §5): Thai month + Gregorian (ค.ศ.) year, both selectable via
+ * dropdowns, past days disabled, itin_main mascot below. Wraps react-day-picker, tokenized. */
 export function DateCalendar({ value, onChange }: DateCalendarProps) {
   const selected = value ? new Date(`${value}T00:00:00`) : undefined;
+  const now = new Date();
+  // Rolling forward window so the year dropdown always starts at the current year.
+  const startMonth = new Date(now.getFullYear(), now.getMonth());
+  const endMonth = new Date(now.getFullYear() + 4, 11);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-2">
-      <style>{`
-        .rdp-root { --rdp-accent-color: var(--color-accent); --rdp-accent-background-color: var(--color-accent-bg); --rdp-font-family: inherit; margin: 0; }
-        .rdp-month_caption { color: var(--color-primary); font-weight: 700; }
-        .rdp-weekday { color: var(--color-muted); font-size: 0.7rem; }
-        .rdp-day_button { color: var(--color-primary-mid); }
-        .rdp-day_button:hover { background: var(--rdp-accent-background-color); }
-        .rdp-nav button { color: var(--color-muted); }
-        .rdp-day[data-outside] .rdp-day_button { color: var(--color-muted-soft); }
-      `}</style>
-      <DayPicker
-        mode="single"
-        selected={selected}
-        onSelect={(d) => {
-          if (d) onChange(toISO(d));
-        }}
-        startMonth={new Date(2025, 0)}
-        endMonth={new Date(2029, 11)}
-        disabled={{ before: new Date() }}
-        formatters={{ formatCaption: (m) => `${TH_MONTHS[m.getMonth()]} ${m.getFullYear()}` }}
-      />
-    </div>
+    <>
+      <div className="rounded-2xl border border-border bg-card p-2">
+        <style>{`
+          .rdp-root { --rdp-accent-color: var(--color-accent); --rdp-accent-background-color: var(--color-accent-bg); --rdp-font-family: inherit; margin: 0; }
+          .rdp-month_caption { color: var(--color-primary); font-weight: 700; }
+          .rdp-weekday { color: var(--color-muted); font-size: 0.7rem; }
+          .rdp-day_button { color: var(--color-primary-mid); }
+          .rdp-day_button:hover { background: var(--rdp-accent-background-color); }
+          .rdp-nav button { color: var(--color-muted); }
+          .rdp-day[data-outside] .rdp-day_button { color: var(--color-muted-soft); }
+          .rdp-dropdowns { display: flex; gap: 0.4rem; align-items: center; }
+          .rdp-dropdown_root { position: relative; }
+          .rdp-dropdown { color: var(--color-primary); font-weight: 700; font-family: inherit; background: var(--color-surface-soft); border: 1px solid var(--color-border); border-radius: 0.6rem; padding: 0.2rem 0.5rem; }
+          .rdp-dropdown:focus-visible { outline: 2px solid var(--color-accent); }
+        `}</style>
+        <DayPicker
+          mode="single"
+          captionLayout="dropdown"
+          selected={selected}
+          onSelect={(d) => {
+            if (d) onChange(toISO(d));
+          }}
+          startMonth={startMonth}
+          endMonth={endMonth}
+          disabled={{ before: now }}
+          formatters={{ formatMonthDropdown: (month) => TH_MONTHS[month.getMonth()] }}
+        />
+      </div>
+      <div className="mt-5 flex justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/mascot/itin_main.png" alt="" className="h-24 w-24 object-contain" />
+      </div>
+    </>
   );
 }
