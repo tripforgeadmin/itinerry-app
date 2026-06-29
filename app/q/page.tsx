@@ -19,6 +19,7 @@ import { ExpensesScreen } from "@/components/screens/ExpensesScreen";
 import { SensitiveYesNoScreen } from "@/components/screens/SensitiveYesNoScreen";
 import { SavingsScreen } from "@/components/screens/SavingsScreen";
 import { TiesScreen } from "@/components/screens/TiesScreen";
+import { ElephantLoader } from "@/components/ui/ElephantLoader";
 import { computeBoxes } from "@/lib/categories";
 import type { ScreenComponent } from "@/components/screens/types";
 
@@ -43,6 +44,18 @@ const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
   q35: TiesScreen,
 };
 
+// Elephant loader (itin-hold-ipad) plays when advancing OUT of these screens — the 5-category
+// boundaries: พื้นฐาน→เดินทาง (q9), อาชีพ→คุณสมบัติ (work-branch end), คุณสมบัติ→ข้อมูลติดต่อ (q35).
+const WORK_END = { cap: "เกือบครบแล้ว!", sub: "เตรียมคำถามคัดกรอง…" };
+const PHASE_END_LOADER: Record<string, { cap: string; sub?: string }> = {
+  q9: { cap: "กำลังบันทึกคำตอบของคุณ", sub: "เตรียมคำถามเรื่องการเดินทาง…" },
+  q25: WORK_END,
+  q27: WORK_END,
+  q28: WORK_END,
+  q29: WORK_END,
+  q35: { cap: "เกือบเสร็จแล้ว!", sub: "เตรียมส่วนข้อมูลติดต่อ…" },
+};
+
 export default function QuestionnairePage() {
   const router = useRouter();
   const { history, answers, setAnswer, pushQuestion, popQuestion } = useFormStore();
@@ -50,6 +63,7 @@ export default function QuestionnairePage() {
   const [direction, setDirection] = useState(1);
   const [mounted, setMounted] = useState(false);
   const [lang, setLang] = useState<Lang>("th");
+  const [loaderState, setLoaderState] = useState<{ cap: string; sub?: string } | null>(null);
   const prevLenRef = useRef(history.length);
 
   useEffect(() => { setMounted(true); }, []);
@@ -85,10 +99,19 @@ export default function QuestionnairePage() {
 
   function handleNext() {
     const nextId = getNextId();
-    if (nextId) {
-      pushQuestion(nextId);
-    } else {
+    if (!nextId) {
       handleSubmit();
+      return;
+    }
+    const loader = PHASE_END_LOADER[currentId];
+    if (loader) {
+      setLoaderState(loader);
+      setTimeout(() => {
+        setLoaderState(null);
+        pushQuestion(nextId);
+      }, 2000);
+    } else {
+      pushQuestion(nextId);
     }
   }
 
@@ -113,46 +136,56 @@ export default function QuestionnairePage() {
     }
   }
 
+  const loaderEl = (
+    <ElephantLoader show={!!loaderState} caption={loaderState?.cap ?? ""} sub={loaderState?.sub} />
+  );
+
   const Reskinned = RESKINNED_SCREENS[currentId];
   if (Reskinned) {
     const { boxes, activeIndex } = computeBoxes(currentId);
     return (
-      <Reskinned
-        question={question}
-        value={answers[currentId] ?? ""}
-        otherValue={answers[`${currentId}_other`] ?? ""}
-        answers={answers}
-        onAnswer={setAnswer}
-        onOther={(v) => setAnswer(`${currentId}_other`, v)}
-        onNext={handleNext}
-        advanceTo={(id) => pushQuestion(id)}
-        onBack={handleBack}
-        isFirst={history.length === 1}
-        lang={lang}
-        onLangChange={setLang}
-        boxes={boxes}
-        activeIndex={activeIndex}
-      />
+      <>
+        <Reskinned
+          question={question}
+          value={answers[currentId] ?? ""}
+          otherValue={answers[`${currentId}_other`] ?? ""}
+          answers={answers}
+          onAnswer={setAnswer}
+          onOther={(v) => setAnswer(`${currentId}_other`, v)}
+          onNext={handleNext}
+          advanceTo={(id) => pushQuestion(id)}
+          onBack={handleBack}
+          isFirst={history.length === 1}
+          lang={lang}
+          onLangChange={setLang}
+          boxes={boxes}
+          activeIndex={activeIndex}
+        />
+        {loaderEl}
+      </>
     );
   }
 
   return (
-    <QuestionScreen
-      question={question}
-      sectionTitle={question.sectionTitle}
-      sectionTitleEn={question.sectionTitleEn}
-      sectionEmoji={question.sectionEmoji}
-      qIndex={history.filter((id) => QUESTIONS_MAP[id]?.type !== "consent").length}
-      answers={answers}
-      lang={lang}
-      onLangChange={setLang}
-      onAnswer={setAnswer}
-      onNext={handleNext}
-      onBack={handleBack}
-      isFirst={history.length === 1}
-      isLast={isLast}
-      direction={direction}
-      submitting={submitting}
-    />
+    <>
+      <QuestionScreen
+        question={question}
+        sectionTitle={question.sectionTitle}
+        sectionTitleEn={question.sectionTitleEn}
+        sectionEmoji={question.sectionEmoji}
+        qIndex={history.filter((id) => QUESTIONS_MAP[id]?.type !== "consent").length}
+        answers={answers}
+        lang={lang}
+        onLangChange={setLang}
+        onAnswer={setAnswer}
+        onNext={handleNext}
+        onBack={handleBack}
+        isFirst={history.length === 1}
+        isLast={isLast}
+        direction={direction}
+        submitting={submitting}
+      />
+      {loaderEl}
+    </>
   );
 }

@@ -15,6 +15,7 @@ import { ExpensesScreen } from "@/components/screens/ExpensesScreen";
 import { SensitiveYesNoScreen } from "@/components/screens/SensitiveYesNoScreen";
 import { SavingsScreen } from "@/components/screens/SavingsScreen";
 import { TiesScreen } from "@/components/screens/TiesScreen";
+import { ElephantLoader } from "@/components/ui/ElephantLoader";
 import { QUESTIONS_MAP } from "@/lib/questions";
 import { computeBoxes } from "@/lib/categories";
 import type { Lang } from "@/components/ui/LangToggle";
@@ -40,6 +41,7 @@ export default function ScreensPreview() {
   const [which, setWhich] = useState<(typeof ORDER)[number]>("q35");
   const [lang, setLang] = useState<Lang>("th");
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [showLoader, setShowLoader] = useState(false);
 
   const Comp = COMPS[which];
   const { boxes, activeIndex } = computeBoxes(which);
@@ -56,6 +58,16 @@ export default function ScreensPreview() {
       >
         {which}
       </button>
+      <button
+        onClick={() => {
+          setShowLoader(true);
+          setTimeout(() => setShowLoader(false), 2000);
+        }}
+        className="fixed right-3 top-12 z-[60] rounded-full bg-accent px-3 py-1.5 text-xs font-bold text-white shadow-lg"
+      >
+        loader
+      </button>
+      <ElephantLoader show={showLoader} caption="กำลังบันทึกคำตอบของคุณ" sub="เตรียมคำถามเรื่องการเดินทาง…" />
       <Comp
         question={QUESTIONS_MAP[which]}
         value={answers[which] ?? ""}

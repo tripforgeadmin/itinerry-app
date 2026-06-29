@@ -31,14 +31,15 @@ export function ElephantLoader({ show, caption, sub }: ElephantLoaderProps) {
           aria-live="polite"
         >
           <div className="flex flex-col items-center gap-4 px-8 text-center">
-            <motion.div
-              className="text-6xl"
+            <motion.img
+              // eslint-disable-next-line @next/next/no-img-element
+              src="/mascot/itin-hold-ipad.png"
+              alt=""
               aria-hidden
-              animate={reduced ? {} : { y: [0, -8, 0] }}
+              className="h-40 w-40 object-contain"
+              animate={reduced ? {} : { y: [0, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            >
-              🐘
-            </motion.div>
+            />
             <p className="text-lg font-extrabold text-primary">{caption}</p>
             {sub && <p className="text-sm text-muted">{sub}</p>}
           </div>

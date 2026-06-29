@@ -60,7 +60,7 @@ export const QUESTIONS: Question[] = [
     placeholder: "กรอกชื่อ-นามสกุล",
     placeholderEn: "Enter your full name",
     required: true,
-    defaultNextId: "q4",
+    defaultNextId: "q5",
     section: "S1",
     sectionTitle: "ข้อมูลส่วนตัว",
     sectionTitleEn: "Personal Information",
@@ -75,7 +75,7 @@ export const QUESTIONS: Question[] = [
     allowOtherText: true,
     otherPlaceholder: "ระบุสัญชาติ",
     otherPlaceholderEn: "Enter your nationality",
-    defaultNextId: "q5",
+    defaultNextId: "q8",
     section: "S1",
     sectionTitle: "ข้อมูลส่วนตัว",
     sectionTitleEn: "Personal Information",
@@ -107,7 +107,7 @@ export const QUESTIONS: Question[] = [
     placeholder: "example@email.com",
     placeholderEn: "example@email.com",
     required: true,
-    defaultNextId: "q7",
+    defaultNextId: "q36",
     section: "S1",
     sectionTitle: "ข้อมูลส่วนตัว",
     sectionTitleEn: "Personal Information",
@@ -122,7 +122,7 @@ export const QUESTIONS: Question[] = [
     allowOtherText: true,
     otherPlaceholder: "ระบุช่องทาง",
     otherPlaceholderEn: "Enter source",
-    defaultNextId: "q8",
+    defaultNextId: "q2",
     section: "S1",
     sectionTitle: "ข้อมูลส่วนตัว",
     sectionTitleEn: "Personal Information",
@@ -622,7 +622,7 @@ export const QUESTIONS: Question[] = [
     question: "ความผูกพันกับประเทศไทย (เลือกได้มากกว่า 1)",
     questionEn: "Ties to Thailand (select all that apply)",
     required: true,
-    defaultNextId: "q36",
+    defaultNextId: "q3",
     section: "S5",
     sectionTitle: "คัดกรองหลัก",
     sectionTitleEn: "Core Qualification",
@@ -649,7 +649,7 @@ export const QUESTIONS: Question[] = [
     sectionTitleEn: "Schedule Callback",
     sectionEmoji: "📞",
     options: [
-      { value: "line", label: "ผ่าน LINE OA @itinerry", labelEn: "Via LINE OA @itinerry", emoji: "💬", nextId: "q2" },
+      { value: "line", label: "ผ่าน LINE OA @itinerry", labelEn: "Via LINE OA @itinerry", emoji: "💬", nextId: "q7" },
       { value: "call", label: "ให้โทรกลับ", labelEn: "Call me back", emoji: "📱", nextId: "q37" },
     ],
   },
@@ -670,7 +670,7 @@ export const QUESTIONS: Question[] = [
       { value: "afternoon", label: "บ่าย 12:00–15:00", labelEn: "Afternoon 12:00–15:00", emoji: "☀️" },
       { value: "evening", label: "เย็น 15:00–18:00", labelEn: "Evening 15:00–18:00", emoji: "🌆" },
     ],
-    defaultNextId: "q2",
+    defaultNextId: "q7",
   },
 ];
 
@@ -678,4 +678,4 @@ export const QUESTIONS_MAP: Record<string, Question> = Object.fromEntries(
   QUESTIONS.map((q) => [q.id, q])
 );
 
-export const FIRST_QUESTION_ID = "q3";
+export const FIRST_QUESTION_ID = "q4";
