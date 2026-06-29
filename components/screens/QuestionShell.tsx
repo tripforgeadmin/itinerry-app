@@ -23,6 +23,8 @@ interface QuestionShellProps {
   footer?: ReactNode;
   /** Drop the divider line under the sticky title. */
   hideTitleDivider?: boolean;
+  /** Smaller title (one step down) + tighter gap to the content — for label-style titles. */
+  compactTitle?: boolean;
   children: ReactNode;
 }
 
@@ -44,6 +46,7 @@ export function QuestionShell({
   footerHint,
   footer,
   hideTitleDivider,
+  compactTitle,
   children,
 }: QuestionShellProps) {
   return (
@@ -62,14 +65,14 @@ export function QuestionShell({
         {/* Sticky headline — a sibling of (never inside) ScreenTransition, since sticky breaks
             inside a transformed/animated ancestor. Pins right below the measured top bar. */}
         <div
-          className={`sticky z-20 bg-surface px-5 pb-3 pt-4 ${hideTitleDivider ? "" : "border-b border-border"}`}
+          className={`sticky z-20 bg-surface px-5 ${compactTitle ? "pb-2 pt-3.5" : "pb-3 pt-4"} ${hideTitleDivider ? "" : "border-b border-border"}`}
           style={{ top: "var(--topbar-h, 128px)" }}
         >
-          <h2 className="text-2xl font-extrabold leading-snug text-primary">{title}</h2>
+          <h2 className={`${compactTitle ? "text-xl" : "text-2xl"} font-extrabold leading-snug text-primary`}>{title}</h2>
           {subtitle && <p className="mt-1.5 text-sm text-muted">{subtitle}</p>}
         </div>
         <ScreenTransition screenKey={screenKey}>
-          <div className="px-5 pb-40 pt-5">{children}</div>
+          <div className={`px-5 pb-40 ${compactTitle ? "pt-2" : "pt-5"}`}>{children}</div>
         </ScreenTransition>
       </div>
       <ScrollMoreHint resetKey={screenKey} />

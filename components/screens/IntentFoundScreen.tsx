@@ -68,6 +68,7 @@ export function IntentFoundScreen({
       screenKey={question.id}
       title={lang === "th" ? "ขั้นตอนสุดท้าย" : "Final step"}
       hideTitleDivider
+      compactTitle
       footer={
         <Button disabled={!gateOk} onClick={onNext}>
           {lang === "th" ? "ถัดไป" : "Next"}
