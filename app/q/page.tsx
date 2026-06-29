@@ -16,6 +16,9 @@ import { PriorVisasScreen } from "@/components/screens/PriorVisasScreen";
 import { OccupationScreen } from "@/components/screens/OccupationScreen";
 import { SegmentedScreen } from "@/components/screens/SegmentedScreen";
 import { ExpensesScreen } from "@/components/screens/ExpensesScreen";
+import { SensitiveYesNoScreen } from "@/components/screens/SensitiveYesNoScreen";
+import { SavingsScreen } from "@/components/screens/SavingsScreen";
+import { TiesScreen } from "@/components/screens/TiesScreen";
 import { computeBoxes } from "@/lib/categories";
 import type { ScreenComponent } from "@/components/screens/types";
 
@@ -34,6 +37,10 @@ const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
   q24: OccupationScreen,
   q25: SegmentedScreen, q26: SegmentedScreen, q27: SegmentedScreen, q28: SegmentedScreen,
   q29: ExpensesScreen,
+  // Group C · คุณสมบัติ (q30 refused + q32 overstay combine their detail q31/q33 via advanceTo)
+  q30: SensitiveYesNoScreen, q32: SensitiveYesNoScreen,
+  q34: SavingsScreen,
+  q35: TiesScreen,
 };
 
 export default function QuestionnairePage() {
@@ -114,9 +121,11 @@ export default function QuestionnairePage() {
         question={question}
         value={answers[currentId] ?? ""}
         otherValue={answers[`${currentId}_other`] ?? ""}
+        answers={answers}
         onAnswer={setAnswer}
         onOther={(v) => setAnswer(`${currentId}_other`, v)}
         onNext={handleNext}
+        advanceTo={(id) => pushQuestion(id)}
         onBack={handleBack}
         isFirst={history.length === 1}
         lang={lang}

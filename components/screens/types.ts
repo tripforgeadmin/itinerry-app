@@ -8,9 +8,13 @@ export interface ScreenProps {
   question: Question;
   value: string;
   otherValue: string;
+  /** Full answers map — for screens that read a sibling question's value (combined screens). */
+  answers: Record<string, string>;
   onAnswer: (key: string, value: string) => void;
   onOther: (value: string) => void;
   onNext: () => void;
+  /** Jump straight to a question id (e.g. a combined Y/N+detail screen skipping the detail step). */
+  advanceTo: (id: string) => void;
   onBack: () => void;
   isFirst: boolean;
   lang: Lang;

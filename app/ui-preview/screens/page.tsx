@@ -12,12 +12,15 @@ import { PriorVisasScreen } from "@/components/screens/PriorVisasScreen";
 import { OccupationScreen } from "@/components/screens/OccupationScreen";
 import { SegmentedScreen } from "@/components/screens/SegmentedScreen";
 import { ExpensesScreen } from "@/components/screens/ExpensesScreen";
+import { SensitiveYesNoScreen } from "@/components/screens/SensitiveYesNoScreen";
+import { SavingsScreen } from "@/components/screens/SavingsScreen";
+import { TiesScreen } from "@/components/screens/TiesScreen";
 import { QUESTIONS_MAP } from "@/lib/questions";
 import { computeBoxes } from "@/lib/categories";
 import type { Lang } from "@/components/ui/LangToggle";
 import type { ScreenComponent } from "@/components/screens/types";
 
-const ORDER = ["q4", "q8", "q9", "q10", "q12", "q14", "q24", "q25", "q29"] as const;
+const ORDER = ["q4", "q8", "q9", "q10", "q12", "q14", "q24", "q25", "q29", "q30", "q34", "q35"] as const;
 const COMPS: Record<string, ScreenComponent> = {
   q4: NationalityScreen,
   q8: CountryScreen,
@@ -28,24 +31,26 @@ const COMPS: Record<string, ScreenComponent> = {
   q24: OccupationScreen,
   q25: SegmentedScreen,
   q29: ExpensesScreen,
+  q30: SensitiveYesNoScreen,
+  q34: SavingsScreen,
+  q35: TiesScreen,
 };
 
 export default function ScreensPreview() {
-  const [which, setWhich] = useState<(typeof ORDER)[number]>("q25");
+  const [which, setWhich] = useState<(typeof ORDER)[number]>("q35");
   const [lang, setLang] = useState<Lang>("th");
-  const [value, setValue] = useState("");
-  const [other, setOther] = useState("");
+  const [answers, setAnswers] = useState<Record<string, string>>({});
 
   const Comp = COMPS[which];
   const { boxes, activeIndex } = computeBoxes(which);
+  const set = (k: string, v: string) => setAnswers((a) => ({ ...a, [k]: v }));
 
   return (
     <>
       <button
         onClick={() => {
           setWhich((w) => ORDER[(ORDER.indexOf(w) + 1) % ORDER.length]);
-          setValue("");
-          setOther("");
+          setAnswers({});
         }}
         className="fixed right-3 top-3 z-[60] rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-lg"
       >
@@ -53,11 +58,13 @@ export default function ScreensPreview() {
       </button>
       <Comp
         question={QUESTIONS_MAP[which]}
-        value={value}
-        otherValue={other}
-        onAnswer={(_k, v) => setValue(v)}
-        onOther={setOther}
+        value={answers[which] ?? ""}
+        otherValue={answers[`${which}_other`] ?? ""}
+        answers={answers}
+        onAnswer={set}
+        onOther={(v) => set(`${which}_other`, v)}
         onNext={() => {}}
+        advanceTo={() => {}}
         onBack={() => {}}
         isFirst={false}
         lang={lang}
