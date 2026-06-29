@@ -56,12 +56,17 @@ export function QuestionShell({
           lang={lang}
           onLangChange={onLangChange}
         />
+        {/* Sticky headline — a sibling of (never inside) ScreenTransition, since sticky breaks
+            inside a transformed/animated ancestor. Pins right below the measured top bar. */}
+        <div
+          className="sticky z-20 border-b border-border bg-surface px-5 pb-3 pt-4"
+          style={{ top: "var(--topbar-h, 128px)" }}
+        >
+          <h2 className="text-2xl font-extrabold leading-snug text-primary">{title}</h2>
+          {subtitle && <p className="mt-1.5 text-sm text-muted">{subtitle}</p>}
+        </div>
         <ScreenTransition screenKey={screenKey}>
-          <div className="px-5 pb-40 pt-5">
-            <h2 className="text-2xl font-extrabold leading-snug text-primary">{title}</h2>
-            {subtitle && <p className="mt-1.5 text-sm text-muted">{subtitle}</p>}
-            <div className="mt-5">{children}</div>
-          </div>
+          <div className="px-5 pb-40 pt-5">{children}</div>
         </ScreenTransition>
       </div>
       <ScrollMoreHint resetKey={screenKey} />

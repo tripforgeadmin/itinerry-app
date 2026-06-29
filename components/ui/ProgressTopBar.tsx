@@ -1,10 +1,12 @@
 "use client";
 
+import { useContext, useLayoutEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
 import { LangToggle, type Lang } from "@/components/ui/LangToggle";
+import { NavContext } from "@/lib/navContext";
 
-export type BoxIconName = "passport" | "plane" | "briefcase" | "shield" | "chat";
+export type BoxIconName = "passport" | "plane" | "briefcase" | "shield" | "chat" | "summary";
 
 export interface ProgressBox {
   label: string; // พื้นฐาน / เดินทาง / …
@@ -15,7 +17,7 @@ export interface ProgressBox {
 interface ProgressTopBarProps {
   /** "questions" = back + liquid boxes + TH/EN toggle; "bare" = centered wordmark. */
   variant?: "questions" | "bare";
-  /** 3 or 5 category boxes (gradients --gradient-progress-1..5). */
+  /** 3, 5, or 6 category boxes (gradients --gradient-progress-1..6). */
   boxes?: ProgressBox[];
   /** Index of the currently active category, or -1 for none. */
   activeIndex?: number;
@@ -66,6 +68,15 @@ function BoxIcon({ name }: { name: BoxIconName }) {
           <path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l.8-5.5A8 8 0 1 1 21 12Z" />
         </svg>
       );
+    case "summary":
+      return (
+        <svg {...SVG}>
+          <rect x="5" y="4" width="14" height="17" rx="2" />
+          <path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" />
+          <path d="m8.5 11 1.5 1.5 3-3" />
+          <path d="M8.5 16h7" />
+        </svg>
+      );
     case "passport":
     default:
       return (
@@ -78,7 +89,7 @@ function BoxIcon({ name }: { name: BoxIconName }) {
   }
 }
 
-const DEFAULT_ICON: BoxIconName[] = ["passport", "plane", "shield", "shield", "chat"];
+const DEFAULT_ICON: BoxIconName[] = ["passport", "plane", "briefcase", "shield", "chat", "summary"];
 
 function BackButton({ onBack }: { onBack?: () => void }) {
   return (
@@ -95,12 +106,26 @@ function BackButton({ onBack }: { onBack?: () => void }) {
   );
 }
 
-function WaterBox({ box, active, index, reduced }: { box: ProgressBox; active: boolean; index: number; reduced: boolean | null }) {
+function WaterBox({
+  box,
+  active,
+  index,
+  reduced,
+  clickable,
+  onClick,
+}: {
+  box: ProgressBox;
+  active: boolean;
+  index: number;
+  reduced: boolean | null;
+  clickable: boolean;
+  onClick: () => void;
+}) {
   const fill = Math.min(Math.max(box.fill, 0), 1);
   const full = fill >= 1;
   const iconName = box.icon ?? DEFAULT_ICON[index] ?? "shield";
-  return (
-    <div className="flex min-w-0 flex-1 flex-col items-center gap-1">
+  const inner = (
+    <>
       <div className={`relative h-11 w-11 overflow-hidden rounded-xl bg-surface-soft transition-shadow ${active ? "ring-2 ring-accent" : "ring-1 ring-border"}`}>
         <motion.div
           className="absolute inset-x-0 bottom-0"
@@ -125,8 +150,22 @@ function WaterBox({ box, active, index, reduced }: { box: ProgressBox; active: b
       <span className={`max-w-full truncate text-[10px] font-semibold leading-none ${active ? "text-accent" : "text-muted-soft"}`}>
         {box.label}
       </span>
-    </div>
+    </>
   );
+
+  if (clickable) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={`ไปยังหมวด ${box.label}`}
+        className="flex min-w-0 flex-1 flex-col items-center gap-1 transition active:scale-95"
+      >
+        {inner}
+      </button>
+    );
+  }
+  return <div className="flex min-w-0 flex-1 flex-col items-center gap-1">{inner}</div>;
 }
 
 const DEFAULT_BOXES: ProgressBox[] = [
@@ -136,9 +175,9 @@ const DEFAULT_BOXES: ProgressBox[] = [
 ];
 
 /**
- * Top bar (design spec §3/§4). On question screens: back + liquid progress boxes + the locked
- * TH/EN toggle (and the wordmark when `logo`). On bare screens: the locked ItinerryLogo wordmark.
- * Logo + toggle are reused as-is (DESIGN_RECONCILIATION §2); only the progress visual is new.
+ * Top bar (design spec §3/§4). On question screens: back + liquid progress boxes (clickable to jump
+ * back to a past category via NavContext) + the locked TH/EN toggle (and the wordmark when `logo`).
+ * Publishes its measured height as --topbar-h so the sticky headline can pin right below it.
  */
 export function ProgressTopBar({
   variant = "questions",
@@ -151,14 +190,34 @@ export function ProgressTopBar({
   onLangChange,
 }: ProgressTopBarProps) {
   const reduced = useReducedMotion();
+  const { onJump } = useContext(NavContext);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const set = () => document.documentElement.style.setProperty("--topbar-h", `${el.offsetHeight}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const back = showBack ? <BackButton onBack={onBack} /> : <span className="w-[34px] shrink-0" />;
   const boxesEls = boxes.map((b, i) => (
-    <WaterBox key={i} box={b} index={i} active={i === activeIndex} reduced={reduced} />
+    <WaterBox
+      key={i}
+      box={b}
+      index={i}
+      active={i === activeIndex}
+      reduced={reduced}
+      clickable={!!onJump && i < activeIndex}
+      onClick={() => onJump?.(i)}
+    />
   ));
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-card px-4 py-3">
+    <header ref={headerRef} className="sticky top-0 z-30 border-b border-border bg-card px-4 py-3">
       <div className="mx-auto max-w-[480px]">
         {variant === "bare" ? (
           <div className="flex min-h-[44px] items-center gap-3">
@@ -177,12 +236,12 @@ export function ProgressTopBar({
               </div>
               <LangToggle lang={lang} onLangChange={onLangChange} />
             </div>
-            <div className="flex items-start gap-2">{boxesEls}</div>
+            <div className="flex items-start gap-1.5">{boxesEls}</div>
           </div>
         ) : (
           <div className="flex min-h-[44px] items-center gap-3">
             {back}
-            <div className="flex min-w-0 flex-1 items-start gap-2">{boxesEls}</div>
+            <div className="flex min-w-0 flex-1 items-start gap-1.5">{boxesEls}</div>
             <LangToggle lang={lang} onLangChange={onLangChange} />
           </div>
         )}

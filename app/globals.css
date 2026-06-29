@@ -73,6 +73,7 @@
   --gradient-progress-3: linear-gradient(180deg, #7ea6f2, #4a63c4); /* คัดกรอง / อาชีพ */
   --gradient-progress-4: linear-gradient(180deg, #f0a868, #d97e2e); /* (5-cat) คุณสมบัติ */
   --gradient-progress-5: linear-gradient(180deg, #a78bfa, #7c5cd6); /* (5-cat) ติดต่อ */
+  --gradient-progress-6: linear-gradient(180deg, #5ad19b, #1a9d6b); /* (6-cat) สรุป — green = done */
 
   /* ─── Motion · design spec §10 ───────────────────────────────────────── */
   --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);

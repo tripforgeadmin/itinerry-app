@@ -13,6 +13,7 @@ export const CATEGORIES: Category[] = [
   { label: "อาชีพ", labelEn: "Work", icon: "briefcase" },
   { label: "คุณสมบัติ", labelEn: "Qualification", icon: "shield" },
   { label: "ข้อมูลติดต่อ", labelEn: "Contact", icon: "chat" },
+  { label: "สรุป", labelEn: "Summary", icon: "summary" },
 ];
 
 // Question id → category index (0–4). Consent (q2) belongs to none → -1.
@@ -21,7 +22,8 @@ const CATEGORY_INDEX_BY_ID: Record<string, number> = {
   q10: 1, q11: 1, q12: 1, q13: 1, q14: 1, q15: 1, q16: 1, q17: 1, q18: 1, q19: 1, q20: 1, q21: 1, q22: 1, q23: 1,
   q24: 2, q25: 2, q26: 2, q27: 2, q28: 2, q29: 2,
   q30: 3, q31: 3, q32: 3, q33: 3, q34: 3, q35: 3,
-  q3: 4, q5: 4, q6: 4, q7: 4, q36: 4, q37: 4, q2: 4,
+  q3: 4, q5: 4, q6: 4, q7: 4, q36: 4, q37: 4,
+  q2: 5, // สรุป — its own category
 };
 
 // Screens captured by another screen (contact-merge on q3; advanceTo on refused q30/overstay q32)
@@ -38,6 +40,12 @@ const CATEGORY_ORDER: string[][] = CATEGORIES.map((_, ci) =>
 
 export function categoryIndexOf(id: string): number {
   return CATEGORY_INDEX_BY_ID[id] ?? -1;
+}
+
+/** First question of a category that the user actually visited (scans real history, so it skips
+ * merged/advanceTo-captured ids and returns the branch-correct entry). undefined if not reached. */
+export function firstVisitedIdOfCategory(categoryIndex: number, history: string[]): string | undefined {
+  return history.find((id) => categoryIndexOf(id) === categoryIndex);
 }
 
 /**

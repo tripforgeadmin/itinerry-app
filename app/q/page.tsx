@@ -24,7 +24,8 @@ import { ContactScreen } from "@/components/screens/ContactScreen";
 import { FoundScreen } from "@/components/screens/FoundScreen";
 import { SummaryScreen } from "@/components/screens/SummaryScreen";
 import { ElephantLoader } from "@/components/ui/ElephantLoader";
-import { computeBoxes } from "@/lib/categories";
+import { computeBoxes, categoryIndexOf, firstVisitedIdOfCategory } from "@/lib/categories";
+import { NavContext } from "@/lib/navContext";
 import type { ScreenComponent } from "@/components/screens/types";
 
 // Screens reskinned to the new design (Phase 3). Anything not listed falls back to the legacy
@@ -66,13 +67,14 @@ const PHASE_END_LOADER: Record<string, { cap: string; sub?: string }> = {
 
 export default function QuestionnairePage() {
   const router = useRouter();
-  const { history, answers, setAnswer, pushQuestion, popQuestion } = useFormStore();
+  const { history, answers, setAnswer, pushQuestion, popQuestion, truncateTo } = useFormStore();
   const [submitting, setSubmitting] = useState(false);
   const [direction, setDirection] = useState(1);
   const [mounted, setMounted] = useState(false);
   const [lang, setLang] = useState<Lang>("th");
   const [loaderState, setLoaderState] = useState<{ cap: string; sub?: string } | null>(null);
   const prevLenRef = useRef(history.length);
+  const loaderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -114,7 +116,7 @@ export default function QuestionnairePage() {
     const loader = PHASE_END_LOADER[currentId];
     if (loader) {
       setLoaderState(loader);
-      setTimeout(() => {
+      loaderTimer.current = setTimeout(() => {
         setLoaderState(null);
         pushQuestion(nextId);
       }, 2000);
@@ -125,6 +127,16 @@ export default function QuestionnairePage() {
 
   function handleBack() {
     popQuestion();
+  }
+
+  // Clicking a past category box jumps back to its first visited question.
+  function handleJump(categoryIndex: number) {
+    if (categoryIndex >= categoryIndexOf(currentId)) return;
+    const targetId = firstVisitedIdOfCategory(categoryIndex, history);
+    if (!targetId || targetId === currentId) return;
+    if (loaderTimer.current) clearTimeout(loaderTimer.current);
+    setLoaderState(null);
+    truncateTo(targetId);
   }
 
   async function handleSubmit() {
@@ -152,7 +164,7 @@ export default function QuestionnairePage() {
   if (Reskinned) {
     const { boxes, activeIndex } = computeBoxes(currentId);
     return (
-      <>
+      <NavContext.Provider value={{ onJump: handleJump }}>
         <Reskinned
           question={question}
           value={answers[currentId] ?? ""}
@@ -171,7 +183,7 @@ export default function QuestionnairePage() {
           submitting={submitting}
         />
         {loaderEl}
-      </>
+      </NavContext.Provider>
     );
   }
 

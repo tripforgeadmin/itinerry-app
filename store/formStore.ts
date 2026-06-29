@@ -13,6 +13,8 @@ interface FormStore {
   lineProfile: LineProfile | null;
   pushQuestion: (id: string) => void;
   popQuestion: () => void;
+  /** Jump back to an earlier question by truncating history to it (no-op if not present). */
+  truncateTo: (id: string) => void;
   setAnswer: (key: string, value: string) => void;
   setLineProfile: (profile: LineProfile) => void;
   reset: () => void;
@@ -26,6 +28,11 @@ export const useFormStore = create<FormStore>()(
       lineProfile: null,
       pushQuestion: (id) =>
         set((s) => ({ history: [...s.history, id] })),
+      truncateTo: (id) =>
+        set((s) => {
+          const i = s.history.indexOf(id);
+          return i >= 0 ? { history: s.history.slice(0, i + 1) } : s;
+        }),
       popQuestion: () =>
         set((s) => ({ history: s.history.length > 1 ? s.history.slice(0, -1) : s.history })),
       setAnswer: (key, value) =>
