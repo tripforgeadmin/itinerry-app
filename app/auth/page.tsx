@@ -35,6 +35,7 @@ export default function AuthPage() {
   function handleLineLogin() {
     setLoading(true);
     useFormStore.getState().reset();
+    localStorage.removeItem("itinerry-visa-form-v3");
     const state = crypto.randomUUID();
     sessionStorage.setItem("line_state", state);
     window.location.href = `/api/auth/login?state=${state}`;
