@@ -8,6 +8,15 @@ const GTM_ID = "GTM-N9ZHZWTG";
 export const metadata: Metadata = {
   title: "itinerry Visa Assessment · เช็คโอกาสผ่านวีซ่า",
   description: "ประเมินโอกาสผ่านวีซ่าของคุณกับ itinerry — ใช้เวลาเพียง 2 นาที",
+  openGraph: {
+    title: "itinerry · เช็คโอกาสผ่านวีซ่าฟรี",
+    description: "ประเมินโอกาสผ่านวีซ่าของคุณกับ itinerry — ใช้เวลาเพียง 2 นาที",
+    url: "https://app.itinerry.com",
+    siteName: "itinerry",
+    images: [{ url: "https://app.itinerry.com/itinfav.png", width: 2880, height: 1800 }],
+    locale: "th_TH",
+    type: "website",
+  },
 };
 
 export const viewport: Viewport = {
