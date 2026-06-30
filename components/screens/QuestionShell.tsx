@@ -15,7 +15,7 @@ interface QuestionShellProps {
   lang: Lang;
   onLangChange: (l: Lang) => void;
   screenKey: string;
-  title: string;
+  title: ReactNode;
   subtitle?: string;
   /** Centered hint (auto-advance screens). Ignored when `footer` is provided. */
   footerHint?: string;

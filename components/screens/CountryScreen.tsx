@@ -4,9 +4,12 @@ import { useMemo, useRef, useState } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { QuestionShell } from "@/components/screens/QuestionShell";
 import { COUNTRIES, flagEmoji, type Country } from "@/lib/countries";
+import { useTypewriter } from "@/lib/useTypewriter";
 import type { ScreenProps } from "@/components/screens/types";
 
 const OTHER = "other";
+const EXAMPLES_TH = ["ญี่ปุ่น", "อังกฤษ", "สหรัฐฯ", "ออสเตรเลีย", "เกาหลีใต้", "แคนาดา"];
+const EXAMPLES_EN = ["Japan", "UK", "USA", "Australia", "Korea", "Canada"];
 
 /** Screen 3 · country (q8) — searchable flag grid (ISO-coded cards). Tapping "อื่นๆ" reveals a
  * searchable list of every remaining country (Thai/English search). Auto-advance on pick. */
@@ -26,6 +29,7 @@ export function CountryScreen({
   const [query, setQuery] = useState("");
   const [otherMode, setOtherMode] = useState(false);
   const advancing = useRef(false);
+  const typedExample = useTypewriter(lang === "th" ? EXAMPLES_TH : EXAMPLES_EN);
 
   const opts = question.options ?? [];
   const cardCodes = useMemo(
@@ -90,7 +94,13 @@ export function CountryScreen({
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={lang === "th" ? "ค้นหาประเทศ..." : "Search country..."}
+          placeholder={
+            query
+              ? ""
+              : lang === "th"
+                ? `ค้นหาประเทศ เช่น ${typedExample}`
+                : `Search country, e.g. ${typedExample}`
+          }
           className="w-full rounded-2xl border border-border bg-card py-3 pl-11 pr-4 text-primary outline-none transition-colors placeholder:text-muted-soft focus:border-accent"
         />
       </div>
