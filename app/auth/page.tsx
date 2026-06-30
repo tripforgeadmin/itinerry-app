@@ -68,7 +68,7 @@ export default function AuthPage() {
           className="text-center mb-4"
         >
           <h1 className="text-2xl font-bold text-primary leading-snug mb-2">
-            เช็คโอกาสผ่านวีซ่าก่อนยื่น <span style={{ color: "#ffd166" }}>ฟรี!</span>
+            เช็คโอกาสผ่านวีซ่าก่อนยื่น <span className="text-logo-primary">ฟรี!</span>
           </h1>
           <div className="h-8 overflow-hidden relative">
             <AnimatePresence mode="wait">

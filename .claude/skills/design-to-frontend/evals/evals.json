@@ -1,0 +1,49 @@
+{
+  "skill_name": "design-to-frontend",
+  "evals": [
+    {
+      "id": 0,
+      "name": "whole-flow-starts-with-gap-analysis",
+      "prompt": "เอา design ใน docs/design มาทำเป็น frontend ของแอปให้หน่อย",
+      "expected_output": "Should NOT start blindly building. Reads design docs by precedence + as-is code, produces a written as-is↔to-be gap report (token drift via token_diff, reuse/migrate/build-fresh per item, 18-screen status, data/service deltas) plus a phased plan, and STOPS for review before writing production code.",
+      "files": [],
+      "assertions": [
+        "produced_gap_analysis_doc",
+        "identified_real_token_drift",
+        "stopped_not_full_build",
+        "reuse_migrate_build_decisions",
+        "respected_precedence"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "single-screen-consent-correct-precedence",
+      "prompt": "ช่วย build หน้า consent ตาม design ให้หน่อย",
+      "expected_output": "Reads screens_detail.md Screen 1 (consent): builds CONTENT order, maps the GATING boolean (CTA enabled ⇔ checkbox checked) to disabled logic, ON ENTER (checkbox unchecked→CTA disabled), EXIT (next→nationality), and EDGE CASE (back keeps checkbox state). Reuses the existing QUESTIONS/store/form primitives rather than a parallel state system; uses tokens not raw hex.",
+      "files": [],
+      "assertions": [
+        "built_consent_screen",
+        "gating_checkbox_enables_cta",
+        "reused_existing_form_engine",
+        "uses_tokens_not_raw_hex",
+        "handled_back_edge_case",
+        "exit_routes_to_nationality"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "token-reconciliation-phase1",
+      "prompt": "tokens ใน docs/design กับ app/globals.css มันไม่ตรงกัน ช่วย reconcile ให้เป็นแหล่งเดียวที",
+      "expected_output": "Runs token_diff.py (or equivalent), identifies the real drift (logo-primary-color vs logo-primary, #06C755 vs #06c755, missing .dark theme), proposes reconciliation into app/globals.css as the single source WITHOUT breaking existing utilities, flags any rename that ripples, and treats this as the Phase 1 design-system step.",
+      "files": [],
+      "assertions": [
+        "identified_logo_primary_drift",
+        "added_dark_theme",
+        "single_source_in_globals",
+        "preserved_existing_utilities",
+        "used_systematic_diff",
+        "noted_case_difference"
+      ]
+    }
+  ]
+}

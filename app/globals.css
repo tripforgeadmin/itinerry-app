@@ -42,7 +42,7 @@
   --color-emerald: #10b981;
   --color-purple: #8b5cf6;
   --color-orange: #f97316;
-  --color-line: #06c755;
+  --color-line: #06C755;
   --color-warning: #f59e0b;
   --color-warning-deep: #b8860b;
 
@@ -56,6 +56,32 @@
 
   /* ─── Shadows ────────────────────────────────────────────────────────── */
   --shadow-card: 0px 2px 12px 0px rgba(68, 168, 219, 0.1);
+
+  /* ─── Glass (frosted card) · design spec §2 ──────────────────────────── */
+  /* Resting card. Pair --blur-glass with saturate(1.4) in the .glass primitive. */
+  --color-glass-bg: rgba(255, 255, 255, 0.55);
+  --color-glass-border: rgba(255, 255, 255, 0.7);
+  --blur-glass: 11px;
+  --shadow-glass: 0 4px 16px rgba(27, 61, 92, 0.08);
+  /* Selected state — border uses --color-accent; bg ≈ --color-accent-tint @ .66 */
+  --color-glass-selected-bg: rgba(214, 239, 250, 0.66);
+  --shadow-glass-selected: 0 0 0 3px rgba(68, 168, 219, 0.18), 0 6px 18px rgba(27, 61, 92, 0.1);
+
+  /* ─── Progress water gradients (per phase, top→bottom) · design spec §2 ─ */
+  --gradient-progress-1: linear-gradient(180deg, #66c1ec, #2b86b5); /* พื้นฐาน */
+  --gradient-progress-2: linear-gradient(180deg, #54ccc6, #1f9aa0); /* เดินทาง */
+  --gradient-progress-3: linear-gradient(180deg, #7ea6f2, #4a63c4); /* คัดกรอง / อาชีพ */
+  --gradient-progress-4: linear-gradient(180deg, #f0a868, #d97e2e); /* (5-cat) คุณสมบัติ */
+  --gradient-progress-5: linear-gradient(180deg, #a78bfa, #7c5cd6); /* (5-cat) ติดต่อ */
+  --gradient-progress-6: linear-gradient(180deg, #5ad19b, #1a9d6b); /* (6-cat) สรุป — green = done */
+
+  /* ─── Motion · design spec §10 ───────────────────────────────────────── */
+  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-screen-fade: 0.28s; /* screen enter: opacity + translateY 8→0 */
+  --motion-water-fill: 0.75s;  /* progress water rise */
+  --motion-reveal: 0.3s;       /* max-height reveal blocks */
+  --motion-auto-advance: 360ms;/* single-select → auto next() */
+  --motion-loader: 2000ms;     /* elephant phase loader (submit = 2300ms) */
 }
 
 body {

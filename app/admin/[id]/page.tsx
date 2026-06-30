@@ -6,6 +6,8 @@ import AnonymizeButton from "./AnonymizeButton";
 
 export const dynamic = "force-dynamic";
 
+export const dynamic = "force-dynamic";
+
 const LABELS: Record<string, Record<string, string>> = {
   visa_type: { tourist: "ท่องเที่ยว", visitor: "เยี่ยมเยียน", business: "ธุรกิจ", student: "นักเรียน" },
   occupation: { employee: "พนักงานประจำ", government: "ข้าราชการ", freelance: "Freelance", business_owner: "เจ้าของธุรกิจ", retired: "เกษียณ", homemaker: "แม่บ้าน", student_occ: "นักเรียน/นักศึกษา" },
@@ -13,6 +15,7 @@ const LABELS: Record<string, Record<string, string>> = {
   source: { facebook: "Facebook", instagram: "Instagram", tiktok: "TikTok", google: "Google", referral: "เพื่อนแนะนำ", other: "อื่นๆ" },
   nationality: { thai: "ไทย", other: "อื่นๆ" },
   contact_preference: { line: "LINE OA", call: "โทรกลับ" },
+  intent: { explore: "ตรวจความพร้อม / ศึกษาข้อมูล", ready: "เลือกปลายทางแล้ว / หาบริการ", execute: "ช่วยดำเนินการ / เร่งด่วน / แก้เคส" },
   callback_time: { morning: "เช้า 9:00–12:00", afternoon: "บ่าย 12:00–15:00", evening: "เย็น 15:00–18:00" },
   visitor_host_status: { citizen_pr: "Citizen / PR", work_visa: "Work Visa", student_visa: "Student Visa", not_sure: "ไม่แน่ใจ" },
   visitor_relationship: { family: "ครอบครัว", relative: "ญาติ", married: "คู่สมรส (จดทะเบียน)", partner: "แฟน", friend: "เพื่อน" },
@@ -38,16 +41,17 @@ const PAST_VISA_LABELS: Record<string, string> = {
   china: "China", dubai: "Dubai/UAE",
 };
 
-function label(group: string, val: string) {
-  return LABELS[group]?.[val] ?? val;
+function label(group: string, val: unknown) {
+  const v = String(val ?? "");
+  return LABELS[group]?.[v] ?? v;
 }
 
-function Row({ title, value }: { title: string; value?: string | null | boolean | string[] }) {
+function Row({ title, value }: { title: string; value?: unknown }) {
   if (value === null || value === undefined || value === "") return null;
   let display: string;
   if (typeof value === "boolean") display = value ? "ใช่" : "ไม่ใช่";
   else if (Array.isArray(value)) display = value.join(", ");
-  else display = value;
+  else display = String(value);
   return (
     <div className="flex gap-3 py-2 border-b border-gray-50 last:border-0">
       <span className="text-gray-400 text-sm w-48 shrink-0">{title}</span>
@@ -65,21 +69,47 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+type Dict = Record<string, unknown>;
+function one(v: unknown): Dict {
+  return ((Array.isArray(v) ? v[0] : v) ?? {}) as Dict;
+}
+
+type RefusedEntry = { country?: string; year?: string };
+type OverstayEntry = { country?: string; year?: string; days?: string };
+
+function refusedText(s: Dict): string {
+  const entries = s.visa_refused_entries as RefusedEntry[] | null;
+  if (Array.isArray(entries) && entries.length)
+    return "ใช่ — " + entries.map((e) => `${e.country ?? ""} ${e.year ?? ""}`.trim()).join(", ");
+  return s.visa_refused ? `ใช่ — ${s.visa_refused_details ?? ""}` : "ไม่เคย";
+}
+function overstayText(s: Dict): string {
+  const entries = s.overstay_entries as OverstayEntry[] | null;
+  if (Array.isArray(entries) && entries.length)
+    return "ใช่ — " + entries.map((e) => `${e.country ?? ""} ${e.year ?? ""} · ${e.days ?? "?"} วัน`.trim()).join(", ");
+  return s.overstayed ? `ใช่ — ${s.overstay_details ?? ""}` : "ไม่เคย";
+}
+
 export default async function AdminDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { data: s, error } = await supabase
+  const { data: row, error } = await supabase
     .from("user_assessment")
-    .select(`*, account:account_id (*), trip:trip_id (*)`)
+    .select("*, account:account_id(*), trip:trip_id(*)")
     .eq("id", id)
     .single();
 
-  if (error || !s) notFound();
+  if (error || !row) notFound();
 
-  const acc = s.account as Record<string, string | boolean | null> | null;
-  const trip = s.trip as Record<string, string | null> | null;
+  const s = row as Dict;
+  const account = one(s.account);
+  const trip = one(s.trip);
   const b = (s.branch_answers ?? {}) as Record<string, string | string[]>;
-  const visaType = trip?.visa_type as string;
+  const visaType = trip.visa_type as string;
   const occ = s.occupation as string;
+  const phone = account.phone_country_code ? `${account.phone_country_code} ${account.phone}` : (account.phone as string);
+  const name = account.first_name || account.last_name
+    ? `${account.first_name ?? ""} ${account.last_name ?? ""}`.trim()
+    : (account.full_name as string);
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
@@ -87,14 +117,14 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <Link href="/admin" className="text-gray-400 hover:text-gray-600 text-sm">← กลับ</Link>
-          <h1 className="text-xl font-bold text-gray-800">{acc?.full_name as string ?? "—"}</h1>
+          <h1 className="text-xl font-bold text-gray-800">{name}</h1>
           <span className="text-xs text-gray-400">
-            {new Date(s.created_at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+            {new Date(s.created_at as string).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
           </span>
         </div>
 
         {/* Status updater */}
-        <StatusUpdater id={s.id} currentStatus={s.status} />
+        <StatusUpdater id={s.id as string} currentStatus={s.status as string} />
 
         {/* PDPA anonymize */}
         {acc && (
@@ -106,33 +136,33 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
 
         {/* LINE */}
         <Section title="LINE">
-          <Row title="Display Name" value={acc?.line_display_name as string} />
-          <Row title="User ID" value={acc?.line_user_id as string} />
-          <Row title="เป็นเพื่อน OA" value={acc?.is_friend as boolean} />
-          <Row title="รูปโปรไฟล์" value={acc?.line_picture_url ? "มี" : null} />
+          <Row title="Display Name" value={account.line_display_name} />
+          <Row title="User ID" value={account.line_user_id} />
+          <Row title="เป็นเพื่อน OA" value={account.is_friend} />
+          <Row title="รูปโปรไฟล์" value={account.line_picture_url ? "มี" : null} />
         </Section>
 
         {/* Personal */}
         <Section title="S1 · ข้อมูลส่วนตัว">
-          <Row title="ชื่อ-นามสกุล" value={acc?.full_name as string} />
-          <Row title="สัญชาติ" value={acc?.nationality === "other" ? `อื่นๆ: ${acc?.nationality_other}` : label("nationality", acc?.nationality as string)} />
-          <Row title="เบอร์โทร" value={acc?.phone as string} />
-          <Row title="อีเมล" value={acc?.email as string} />
-          <Row title="รู้จักจาก" value={acc?.source === "other" ? `อื่นๆ: ${acc?.source_other}` : label("source", acc?.source as string)} />
+          <Row title="ชื่อ-นามสกุล" value={name} />
+          <Row title="สัญชาติ" value={account.nationality === "other" ? `อื่นๆ: ${account.nationality_other}` : label("nationality", account.nationality)} />
+          <Row title="เบอร์โทร" value={phone} />
+          <Row title="อีเมล" value={account.email} />
+          <Row title="รู้จักจาก" value={account.source === "other" ? `อื่นๆ: ${account.source_other}` : label("source", account.source)} />
         </Section>
 
         {/* Destination */}
         <Section title="S2 · ปลายทาง + วีซ่า">
-          <Row title="ประเทศปลายทาง" value={(trip?.destination as string)?.toUpperCase()} />
-          <Row title="ประเภทวีซ่า" value={label("visa_type", visaType)} />
+          <Row title="ประเทศปลายทาง" value={(trip.destination as string)?.toUpperCase()} />
+          <Row title="ประเภทวีซ่า" value={label("visa_type", trip.visa_type)} />
           {(visaType === "tourist" || visaType === "visitor" || visaType === "business") && (
-            <Row title="วันเดินทาง" value={trip?.travel_arrival as string} />
+            <Row title="วันเดินทาง" value={trip.travel_arrival} />
           )}
           {(visaType === "tourist" || visaType === "business") && (
-            <Row title="วันกลับ" value={trip?.travel_return as string} />
+            <Row title="วันกลับ" value={trip.travel_return} />
           )}
           {visaType === "student" && (
-            <Row title="วันเริ่มเรียน" value={trip?.study_start as string} />
+            <Row title="วันเริ่มเรียน" value={trip.study_start} />
           )}
           {visaType === "tourist" && Array.isArray(b.tourist_previous_visas) && (
             <Row title="วีซ่าที่เคยได้รับ" value={(b.tourist_previous_visas as string[]).map(v => PAST_VISA_LABELS[v] ?? v).join(", ")} />
@@ -164,16 +194,17 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
 
         {/* Core Qualification */}
         <Section title="S5 · คัดกรองหลัก">
-          <Row title="ถูกปฏิเสธวีซ่า" value={s.visa_refused ? `ใช่ — ${s.visa_refused_details}` : "ไม่เคย"} />
-          <Row title="Overstay" value={s.overstayed ? `ใช่ — ${s.overstay_details}` : "ไม่เคย"} />
+          <Row title="ถูกปฏิเสธวีซ่า" value={refusedText(s)} />
+          <Row title="Overstay" value={overstayText(s)} />
           <Row title="เงินในบัญชี" value={label("savings_balance", s.savings_balance)} />
-          <Row title="ความผูกพันกับไทย" value={s.ties_thailand?.map((v: string) => TIES_LABELS[v] ?? v).join(", ")} />
+          <Row title="ความผูกพันกับไทย" value={(s.ties_thailand as string[])?.map((v) => TIES_LABELS[v] ?? v).join(", ")} />
         </Section>
 
         {/* Contact */}
-        <Section title="S6–S7 · ช่องทางติดต่อ">
+        <Section title="S6–S8 · ช่องทางติดต่อ + ความต้องการ">
           <Row title="ติดต่อผ่าน" value={label("contact_preference", s.contact_preference)} />
           <Row title="ช่วงเวลาโทร" value={label("callback_time", s.callback_time)} />
+          <Row title="ความต้องการ" value={label("intent", s.intent)} />
         </Section>
       </div>
     </main>
