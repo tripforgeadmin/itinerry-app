@@ -159,10 +159,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: assessError.message }, { status: 500 });
   }
 
-  // Send email notification (awaited — Vercel kills fire-and-forget before response)
+  // Send email notification (PDF is optional — email sends even if PDF fails)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  let pdfBuffer: Buffer | undefined;
   try {
-    const pdfBuffer = await generateAssessmentPdf(answers, new Date().toISOString());
+    pdfBuffer = await generateAssessmentPdf(answers, new Date().toISOString());
+  } catch (err) {
+    console.error("pdf error:", err);
+  }
+  try {
     await sendNewLeadEmail({
       assessmentId: trip.id,
       fullName: fullName ?? "",
@@ -176,7 +181,7 @@ export async function POST(request: NextRequest) {
       pdfBuffer,
     });
   } catch (err) {
-    console.error("email/pdf error:", err);
+    console.error("email error:", err);
   }
 
   return NextResponse.json({ ok: true });
