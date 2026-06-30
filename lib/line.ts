@@ -6,9 +6,9 @@ import {
   LINE_CALLBACK_URL,
 } from "./constants";
 
-const secret = new TextEncoder().encode(
-  process.env.LINE_CHANNEL_SECRET ?? "fallback-dev-secret-32-chars-long!!"
-);
+const rawSecret = process.env.LINE_CHANNEL_SECRET;
+if (!rawSecret) throw new Error("LINE_CHANNEL_SECRET is not set");
+const secret = new TextEncoder().encode(rawSecret);
 
 export interface LineProfile {
   userId: string;

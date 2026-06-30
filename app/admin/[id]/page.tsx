@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import StatusUpdater from "./StatusUpdater";
+import AnonymizeButton from "./AnonymizeButton";
 
 export const dynamic = "force-dynamic";
 
@@ -13,18 +14,17 @@ const LABELS: Record<string, Record<string, string>> = {
   nationality: { thai: "ไทย", other: "อื่นๆ" },
   contact_preference: { line: "LINE OA", call: "โทรกลับ" },
   callback_time: { morning: "เช้า 9:00–12:00", afternoon: "บ่าย 12:00–15:00", evening: "เย็น 15:00–18:00" },
-  // branch labels
-  q14: { citizen_pr: "Citizen / PR", work_visa: "Work Visa", student_visa: "Student Visa", not_sure: "ไม่แน่ใจ" },
-  q15: { family: "ครอบครัว", relative: "ญาติ", married: "คู่สมรส (จดทะเบียน)", partner: "แฟน", friend: "เพื่อน" },
-  q16: { invitation_letter: "จดหมายเชิญ", house_cert: "หลักฐานที่พัก", job_cert: "จดหมายรับรองงาน", bank_stmt: "รายการเดินบัญชี 6 เดือน", none: "ไม่มีเลย" },
-  q19: { yes: "มีแล้ว", requesting: "กำลังจะขอ", not_required: "ไม่ต้องการ" },
-  q22: { received: "ได้รับแล้ว", in_progress: "อยู่ระหว่างสมัคร", not_applied: "ยังไม่ได้สมัคร" },
-  q23: { self: "ตัวเอง", parents: "พ่อแม่", scholarship: "ทุนการศึกษา", other: "อื่นๆ" },
-  q25: { complete: "มีครบ", partial: "มีแต่ไม่ครบ", none: "ยังไม่มี" },
-  q26: { all_three: "มีครบทั้งสามอย่าง", partial: "มีบางส่วน", none: "ไม่มีเลย" },
-  q27: { all_3y: "มีครบ 3 ปี", partial: "มีบางส่วน", none: "ไม่มีเลย" },
-  q28: { yes: "มีแล้ว", no: "ยังไม่มี" },
-  q29: { parents: "พ่อแม่", spouse: "คู่สมรส", self_savings: "ตัวเอง (มีเงินออม)", employer: "บริษัท", other: "อื่นๆ" },
+  visitor_host_status: { citizen_pr: "Citizen / PR", work_visa: "Work Visa", student_visa: "Student Visa", not_sure: "ไม่แน่ใจ" },
+  visitor_relationship: { family: "ครอบครัว", relative: "ญาติ", married: "คู่สมรส (จดทะเบียน)", partner: "แฟน", friend: "เพื่อน" },
+  visitor_host_documents: { invitation_letter: "จดหมายเชิญ", house_cert: "หลักฐานที่พัก", job_cert: "จดหมายรับรองงาน", bank_stmt: "รายการเดินบัญชี 6 เดือน", none: "ไม่มีเลย" },
+  business_invitation_letter: { yes: "มีแล้ว", requesting: "กำลังจะขอ", not_required: "ไม่ต้องการ" },
+  student_acceptance_letter: { received: "ได้รับแล้ว", in_progress: "อยู่ระหว่างสมัคร", not_applied: "ยังไม่ได้สมัคร" },
+  student_expense_sponsor: { self: "ตัวเอง", parents: "พ่อแม่", scholarship: "ทุนการศึกษา", other: "อื่นๆ" },
+  employee_work_letter: { complete: "มีครบ", partial: "มีแต่ไม่ครบ", none: "ยังไม่มี" },
+  freelance_income_proof: { all_three: "มีครบทั้งสามอย่าง", partial: "มีบางส่วน", none: "ไม่มีเลย" },
+  freelance_tax_history: { all_3y: "มีครบ 3 ปี", partial: "มีบางส่วน", none: "ไม่มีเลย" },
+  business_registration: { yes: "มีแล้ว", no: "ยังไม่มี" },
+  dependent_expense_sponsor: { parents: "พ่อแม่", spouse: "คู่สมรส", self_savings: "ตัวเอง (มีเงินออม)", employer: "บริษัท", other: "อื่นๆ" },
 };
 
 const TIES_LABELS: Record<string, string> = {
@@ -68,15 +68,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default async function AdminDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { data: s, error } = await supabase
-    .from("visa_assessments")
-    .select("*")
+    .from("user_assessment")
+    .select(`*, account:account_id (*), trip:trip_id (*)`)
     .eq("id", id)
     .single();
 
   if (error || !s) notFound();
 
+  const acc = s.account as Record<string, string | boolean | null> | null;
+  const trip = s.trip as Record<string, string | null> | null;
   const b = (s.branch_answers ?? {}) as Record<string, string | string[]>;
-  const visaType = s.visa_type as string;
+  const visaType = trip?.visa_type as string;
   const occ = s.occupation as string;
 
   return (
@@ -85,7 +87,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <Link href="/admin" className="text-gray-400 hover:text-gray-600 text-sm">← กลับ</Link>
-          <h1 className="text-xl font-bold text-gray-800">{s.full_name}</h1>
+          <h1 className="text-xl font-bold text-gray-800">{acc?.full_name as string ?? "—"}</h1>
           <span className="text-xs text-gray-400">
             {new Date(s.created_at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
           </span>
@@ -94,65 +96,69 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         {/* Status updater */}
         <StatusUpdater id={s.id} currentStatus={s.status} />
 
+        {/* PDPA anonymize */}
+        {acc && (
+          <AnonymizeButton
+            accountId={acc.id as string}
+            isAnonymized={acc.full_name === "[ลบแล้ว]"}
+          />
+        )}
+
         {/* LINE */}
         <Section title="LINE">
-          <Row title="Display Name" value={s.line_display_name} />
-          <Row title="User ID" value={s.line_user_id} />
-          <Row title="เป็นเพื่อน OA" value={s.is_friend} />
-          <Row title="รูปโปรไฟล์" value={s.line_picture_url ? "มี" : null} />
+          <Row title="Display Name" value={acc?.line_display_name as string} />
+          <Row title="User ID" value={acc?.line_user_id as string} />
+          <Row title="เป็นเพื่อน OA" value={acc?.is_friend as boolean} />
+          <Row title="รูปโปรไฟล์" value={acc?.line_picture_url ? "มี" : null} />
         </Section>
 
         {/* Personal */}
         <Section title="S1 · ข้อมูลส่วนตัว">
-          <Row title="ชื่อ-นามสกุล" value={s.full_name} />
-          <Row title="สัญชาติ" value={s.nationality === "other" ? `อื่นๆ: ${s.nationality_other}` : label("nationality", s.nationality)} />
-          <Row title="เบอร์โทร" value={s.phone} />
-          <Row title="อีเมล" value={s.email} />
-          <Row title="รู้จักจาก" value={s.source === "other" ? `อื่นๆ: ${s.source_other}` : label("source", s.source)} />
+          <Row title="ชื่อ-นามสกุล" value={acc?.full_name as string} />
+          <Row title="สัญชาติ" value={acc?.nationality === "other" ? `อื่นๆ: ${acc?.nationality_other}` : label("nationality", acc?.nationality as string)} />
+          <Row title="เบอร์โทร" value={acc?.phone as string} />
+          <Row title="อีเมล" value={acc?.email as string} />
+          <Row title="รู้จักจาก" value={acc?.source === "other" ? `อื่นๆ: ${acc?.source_other}` : label("source", acc?.source as string)} />
         </Section>
 
         {/* Destination */}
         <Section title="S2 · ปลายทาง + วีซ่า">
-          <Row title="ประเทศปลายทาง" value={s.destination?.toUpperCase()} />
-          <Row title="ประเภทวีซ่า" value={label("visa_type", s.visa_type)} />
+          <Row title="ประเทศปลายทาง" value={(trip?.destination as string)?.toUpperCase()} />
+          <Row title="ประเภทวีซ่า" value={label("visa_type", visaType)} />
           {(visaType === "tourist" || visaType === "visitor" || visaType === "business") && (
-            <Row title="วันเดินทาง" value={s.travel_arrival} />
+            <Row title="วันเดินทาง" value={trip?.travel_arrival as string} />
           )}
           {(visaType === "tourist" || visaType === "business") && (
-            <Row title="วันกลับ" value={s.travel_return} />
+            <Row title="วันกลับ" value={trip?.travel_return as string} />
           )}
           {visaType === "student" && (
-            <Row title="วันเริ่มเรียน" value={s.study_start} />
+            <Row title="วันเริ่มเรียน" value={trip?.study_start as string} />
           )}
-          {/* Tourist branch */}
-          {visaType === "tourist" && Array.isArray(b.q12) && (
-            <Row title="วีซ่าที่เคยได้รับ" value={(b.q12 as string[]).map(v => PAST_VISA_LABELS[v] ?? v).join(", ")} />
+          {visaType === "tourist" && Array.isArray(b.tourist_previous_visas) && (
+            <Row title="วีซ่าที่เคยได้รับ" value={(b.tourist_previous_visas as string[]).map(v => PAST_VISA_LABELS[v] ?? v).join(", ")} />
           )}
-          {/* Visitor branch */}
-          {visaType === "visitor" && <Row title="สถานะผู้เชิญ" value={label("q14", b.q14 as string)} />}
-          {visaType === "visitor" && <Row title="ความสัมพันธ์" value={label("q15", b.q15 as string)} />}
-          {visaType === "visitor" && Array.isArray(b.q16) && (
-            <Row title="เอกสารที่ผู้เชิญมี" value={(b.q16 as string[]).map(v => LABELS.q16[v] ?? v).join(", ")} />
+          {visaType === "visitor" && <Row title="สถานะผู้เชิญ" value={label("visitor_host_status", b.visitor_host_status as string)} />}
+          {visaType === "visitor" && <Row title="ความสัมพันธ์" value={label("visitor_relationship", b.visitor_relationship as string)} />}
+          {visaType === "visitor" && Array.isArray(b.visitor_host_documents) && (
+            <Row title="เอกสารที่ผู้เชิญมี" value={(b.visitor_host_documents as string[]).map(v => LABELS.visitor_host_documents[v] ?? v).join(", ")} />
           )}
-          {/* Business branch */}
-          {visaType === "business" && <Row title="Invitation Letter" value={label("q19", b.q19 as string)} />}
-          {visaType === "business" && Array.isArray(b.q20) && (
-            <Row title="วีซ่าที่เคยได้รับ" value={(b.q20 as string[]).map(v => PAST_VISA_LABELS[v] ?? v).join(", ")} />
+          {visaType === "business" && <Row title="Invitation Letter" value={label("business_invitation_letter", b.business_invitation_letter as string)} />}
+          {visaType === "business" && Array.isArray(b.business_previous_visas) && (
+            <Row title="วีซ่าที่เคยได้รับ" value={(b.business_previous_visas as string[]).map(v => PAST_VISA_LABELS[v] ?? v).join(", ")} />
           )}
-          {/* Student branch */}
-          {visaType === "student" && <Row title="Acceptance Letter" value={label("q22", b.q22 as string)} />}
-          {visaType === "student" && <Row title="ผู้รับผิดชอบค่าเรียน" value={label("q23", b.q23 as string)} />}
+          {visaType === "student" && <Row title="Acceptance Letter" value={label("student_acceptance_letter", b.student_acceptance_letter as string)} />}
+          {visaType === "student" && <Row title="ผู้รับผิดชอบค่าเรียน" value={label("student_expense_sponsor", b.student_expense_sponsor as string)} />}
         </Section>
 
         {/* Occupation */}
         <Section title="S3–S4 · อาชีพ">
-          <Row title="อาชีพ" value={label("occupation", s.occupation)} />
-          {(occ === "employee" || occ === "government") && <Row title="หนังสือรับรองงาน" value={label("q25", b.q25 as string)} />}
-          {occ === "freelance" && <Row title="เอกสารพิสูจน์รายได้" value={label("q26", b.q26 as string)} />}
-          {occ === "freelance" && <Row title="เอกสารภาษี 3 ปี" value={label("q27", b.q27 as string)} />}
-          {occ === "business_owner" && <Row title="หนังสือรับรองบริษัท" value={label("q28", b.q28 as string)} />}
+          <Row title="อาชีพ" value={label("occupation", occ)} />
+          {(occ === "employee" || occ === "government") && <Row title="หนังสือรับรองงาน" value={label("employee_work_letter", b.employee_work_letter as string)} />}
+          {occ === "freelance" && <Row title="เอกสารพิสูจน์รายได้" value={label("freelance_income_proof", b.freelance_income_proof as string)} />}
+          {occ === "freelance" && <Row title="เอกสารภาษี 3 ปี" value={label("freelance_tax_history", b.freelance_tax_history as string)} />}
+          {occ === "business_owner" && <Row title="หนังสือรับรองบริษัท" value={label("business_registration", b.business_registration as string)} />}
           {(occ === "retired" || occ === "homemaker" || occ === "student_occ") && (
-            <Row title="ผู้รับผิดชอบค่าเดินทาง" value={label("q29", b.q29 as string)} />
+            <Row title="ผู้รับผิดชอบค่าเดินทาง" value={label("dependent_expense_sponsor", b.dependent_expense_sponsor as string)} />
           )}
         </Section>
 

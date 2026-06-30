@@ -6,6 +6,10 @@ import { QuestionScreen } from "@/components/form/QuestionScreen";
 import type { Lang } from "@/components/form/QuestionScreen";
 import { useFormStore } from "@/store/formStore";
 import { QUESTIONS_MAP } from "@/lib/questions";
+import type { Question } from "@/lib/questions";
+
+type DbOption = { value: string; label_th: string; label_en: string; emoji?: string };
+type DbQuestion = { legacy_id: string; question_text_th: string; question_text_en: string; options: DbOption[] | null };
 
 export default function QuestionnairePage() {
   const router = useRouter();
@@ -14,7 +18,32 @@ export default function QuestionnairePage() {
   const [direction, setDirection] = useState(1);
   const [mounted, setMounted] = useState(false);
   const [lang, setLang] = useState<Lang>("th");
+  const [questionsMap, setQuestionsMap] = useState<Record<string, Question>>(QUESTIONS_MAP);
   const prevLenRef = useRef(history.length);
+
+  useEffect(() => {
+    fetch("/api/questions")
+      .then((r) => r.json())
+      .then((rows: DbQuestion[]) => {
+        const merged: Record<string, Question> = { ...QUESTIONS_MAP };
+        for (const row of rows) {
+          const q = merged[row.legacy_id];
+          if (!q) continue;
+          merged[row.legacy_id] = {
+            ...q,
+            question: row.question_text_th ?? q.question,
+            questionEn: row.question_text_en ?? q.questionEn,
+            options: q.options?.map((opt) => {
+              const dbOpt = row.options?.find((o) => o.value === opt.value);
+              if (!dbOpt) return opt;
+              return { ...opt, label: dbOpt.label_th ?? opt.label, labelEn: dbOpt.label_en ?? opt.labelEn };
+            }),
+          };
+        }
+        setQuestionsMap(merged);
+      })
+      .catch(() => {}); // silently fall back to local questions on error
+  }, []);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -31,7 +60,7 @@ export default function QuestionnairePage() {
   );
 
   const currentId = history[history.length - 1];
-  const question = QUESTIONS_MAP[currentId];
+  const question = questionsMap[currentId];
 
   if (!question) return null;
 
@@ -83,7 +112,7 @@ export default function QuestionnairePage() {
       sectionTitle={question.sectionTitle}
       sectionTitleEn={question.sectionTitleEn}
       sectionEmoji={question.sectionEmoji}
-      qIndex={history.filter((id) => QUESTIONS_MAP[id]?.type !== "consent").length}
+      qIndex={history.filter((id) => questionsMap[id]?.type !== "consent").length}
       answers={answers}
       lang={lang}
       onLangChange={setLang}

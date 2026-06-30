@@ -5,8 +5,12 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const { data: submissions, error } = await supabase
-    .from("visa_assessments")
-    .select("id, created_at, full_name, line_display_name, visa_type, destination, occupation, is_friend, status, phone, contact_preference, savings_balance")
+    .from("user_assessment")
+    .select(`
+      id, created_at, occupation, status, contact_preference,
+      account:account_id (full_name, line_display_name, phone, is_friend),
+      trip:trip_id (visa_type, destination)
+    `)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -21,7 +25,8 @@ export default async function AdminPage() {
           <span className="text-sm text-gray-500">{submissions?.length ?? 0} รายการ</span>
         </div>
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <AdminTable rows={submissions ?? []} />
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <AdminTable rows={(submissions ?? []) as any[]} />
         </div>
       </div>
     </main>
