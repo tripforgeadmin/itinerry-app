@@ -62,13 +62,25 @@ export default function DonePage() {
           style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
         >
           {isFriend ? (
-            <div className="px-6 py-6 text-center space-y-2">
+            <div className="px-6 py-6 text-center space-y-4">
               <span className="text-3xl">💬</span>
-              <p className="text-white font-bold text-base">พร้อมติดต่อคุณแล้ว!</p>
-              <p className="text-white/50 text-sm leading-relaxed">
-                ทีม itinerry จะติดต่อคุณผ่าน LINE<br />
-                และเบอร์โทรที่ให้ไว้ภายใน 24 ชม.
-              </p>
+              <div className="space-y-2">
+                <p className="text-white font-bold text-base">พร้อมติดต่อคุณแล้ว!</p>
+                <p className="text-white/50 text-sm leading-relaxed">
+                  ทีม itinerry จะติดต่อคุณผ่าน LINE<br />
+                  และเบอร์โทรที่ให้ไว้ภายใน 24 ชม.
+                </p>
+              </div>
+              <a
+                href={LINE_OA_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-white font-bold text-sm transition-all active:scale-[0.98]"
+                style={{ backgroundColor: "#06c755" }}
+              >
+                <LineIcon />
+                กลับไปที่แชท LINE
+              </a>
             </div>
           ) : (
             <>
