@@ -91,3 +91,9 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Fix 100vh on iOS/iPad LIFF webview — use dvh with vh fallback */
+.min-h-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+}

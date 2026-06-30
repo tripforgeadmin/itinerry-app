@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import "./globals.css";
 
@@ -8,6 +8,13 @@ const GTM_ID = "GTM-N9ZHZWTG";
 export const metadata: Metadata = {
   title: "itinerry Visa Assessment · เช็คโอกาสผ่านวีซ่า",
   description: "ประเมินโอกาสผ่านวีซ่าของคุณกับ itinerry — ใช้เวลาเพียง 2 นาที",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
