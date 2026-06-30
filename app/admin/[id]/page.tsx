@@ -145,6 +145,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
           <Row title="เบอร์โทร" value={phone} />
           <Row title="อีเมล" value={account.email} />
           <Row title="รู้จักจาก" value={account.source === "other" ? `อื่นๆ: ${account.source_other}` : label("source", account.source)} />
+          <Row title="ยินยอม PDPA เมื่อ" value={account.consented_at ? new Date(account.consented_at as string).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : null} />
         </Section>
 
         {/* Destination */}

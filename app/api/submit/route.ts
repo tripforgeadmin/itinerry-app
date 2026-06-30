@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
     nationality_other:  answers.q4 === "other" ? toNull(answers.q4_other) : null,
     source:             ["facebook","instagram","tiktok","google","referral","other"].includes(answers.q7) ? answers.q7 : "other",
     source_other:       answers.q7 === "other" ? toNull(answers.q7_other) : null,
+    consented_at:       new Date().toISOString(),
     updated_at:         new Date().toISOString(),
   };
 
