@@ -3,6 +3,11 @@
 How to extract what you need from each artifact in `docs/design/` — and what to deliberately
 ignore. Apply the precedence in SKILL.md when sources disagree.
 
+> **Reference-only for locked surfaces.** Some screens/chrome are pinned to the source code (the
+> authoritative list is in `docs/design/DESIGN_RECONCILIATION.md`). For those, read the design
+> docs below for context, but **do not implement them over the as-is** — the design is
+> reference-only there.
+
 ## `itinerry_visa_assessment_prototype_v2.html` — behavior source of truth
 
 A single self-contained vanilla-JS mock. It is the **ground truth for how things behave**, but

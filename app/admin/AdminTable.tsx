@@ -13,10 +13,17 @@ const VISA_LABEL: Record<string, string> = {
   tourist: "ท่องเที่ยว", visitor: "เยี่ยมเยียน", business: "ธุรกิจ", student: "นักเรียน",
 };
 
+type Account = { full_name: string | null; line_display_name: string | null; phone: string | null; is_friend: boolean | null };
+type Trip = { visa_type: string; destination: string };
+
 type Row = {
-  id: string; created_at: string; full_name: string; line_display_name: string | null;
-  visa_type: string; destination: string; phone: string; contact_preference: string;
-  is_friend: boolean | null; status: string; savings_balance: string;
+  id: string;
+  created_at: string;
+  occupation: string;
+  status: string;
+  contact_preference: string;
+  account: Account | null;
+  trip: Trip | null;
 };
 
 export default function AdminTable({ rows }: { rows: Row[] }) {
@@ -39,39 +46,43 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((s) => (
-            <tr
-              key={s.id}
-              onClick={() => router.push(`/admin/${s.id}`)}
-              className="border-b border-gray-50 hover:bg-blue-50 transition-colors cursor-pointer"
-            >
-              <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                {new Date(s.created_at).toLocaleDateString("th-TH", {
-                  day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
-                })}
-              </td>
-              <td className="px-4 py-3 font-medium text-gray-800">{s.full_name}</td>
-              <td className="px-4 py-3 text-gray-600">{s.line_display_name ?? "—"}</td>
-              <td className="px-4 py-3">
-                <span className="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium">
-                  {VISA_LABEL[s.visa_type] ?? s.visa_type}
-                </span>
-              </td>
-              <td className="px-4 py-3 text-gray-600 uppercase">{s.destination}</td>
-              <td className="px-4 py-3 text-gray-600">{s.phone}</td>
-              <td className="px-4 py-3 text-gray-600">
-                {s.contact_preference === "line" ? "💬 LINE" : s.contact_preference === "call" ? "📞 โทร" : s.contact_preference}
-              </td>
-              <td className="px-4 py-3 text-center">
-                {s.is_friend === true ? "✅" : s.is_friend === false ? "❌" : "—"}
-              </td>
-              <td className="px-4 py-3">
-                <span className={`px-2 py-1 rounded-lg text-xs font-medium ${STATUS_COLOR[s.status] ?? ""}`}>
-                  {STATUS_LABEL[s.status] ?? s.status}
-                </span>
-              </td>
-            </tr>
-          ))}
+          {rows.map((s) => {
+            const acc = s.account;
+            const trip = s.trip;
+            return (
+              <tr
+                key={s.id}
+                onClick={() => router.push(`/admin/${s.id}`)}
+                className="border-b border-gray-50 hover:bg-blue-50 transition-colors cursor-pointer"
+              >
+                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                  {new Date(s.created_at).toLocaleDateString("th-TH", {
+                    day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
+                  })}
+                </td>
+                <td className="px-4 py-3 font-medium text-gray-800">{acc?.full_name ?? "—"}</td>
+                <td className="px-4 py-3 text-gray-600">{acc?.line_display_name ?? "—"}</td>
+                <td className="px-4 py-3">
+                  <span className="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium">
+                    {trip ? (VISA_LABEL[trip.visa_type] ?? trip.visa_type) : "—"}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-gray-600 uppercase">{trip?.destination ?? "—"}</td>
+                <td className="px-4 py-3 text-gray-600">{acc?.phone ?? "—"}</td>
+                <td className="px-4 py-3 text-gray-600">
+                  {s.contact_preference === "line" ? "💬 LINE" : s.contact_preference === "call" ? "📞 โทร" : s.contact_preference}
+                </td>
+                <td className="px-4 py-3 text-center">
+                  {acc?.is_friend === true ? "✅" : acc?.is_friend === false ? "❌" : "—"}
+                </td>
+                <td className="px-4 py-3">
+                  <span className={`px-2 py-1 rounded-lg text-xs font-medium ${STATUS_COLOR[s.status] ?? ""}`}>
+                    {STATUS_LABEL[s.status] ?? s.status}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
       {rows.length === 0 && (

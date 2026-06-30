@@ -6,9 +6,9 @@ import {
   LINE_CALLBACK_URL,
 } from "./constants";
 
-const secret = new TextEncoder().encode(
-  process.env.LINE_CHANNEL_SECRET ?? "fallback-dev-secret-32-chars-long!!"
-);
+const rawSecret = process.env.LINE_CHANNEL_SECRET;
+if (!rawSecret) throw new Error("LINE_CHANNEL_SECRET is not set");
+const secret = new TextEncoder().encode(rawSecret);
 
 export interface LineProfile {
   userId: string;
@@ -21,7 +21,7 @@ export function buildLineAuthUrl(state: string): string {
     response_type: "code",
     client_id: process.env.LINE_CHANNEL_ID ?? "",
     redirect_uri: LINE_CALLBACK_URL,
-    scope: "profile openid",
+    scope: "profile openid friendship_status_read",
     state,
     bot_prompt: "aggressive",
   });

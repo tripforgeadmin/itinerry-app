@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "./lib/line";
+import { verifyAdminSession } from "./app/api/admin/login/route";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Admin routes — check admin_session cookie
+  // Admin routes — verify signed JWT (not raw password)
   if (pathname.startsWith("/admin")) {
     if (pathname.startsWith("/admin/login")) return NextResponse.next();
     const adminSession = request.cookies.get("admin_session")?.value;
-    if (adminSession !== process.env.ADMIN_PASSWORD) {
+    if (!adminSession || !(await verifyAdminSession(adminSession))) {
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }
     return NextResponse.next();

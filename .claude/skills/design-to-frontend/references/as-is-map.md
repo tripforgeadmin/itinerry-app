@@ -75,6 +75,14 @@ hand-written routing. Add/adjust questions here; the renderer follows.
 routing/profile → `lib/line.ts` + `app/api/auth/*`. The design's "route to LINE / phone
 callback" maps onto these — extend, don't replace.
 
+## As-is locked surfaces
+
+Some surfaces are pinned to the source code (the entry/auth/exit screens + parts of the top-bar
+chrome) — kept as-is, their design screens reference-only. **The authoritative list with exact
+files lives in `docs/design/DESIGN_RECONCILIATION.md`.** Read it in Phase 0 and mark those
+**as-is locked (keep)**. The map above shows where those files sit; *which* are locked is project
+data in the reconciliation doc, not something to infer or hardcode here.
+
 ## Reconciliation pointers (feed the Phase 0 gap report)
 
 - **Tokens:** `app/globals.css` `@theme` is the live source; `docs/design/styles/tokens.css` is

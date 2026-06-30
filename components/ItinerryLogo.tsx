@@ -1,11 +1,13 @@
 interface ItinerryLogoProps {
   size?: "sm" | "md" | "lg";
   variant?: "color" | "white";
+  /** Explicit pixel height, overrides `size`. Used to nudge the wordmark larger in fixed-height bars. */
+  height?: number;
 }
 
-export function ItinerryLogo({ size = "md", variant = "color" }: ItinerryLogoProps) {
+export function ItinerryLogo({ size = "md", variant = "color", height }: ItinerryLogoProps) {
   const heights = { sm: 22, md: 32, lg: 44 };
-  const h = heights[size];
+  const h = height ?? heights[size];
 
   const itiColor = variant === "white" ? "#ffffff" : "#00C3FF";
   const nerryColor = variant === "white" ? "rgba(255,255,255,0.9)" : "#1b3d5c";

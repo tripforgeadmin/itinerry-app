@@ -94,7 +94,7 @@ export default function DonePage() {
               <p className="text-center text-white/30 text-xs pb-3">@448yxrvh</p>
 
               {/* Add Friend Button */}
-              <div className="px-4 pb-5">
+              <div className="px-4 pb-4">
                 <a
                   href={LINE_OA_URL}
                   target="_blank"
@@ -108,6 +108,20 @@ export default function DonePage() {
               </div>
             </>
           )}
+
+          {/* Always show: กลับไปที่แชท LINE */}
+          <div className="px-6 pb-5 pt-1">
+            <a
+              href={LINE_OA_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-[0.98]"
+              style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}
+            >
+              <LineIcon />
+              กลับไปที่แชท LINE
+            </a>
+          </div>
         </motion.div>
 
         {/* Steps */}

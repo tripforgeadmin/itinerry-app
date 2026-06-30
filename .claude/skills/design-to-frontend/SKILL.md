@@ -65,10 +65,29 @@ matters.
 > If the user points you at a specific file, that's the lead — but still apply precedence to
 > resolve conflicts, and say so.
 
+## The reconciliation lives in data, not in this skill
+
+Which surfaces follow the design vs the source code, the token-drift specifics, the data-model
+deltas — these are **project facts**, not transformation logic, so they don't belong hardcoded
+here. They live in **`docs/design/DESIGN_RECONCILIATION.md`** (the as-is↔to-be record). Read it
+at the start of Phase 0; it is authoritative and **overrides the raw design where they conflict**.
+
+Two patterns from it that shape every build:
+
+- **"As-is locked (keep)" is a first-class classification** alongside reuse / migrate /
+  build-fresh. Some surfaces are pinned to the source code — kept untouched, their design screens
+  read for *context only*. The reconciliation doc names them (e.g. the entry/auth/exit screens and
+  parts of the top-bar chrome). Never reskin a locked surface; if a token/primitive change would
+  alter one, flag it first. If the user later asks to reskin one, that's a scoped, explicit call.
+- **Reskin scope is therefore narrower than "the whole design"** — typically the in-flow question
+  screens, shared visual foundations, and unlocked chrome. Confirm the exact scope from the doc
+  + the Phase 0 gap analysis, not from assumptions.
+
 ## Inputs at a glance
 
 | File | Role |
 |---|---|
+| **`docs/design/DESIGN_RECONCILIATION.md`** | **Project as-is↔to-be decisions (locked surfaces, token/data deltas) — read first; overrides the raw design where they conflict** |
 | `docs/design/itinerry_visa_assessment_prototype_v2.html` | Behavior source of truth (vanilla-JS mock) |
 | `docs/design/itinerry_screens_detail.md` | Per-screen layout + GATING/INTERACTIONS/EDGE CASES (18 screens) |
 | `docs/design/itinerry_design_spec.md` | Intent, tokens, chrome, motion, §9 prod-vs-prototype |
@@ -103,12 +122,13 @@ starting that phase. Keep a short `docs/design/IMPLEMENTATION_PLAN.md` as the ru
 work survives across sessions and checkpoints.
 
 **Phase 0 — Intake & Gap Analysis (no code yet).**
-Read the design docs (per precedence) and the as-is code/DB/services. Produce a written
-**as-is ↔ to-be gap report** + a phased plan. Cover: token drift (run
-`scripts/token_diff.py`), components that can be reused vs need building vs need migrating,
-screens already implemented vs missing, data-model/service deltas (Supabase columns vs the
-spec's field map, LINE routing). Recommend **reuse / migrate / build-fresh per item** and let
-the user confirm scope before any code. → **STOP.**
+Read `docs/design/DESIGN_RECONCILIATION.md` first (it carries the decided project facts), then the
+design docs (per precedence) and the as-is code/DB/services. Produce a written **as-is ↔ to-be gap
+report** + a phased plan that *picks up where the reconciliation doc leaves off*: token drift (run
+`scripts/token_diff.py`), components to reuse vs build vs migrate, screens implemented vs missing,
+data-model/service deltas. Recommend **reuse / migrate / build-fresh / as-is locked (keep) per
+item** — carry the locked surfaces from the reconciliation doc as *keep* — and let the user
+confirm scope before any code. → **STOP.**
 
 **Phase 1 — Design system.**
 Make tokens a single source of truth in `app/globals.css`: reconcile the drift the gap report
@@ -117,15 +137,19 @@ and document typography, spacing, radius, shadow, and motion durations. No compo
 just the foundation everything else consumes via Tailwind utilities. → **STOP.**
 
 **Phase 2 — Primitives & shared chrome.**
-Build the small reusable pieces every screen needs: the glass choice card, sticky CTA / footer,
-top bar with the 3 liquid progress boxes, the elephant loader overlay, screen-transition
-wrapper, form field primitives. Each consumes Phase-1 tokens only. → **STOP.**
+Build the small reusable pieces every question screen needs: the glass choice card, sticky CTA /
+footer, the elephant loader overlay, screen-transition wrapper, form field primitives. Restyle
+only the **unlocked** chrome (e.g. the top-bar progress visual) — **reuse the locked top-bar
+elements** (logo + language toggle, per the reconciliation doc) rather than re-creating them, and
+leave the locked entry/auth/exit screens untouched. Each consumes Phase-1 tokens only. → **STOP.**
 
 **Phase 3 — Screens.**
-Build screens from `itinerry_screens_detail.md`, composing Phase-2 primitives. Translate each
-screen's **GATING boolean → enable logic**, **INTERACTIONS → handlers**, **EDGE CASES → guards**.
-Default to one logical group per checkpoint (the user may ask for one screen at a time, or a
-whole phase of the flow). Don't invent state here — wire to the model decided in Phase 0. → **STOP.**
+Build the **in-flow question screens** from `itinerry_screens_detail.md`, composing Phase-2
+primitives. Translate each screen's **GATING boolean → enable logic**, **INTERACTIONS → handlers**,
+**EDGE CASES → guards**. **Skip the as-is locked screens** (per the reconciliation doc) — they stay
+as source code and their design screens are reference-only. Default to one logical group per
+checkpoint (the user may ask for one screen at a time, or a whole phase of the flow). Don't invent
+state here — wire to the model decided in Phase 0. → **STOP.**
 
 **Phase 4 — Flow wiring & services.**
 Connect navigation/branching (reuse the `nextId` model in `lib/questions.ts`), the persisted
@@ -154,13 +178,21 @@ the user has eyeballed beats a fast full build they have to unwind.
 
 ## Critical gotchas
 
+- **Some surfaces are as-is locked — do not reskin them.** Certain screens/chrome follow the
+  **source code**, not the design; their design screens are reference-only. The authoritative list
+  is in `docs/design/DESIGN_RECONCILIATION.md` — check it before touching any entry/auth/exit
+  screen or top-bar chrome.
 - **`design-system.md` is the Astro marketing site, not this app.** Use it for token values and
   brand intent only — never copy its `src/styles/...` paths, Sanity references, or Astro stack.
+- **Look at the wireframe for every screen.** The QUESTIONS data encodes options, not decoration.
+  Before building a screen, open its `docs/design/wireframe/NN.png` — mascots, positive banners,
+  helper lines, and chip-vs-card styling live there, and generic field renderers silently drop
+  them. Building from prose + data alone loses the picture.
 - **Prototype shortcuts ≠ production.** The summary is DOM-scanned in the mock; the spec's §9
   says derive it from state. Always prefer the spec's production guidance.
-- **Token drift is real.** e.g. `--color-logo-primary-color` (tokens.css) vs `--color-logo-primary`
-  (globals.css); the `.dark` theme exists in tokens.css but not yet in globals.css. Reconcile in
-  Phase 1; don't let both drift further.
+- **Token drift is real.** The design token copy and `app/globals.css` have diverged (names,
+  casing, a missing theme block). Run `scripts/token_diff.py` to see the current drift; the known
+  deltas are summarized in the reconciliation doc. Reconcile into `app/globals.css` in Phase 1.
 - **Reuse the existing form engine.** `lib/questions.ts` (QUESTIONS + `nextId` branching) and
   `store/formStore.ts` (Zustand + persist) already model the flow. Extend them; don't fork a
   parallel state system.
