@@ -6,6 +6,7 @@ import { QuestionScreen } from "@/components/form/QuestionScreen";
 import type { Lang } from "@/components/form/QuestionScreen";
 import { useFormStore } from "@/store/formStore";
 import { QUESTIONS_MAP } from "@/lib/questions";
+import type { Question } from "@/lib/questions";
 import { NationalityScreen } from "@/components/screens/NationalityScreen";
 import { CountryScreen } from "@/components/screens/CountryScreen";
 import { VisatypeScreen } from "@/components/screens/VisatypeScreen";
@@ -27,6 +28,13 @@ import { ElephantLoader } from "@/components/ui/ElephantLoader";
 import { computeBoxes, categoryIndexOf } from "@/lib/categories";
 import { NavContext } from "@/lib/navContext";
 import type { ScreenComponent } from "@/components/screens/types";
+
+interface DbQuestion {
+  legacy_id: string;
+  question_text_th: string | null;
+  question_text_en: string | null;
+  options: { value: string; label_th: string | null; label_en: string | null }[] | null;
+}
 
 // Screens reskinned to the new design (Phase 3). Anything not listed falls back to the legacy
 // QuestionScreen, so the flow stays end-to-end during the screen-by-screen migration.
@@ -73,6 +81,7 @@ export default function QuestionnairePage() {
   const [mounted, setMounted] = useState(false);
   const [lang, setLang] = useState<Lang>("th");
   const [loaderState, setLoaderState] = useState<{ cap: string; sub?: string } | null>(null);
+  const [questionsMap, setQuestionsMap] = useState<Record<string, Question>>(QUESTIONS_MAP);
   const prevPosRef = useRef(pos);
   const loaderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -114,7 +123,7 @@ export default function QuestionnairePage() {
   );
 
   const currentId = history[pos];
-  const question = QUESTIONS_MAP[currentId];
+  const question = questionsMap[currentId];
 
   if (!question) return null;
 

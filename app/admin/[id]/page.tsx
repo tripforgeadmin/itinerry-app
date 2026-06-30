@@ -6,8 +6,6 @@ import AnonymizeButton from "./AnonymizeButton";
 
 export const dynamic = "force-dynamic";
 
-export const dynamic = "force-dynamic";
-
 const LABELS: Record<string, Record<string, string>> = {
   visa_type: { tourist: "ท่องเที่ยว", visitor: "เยี่ยมเยียน", business: "ธุรกิจ", student: "นักเรียน" },
   occupation: { employee: "พนักงานประจำ", government: "ข้าราชการ", freelance: "Freelance", business_owner: "เจ้าของธุรกิจ", retired: "เกษียณ", homemaker: "แม่บ้าน", student_occ: "นักเรียน/นักศึกษา" },
@@ -127,12 +125,10 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         <StatusUpdater id={s.id as string} currentStatus={s.status as string} />
 
         {/* PDPA anonymize */}
-        {acc && (
-          <AnonymizeButton
-            accountId={acc.id as string}
-            isAnonymized={acc.full_name === "[ลบแล้ว]"}
-          />
-        )}
+        <AnonymizeButton
+          accountId={account.id as string}
+          isAnonymized={account.full_name === "[ลบแล้ว]"}
+        />
 
         {/* LINE */}
         <Section title="LINE">

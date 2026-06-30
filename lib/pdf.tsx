@@ -130,6 +130,7 @@ export async function generateAssessmentPdf(
   answers: Record<string, string>,
   submittedAt: string,
 ): Promise<Buffer> {
-  const element = React.createElement(AssessmentDocument, { answers, submittedAt });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const element = React.createElement(AssessmentDocument, { answers, submittedAt }) as any;
   return await renderToBuffer(element);
 }

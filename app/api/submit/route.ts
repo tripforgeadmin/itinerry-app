@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
   for (const [qKey, semanticKey] of Object.entries(branchMap)) {
     const val = answers[qKey];
     if (val && val !== "") {
-      branchAnswers[key] = key === "q12" || key === "q16" || key === "q20" ? toArray(val) : val;
+      branchAnswers[semanticKey] = multiSelectBranchKeys.has(qKey) ? toArray(val) : val;
     }
   }
 
@@ -153,6 +153,28 @@ export async function POST(request: NextRequest) {
     console.error("assessment insert error:", assessError);
     return NextResponse.json({ ok: false, error: assessError.message }, { status: 500 });
   }
+
+  // Fire-and-forget: generate PDF and send email notification
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  void (async () => {
+    try {
+      const pdfBuffer = await generateAssessmentPdf(answers, new Date().toISOString());
+      await sendNewLeadEmail({
+        assessmentId: trip.id,
+        fullName: fullName ?? "",
+        phone: answers.q5 ?? "",
+        visaType: answers.q9 ?? "",
+        destination: answers.q8 ?? "",
+        travelArrival: answers.q10 ?? answers.q13 ?? answers.q17 ?? "",
+        travelReturn: answers.q11 ?? answers.q18 ?? "",
+        contactPreference: answers.q36 ?? "",
+        appUrl,
+        pdfBuffer,
+      });
+    } catch (err) {
+      console.error("email/pdf error:", err);
+    }
+  })();
 
   return NextResponse.json({ ok: true });
 }
