@@ -15,22 +15,16 @@ export default async function AdminPage() {
     return <div className="p-8 text-red-500">Error: {error.message}</div>;
   }
 
-  // Flatten the normalized join into the flat row shape AdminTable expects.
   const submissions = (data ?? []).map((r) => {
-    const account = (Array.isArray(r.account) ? r.account[0] : r.account) ?? {};
-    const trip = (Array.isArray(r.trip) ? r.trip[0] : r.trip) ?? {};
+    const account = (Array.isArray(r.account) ? r.account[0] : r.account) ?? null;
+    const trip = (Array.isArray(r.trip) ? r.trip[0] : r.trip) ?? null;
     return {
       id: r.id,
       created_at: r.created_at,
       status: r.status,
       contact_preference: r.contact_preference,
-      savings_balance: r.savings_balance,
-      full_name: account.full_name ?? "",
-      line_display_name: account.line_display_name ?? null,
-      phone: account.phone ?? "",
-      is_friend: account.is_friend ?? null,
-      visa_type: trip.visa_type ?? "",
-      destination: trip.destination ?? "",
+      account,
+      trip,
     };
   });
 
