@@ -26,9 +26,9 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e2e8f0",
   },
-  row: { flexDirection: "row", marginBottom: 6 },
-  label: { width: 200, color: "#64748b", paddingRight: 8 },
-  value: { flex: 1 },
+  row: { flexDirection: "row", marginBottom: 6, alignItems: "flex-start" },
+  label: { flex: 2, color: "#64748b", paddingRight: 12 },
+  value: { flex: 3 },
 });
 
 type AnsweredQuestion = {
