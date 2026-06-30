@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+
+export async function GET() {
+  return NextResponse.json({ ok: true });
+}
 import { supabase } from "@/lib/supabase";
 import { replyMessage, confirmDeleteMessage } from "@/lib/line-messaging";
 import { anonymizeAccount } from "@/lib/anonymize";
