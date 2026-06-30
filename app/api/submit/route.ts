@@ -159,27 +159,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: assessError.message }, { status: 500 });
   }
 
-  // Fire-and-forget: generate PDF and send email notification
+  // Send email notification (awaited — Vercel kills fire-and-forget before response)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
-  void (async () => {
-    try {
-      const pdfBuffer = await generateAssessmentPdf(answers, new Date().toISOString());
-      await sendNewLeadEmail({
-        assessmentId: trip.id,
-        fullName: fullName ?? "",
-        phone: answers.q5 ?? "",
-        visaType: answers.q9 ?? "",
-        destination: answers.q8 ?? "",
-        travelArrival: answers.q10 ?? answers.q13 ?? answers.q17 ?? "",
-        travelReturn: answers.q11 ?? answers.q18 ?? "",
-        contactPreference: answers.q36 ?? "",
-        appUrl,
-        pdfBuffer,
-      });
-    } catch (err) {
-      console.error("email/pdf error:", err);
-    }
-  })();
+  try {
+    const pdfBuffer = await generateAssessmentPdf(answers, new Date().toISOString());
+    await sendNewLeadEmail({
+      assessmentId: trip.id,
+      fullName: fullName ?? "",
+      phone: answers.q5 ?? "",
+      visaType: answers.q9 ?? "",
+      destination: answers.q8 ?? "",
+      travelArrival: answers.q10 ?? answers.q13 ?? answers.q17 ?? "",
+      travelReturn: answers.q11 ?? answers.q18 ?? "",
+      contactPreference: answers.q36 ?? "",
+      appUrl,
+      pdfBuffer,
+    });
+  } catch (err) {
+    console.error("email/pdf error:", err);
+  }
 
   return NextResponse.json({ ok: true });
 }
