@@ -11,7 +11,7 @@ import { anonymizeAccount } from "@/lib/anonymize";
 const TRIGGER_KEYWORDS = ["ยกเลิกข้อมูล", "ลบข้อมูล", "pdpa", "ถอนความยินยอม"];
 
 function verifySignature(body: string, signature: string): boolean {
-  const secret = process.env.LINE_CHANNEL_SECRET ?? "";
+  const secret = process.env.LINE_MESSAGING_CHANNEL_SECRET ?? "";
   const hash = crypto.createHmac("sha256", secret).update(body).digest("base64");
   return hash === signature;
 }
