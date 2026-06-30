@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     savings_balance:      answers.q34 ?? "",
     ties_thailand:        toArray(answers.q35),
     contact_preference:   answers.q36 ?? "",
-    callback_time:        toNull(answers.q37),
+    callback_time:        answers.q37 === "other" ? toNull(answers.q37_other) : toNull(answers.q37),
     branch_answers:       branchAnswers,
   });
   if (assessError) {
