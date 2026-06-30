@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
 import { LIFF_DEEPLINK } from "@/lib/constants";
 import { useTypewriter } from "@/lib/useTypewriter";
+import { useFormStore } from "@/store/formStore";
 
 const TAGLINES = [
   "ประเมินความเสี่ยงล่วงหน้าก่อนยื่นวีซ่า",
@@ -33,6 +34,7 @@ export default function AuthPage() {
 
   function handleLineLogin() {
     setLoading(true);
+    useFormStore.getState().reset();
     const state = crypto.randomUUID();
     sessionStorage.setItem("line_state", state);
     window.location.href = `/api/auth/login?state=${state}`;
