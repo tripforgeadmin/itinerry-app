@@ -17,18 +17,17 @@ const STEPS = [
   { icon: "💬", text: "รับผลผ่าน LINE ใน 24 ชม." },
 ];
 
-function isInAppBrowser(): boolean {
-  const ua = navigator.userAgent;
-  return /FBAN|FBAV|Instagram/.test(ua);
+function isLineBrowser(): boolean {
+  return /Line\//i.test(navigator.userAgent);
 }
 
 export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [taglineIndex, setTaglineIndex] = useState(0);
-  const [showIAB, setShowIAB] = useState(false);
+  const [showOpenInLine, setShowOpenInLine] = useState(false);
 
   useEffect(() => {
-    if (isInAppBrowser()) setShowIAB(true);
+    if (!isLineBrowser()) setShowOpenInLine(true);
   }, []);
 
   useEffect(() => {
@@ -45,16 +44,16 @@ export default function AuthPage() {
     window.location.href = `/api/auth/login?state=${state}`;
   }
 
-  if (showIAB) {
+  if (showOpenInLine) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center px-6 bg-surface">
         <div className="w-full max-w-sm flex flex-col items-center gap-6 text-center">
           <img src="/itin.png" alt="" className="w-24 h-24 object-contain" />
           <div className="space-y-2">
-            <h1 className="text-xl font-bold text-primary">กรุณาเปิดใน LINE</h1>
+            <h1 className="text-xl font-bold text-primary">เปิดในแอป LINE</h1>
             <p className="text-sm text-muted leading-relaxed">
-              เบราว์เซอร์นี้ไม่รองรับการเข้าสู่ระบบด้วย LINE<br />
-              กดปุ่มด้านล่างเพื่อเปิดในแอป LINE
+              กดปุ่มด้านล่างเพื่อเปิดในแอป LINE<br />
+              แล้วเข้าสู่ระบบได้เลย
             </p>
           </div>
           <a
@@ -65,10 +64,6 @@ export default function AuthPage() {
             <LineIcon />
             เปิดใน LINE
           </a>
-          <p className="text-xs text-muted text-center leading-relaxed">
-            หากกดแล้วไม่มีอะไรเกิดขึ้น<br />
-            ให้คัดลอก URL แล้วเปิดในแอป LINE แทน
-          </p>
         </div>
       </main>
     );
