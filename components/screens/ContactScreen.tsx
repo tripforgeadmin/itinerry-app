@@ -37,6 +37,7 @@ export function ContactScreen({
   const email = answers["q6"] ?? "";
   const channel = answers["q36"] ?? "";
   const time = answers["q37"] ?? "";
+  const timeOther = answers["q37_other"] ?? "";
   const isCall = channel === "call";
 
   function setName(part: "first" | "last", v: string) {
@@ -50,7 +51,8 @@ export function ContactScreen({
   const phoneOk = isValidPhone(cc, phone);
   const phoneErr = phone && !phoneOk ? (lang === "th" ? "รูปแบบเบอร์โทรไม่ถูกต้อง" : "Invalid phone number") : null;
   const emailErr = email && !EMAIL_RE.test(email) ? (lang === "th" ? "รูปแบบอีเมลไม่ถูกต้อง" : "Invalid email") : null;
-  const gateOk = nameOk && phoneOk && EMAIL_RE.test(email) && !!channel && (!isCall || !!time);
+  const timeOk = !isCall || (!!time && (time !== "other" || timeOther.trim().length > 0));
+  const gateOk = nameOk && phoneOk && EMAIL_RE.test(email) && !!channel && timeOk;
 
   const q36 = QUESTIONS_MAP["q36"];
   const q37 = QUESTIONS_MAP["q37"];
@@ -101,10 +103,20 @@ export function ContactScreen({
       <RevealBlock open={isCall}>
         <div className="pt-3">
           <SegmentedControl
+            columns={2}
             segments={(q37.options ?? []).map((o) => ({ value: o.value, label: lang === "th" ? o.label : o.labelEn ?? o.label }))}
             value={time || null}
             onChange={(v) => onAnswer("q37", v)}
           />
+          <RevealBlock open={time === "other"}>
+            <div className="pt-3">
+              <TextField
+                value={timeOther}
+                onChange={(e) => onAnswer("q37_other", e.target.value)}
+                placeholder={lang === "th" ? q37.otherPlaceholder : q37.otherPlaceholderEn}
+              />
+            </div>
+          </RevealBlock>
         </div>
       </RevealBlock>
 
