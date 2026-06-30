@@ -43,6 +43,10 @@ export async function POST(request: NextRequest) {
   const isFriendCookie = cookieStore.get("isFriend")?.value;
   const profile = token ? await verifySessionToken(token) : null;
 
+  if (!profile) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
   const body = await request.json();
   const { answers } = body as { answers: Record<string, string> };
 

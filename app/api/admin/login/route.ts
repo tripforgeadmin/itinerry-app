@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SignJWT, jwtVerify } from "jose";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 function getAdminSecret() {
   const pw = process.env.ADMIN_PASSWORD;
@@ -8,6 +9,11 @@ function getAdminSecret() {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  if (!checkRateLimit(`admin_login:${ip}`, 5, 15 * 60 * 1000)) {
+    return NextResponse.json({ ok: false, error: "too many attempts" }, { status: 429 });
+  }
+
   const { password } = await request.json();
   const adminPassword = process.env.ADMIN_PASSWORD;
 

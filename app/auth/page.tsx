@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
+import { LIFF_URL } from "@/lib/constants";
 
 const TAGLINES = [
   "ประเมินความเสี่ยงล่วงหน้าก่อนยื่นวีซ่า",
@@ -16,9 +17,19 @@ const STEPS = [
   { icon: "💬", text: "รับผลผ่าน LINE ใน 24 ชม." },
 ];
 
+function isInAppBrowser(): boolean {
+  const ua = navigator.userAgent;
+  return /FBAN|FBAV|Instagram/.test(ua);
+}
+
 export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [taglineIndex, setTaglineIndex] = useState(0);
+  const [showIAB, setShowIAB] = useState(false);
+
+  useEffect(() => {
+    if (isInAppBrowser()) setShowIAB(true);
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -32,6 +43,31 @@ export default function AuthPage() {
     const state = crypto.randomUUID();
     sessionStorage.setItem("line_state", state);
     window.location.href = `/api/auth/login?state=${state}`;
+  }
+
+  if (showIAB) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center px-6 bg-surface">
+        <div className="w-full max-w-sm flex flex-col items-center gap-6 text-center">
+          <img src="/itin.png" alt="" className="w-24 h-24 object-contain" />
+          <div className="space-y-2">
+            <h1 className="text-xl font-bold text-primary">กรุณาเปิดใน LINE</h1>
+            <p className="text-sm text-muted leading-relaxed">
+              เบราว์เซอร์นี้ไม่รองรับการเข้าสู่ระบบด้วย LINE<br />
+              กดปุ่มด้านล่างเพื่อเปิดในแอป LINE
+            </p>
+          </div>
+          <a
+            href={LIFF_URL}
+            className="w-full flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-bold text-base shadow-lg"
+            style={{ backgroundColor: "#06c755", boxShadow: "0 4px 24px rgba(6,199,85,0.3)" }}
+          >
+            <LineIcon />
+            เปิดใน LINE
+          </a>
+        </div>
+      </main>
+    );
   }
 
   return (
