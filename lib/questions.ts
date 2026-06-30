@@ -26,6 +26,9 @@ export interface Question {
   options?: Option[];
   required?: boolean;
   defaultNextId?: string;
+  /** For a return-date question: id of the arrival-date question it must not precede (DateScreen
+   * uses it to default/clamp the return and show the stay duration). */
+  returnFromId?: string;
   allowOtherText?: boolean;
   otherPlaceholder?: string;
   otherPlaceholderEn?: string;
@@ -165,7 +168,6 @@ export const QUESTIONS: Question[] = [
       { value: "ae", label: "สหรัฐอาหรับเอมิเรตส์", labelEn: "United Arab Emirates" },
       { value: "sa", label: "ซาอุดีอาระเบีย", labelEn: "Saudi Arabia" },
       { value: "qa", label: "กาตาร์", labelEn: "Qatar" },
-      { value: "eu", label: "สหภาพยุโรป", labelEn: "European Union" },
       { value: "gr", label: "กรีซ", labelEn: "Greece" },
       { value: "ke", label: "เคนยา", labelEn: "Kenya" },
       { value: "dk", label: "เดนมาร์ก", labelEn: "Denmark" },
@@ -214,6 +216,7 @@ export const QUESTIONS: Question[] = [
       { value: "visitor", label: "วีซ่าเยี่ยมเยียน", labelEn: "Visitor", emoji: "👨‍👩‍👧", nextId: "q13" },
       { value: "business", label: "วีซ่าธุรกิจ", labelEn: "Business", emoji: "🤝", nextId: "q17" },
       { value: "student", label: "วีซ่านักเรียน", labelEn: "Student", emoji: "🎓", nextId: "q21" },
+      { value: "other", label: "วีซ่าประเภทอื่นๆ (โปรดระบุ)", labelEn: "Other visa type", emoji: "✨", nextId: "q10" },
     ],
   },
 
@@ -237,6 +240,7 @@ export const QUESTIONS: Question[] = [
     questionEn: "Planned Return Date",
     required: true,
     defaultNextId: "q12",
+    returnFromId: "q10",
     section: "S2A",
     sectionTitle: "วีซ่าท่องเที่ยว",
     sectionTitleEn: "Tourist Visa",
@@ -358,6 +362,7 @@ export const QUESTIONS: Question[] = [
     questionEn: "Planned Return Date",
     required: true,
     defaultNextId: "q19",
+    returnFromId: "q17",
     section: "S2C",
     sectionTitle: "วีซ่าธุรกิจ",
     sectionTitleEn: "Business Visa",

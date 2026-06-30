@@ -5,12 +5,13 @@ import { ChoiceRow } from "@/components/ui/ChoiceRow";
 import { QuestionShell } from "@/components/screens/QuestionShell";
 import type { ScreenProps } from "@/components/screens/types";
 
-// visa value → mascot (the real q9 has 4 options; design's 5th "อื่นๆ" is not in the data).
+// visa value → mascot. "other" (โปรดระบุ) branches through the Tourist questions (nextId q10).
 const IMG: Record<string, string> = {
   tourist: "/mascot/itin-travel-visa-cut.png",
   visitor: "/mascot/itin-visit-visa-cut.png",
   business: "/mascot/itin-business-visa-cut.png",
   student: "/mascot/itin-student-visa-cut.png",
+  other: "/mascot/itin-other-visa-cut.png",
 };
 
 /** Screen 4 · visatype (q9) — auto-advance choice rows; branching via each option's nextId. */
@@ -67,6 +68,16 @@ export function VisatypeScreen({
           />
         ))}
       </div>
+
+      {/* Note for the "other visa type" card — an expert follows up for details. */}
+      <p className="mt-3 flex items-start gap-1.5 px-1 text-xs leading-relaxed text-muted-soft">
+        <span aria-hidden>ℹ️</span>
+        <span>
+          {lang === "th"
+            ? "เลือก “วีซ่าประเภทอื่นๆ” ได้เลย — ผู้เชี่ยวชาญของเราจะติดต่อกลับเพื่อสอบถามรายละเอียดเพิ่มเติม"
+            : "Pick “Other visa type” — our expert will follow up to ask for more details"}
+        </span>
+      </p>
     </QuestionShell>
   );
 }

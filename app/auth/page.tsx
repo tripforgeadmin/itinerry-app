@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
 import { LIFF_DEEPLINK } from "@/lib/constants";
+import { useTypewriter } from "@/lib/useTypewriter";
 
 const TAGLINES = [
   "ประเมินความเสี่ยงล่วงหน้าก่อนยื่นวีซ่า",
@@ -13,8 +14,8 @@ const TAGLINES = [
 
 const STEPS = [
   { icon: "📋", text: "ตอบคำถาม ~2 นาที" },
-  { icon: "🔍", text: "ทีมวิเคราะห์โอกาสวีซ่า" },
-  { icon: "💬", text: "รับผลผ่าน LINE ใน 24 ชม." },
+  { icon: "🔍", text: "ทีมผู้เชี่ยวชาญวิเคราะห์โอกาสวีซ่า" },
+  { icon: "💬", text: "รับผล + คำแนะนำผ่าน LINE ใน 24 ชม." },
 ];
 
 function isLineBrowser(): boolean {
@@ -23,18 +24,11 @@ function isLineBrowser(): boolean {
 
 export default function AuthPage() {
   const [loading, setLoading] = useState(false);
-  const [taglineIndex, setTaglineIndex] = useState(0);
   const [showOpenInLine, setShowOpenInLine] = useState(false);
+  const typed = useTypewriter(TAGLINES);
 
   useEffect(() => {
     if (!isLineBrowser()) setShowOpenInLine(true);
-  }, []);
-
-  useEffect(() => {
-    const t = setInterval(() => {
-      setTaglineIndex((i) => (i + 1) % TAGLINES.length);
-    }, 2800);
-    return () => clearInterval(t);
   }, []);
 
   function handleLineLogin() {
@@ -84,14 +78,20 @@ export default function AuthPage() {
 
       <div className="relative flex-1 flex flex-col items-center justify-start px-5 pt-6 pb-8 max-w-sm mx-auto w-full">
 
-        {/* Logo */}
+        {/* Logo + floating mascot */}
         <motion.div
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="mb-4 flex flex-col items-center gap-2"
         >
-          <img src="/itin.png" alt="" className="w-44 h-44 object-contain" />
+          <motion.img
+            src="/itin.png"
+            alt=""
+            className="w-44 h-44 object-contain"
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+          />
           <ItinerryLogo size="lg" />
         </motion.div>
 
@@ -103,22 +103,40 @@ export default function AuthPage() {
           className="text-center mb-4"
         >
           <h1 className="text-2xl font-bold text-primary leading-snug mb-2">
-            เช็คโอกาสผ่านวีซ่าก่อนยื่น <span className="text-logo-primary">ฟรี!</span>
-          </h1>
-          <div className="h-8 overflow-hidden relative">
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={taglineIndex}
-                initial={{ rotateX: -90, opacity: 0 }}
-                animate={{ rotateX: 0, opacity: 1 }}
-                exit={{ rotateX: 90, opacity: 0 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-                style={{ transformOrigin: "center" }}
-                className="text-base font-bold text-muted absolute inset-0 flex items-center justify-center"
+            เช็คโอกาสผ่านวีซ่าก่อนยื่น{" "}
+            {/* "ฟรี!" circled for emphasis */}
+            <span className="relative inline-block text-logo-primary">
+              ฟรี!
+              <svg
+                className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                style={{ width: "150%", height: "180%" }}
+                viewBox="0 0 100 60"
+                preserveAspectRatio="none"
+                fill="none"
+                aria-hidden
               >
-                {TAGLINES[taglineIndex]}
-              </motion.p>
-            </AnimatePresence>
+                <motion.ellipse
+                  cx="50" cy="30" rx="44" ry="24"
+                  stroke="currentColor" strokeWidth="3" strokeLinecap="round"
+                  transform="rotate(-4 50 30)"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{ duration: 0.7, delay: 0.5, ease: "easeInOut" }}
+                />
+              </svg>
+            </span>
+          </h1>
+          {/* typewriter tagline */}
+          <div className="min-h-[3rem] flex items-start justify-center">
+            <p className="text-base font-bold text-muted leading-snug">
+              {typed}
+              <motion.span
+                aria-hidden
+                className="inline-block w-[2px] h-[1.1em] translate-y-[2px] bg-logo-primary ml-0.5 align-middle"
+                animate={{ opacity: [1, 0, 1] }}
+                transition={{ duration: 0.9, repeat: Infinity, ease: "linear" }}
+              />
+            </p>
           </div>
         </motion.div>
 

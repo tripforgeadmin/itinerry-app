@@ -14,14 +14,19 @@ function toISO(d: Date): string {
 interface DateCalendarProps {
   value?: string; // ISO YYYY-MM-DD
   onChange: (iso: string) => void;
+  /** Earliest selectable day (ISO); days before max(today, minDate) are disabled. */
+  minDate?: string;
 }
 
 /** Inline date picker (design spec §5): Thai month + Gregorian (ค.ศ.) year, both selectable via
  * dropdowns, past days disabled, itin_main mascot below. Wraps react-day-picker, tokenized. */
-export function DateCalendar({ value, onChange }: DateCalendarProps) {
+export function DateCalendar({ value, onChange, minDate }: DateCalendarProps) {
   const selected = value ? new Date(`${value}T00:00:00`) : undefined;
-  const now = new Date();
-  // Rolling forward window so the year dropdown always starts at the current year.
+  const today = new Date();
+  // Floor at today; if a minDate (e.g. the arrival date) is later, floor there instead.
+  const minD = minDate ? new Date(`${minDate}T00:00:00`) : today;
+  const now = minD > today ? minD : today;
+  // Rolling forward window so the year dropdown always starts at the floor month.
   const startMonth = new Date(now.getFullYear(), now.getMonth());
   const endMonth = new Date(now.getFullYear() + 4, 11);
 
