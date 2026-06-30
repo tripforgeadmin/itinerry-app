@@ -16,21 +16,9 @@ const STEPS = [
   { icon: "💬", text: "รับผลผ่าน LINE ใน 24 ชม." },
 ];
 
-function detectInAppBrowser(): string | null {
-  if (typeof navigator === "undefined") return null;
-  const ua = navigator.userAgent;
-  if (/FBAN|FBAV|FB_IAB|FBIOS|FBANDROID/i.test(ua)) return "Facebook";
-  if (/Instagram/i.test(ua)) return "Instagram";
-  if (/musical_ly|TikTok/i.test(ua)) return "TikTok";
-  if (/TwitterAndroid|TwitteriPhone/i.test(ua)) return "X (Twitter)";
-  return null;
-}
-
 export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [taglineIndex, setTaglineIndex] = useState(0);
-  const [inAppBrowser, setInAppBrowser] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -38,17 +26,6 @@ export default function AuthPage() {
     }, 2800);
     return () => clearInterval(t);
   }, []);
-
-  useEffect(() => {
-    setInAppBrowser(detectInAppBrowser());
-  }, []);
-
-  function handleCopyUrl() {
-    navigator.clipboard.writeText(window.location.href).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
 
   function handleLineLogin() {
     setLoading(true);
@@ -69,26 +46,6 @@ export default function AuthPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full opacity-5"
           style={{ background: "#ffd166", filter: "blur(100px)" }} />
       </div>
-
-      {/* In-app browser warning */}
-      {inAppBrowser && (
-        <div className="relative z-10 w-full bg-amber-50 border-b border-amber-200 px-4 py-4">
-          <div className="max-w-sm mx-auto">
-            <p className="text-sm font-bold text-amber-800 mb-1">⚠️ เปิดใน {inAppBrowser} Browser</p>
-            <p className="text-xs text-amber-700 mb-3">
-              ไม่สามารถล็อกอิน LINE ได้จาก {inAppBrowser} Browser
-              กรุณาเปิดลิงก์นี้ใน Safari หรือ Chrome
-            </p>
-            <button
-              onClick={handleCopyUrl}
-              className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-95"
-              style={{ backgroundColor: copied ? "#22c55e" : "#f59e0b" }}
-            >
-              {copied ? "✅ คัดลอกแล้ว!" : "📋 คัดลอกลิงก์"}
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="relative flex-1 flex flex-col items-center justify-start px-5 pt-6 pb-8 max-w-sm mx-auto w-full">
 
