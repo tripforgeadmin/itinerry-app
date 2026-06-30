@@ -109,22 +109,24 @@ function BackButton({ onBack }: { onBack?: () => void }) {
 /** Hand-rolled liquid wave (react-wavify-style, no dependency): a 200-wide periodic crest path
  * scrolled left forever — period 50 over a 200 viewBox tiles seamlessly at x: -50%. */
 function Wave() {
+  // motion.div (not motion.svg) so `x` is a real transform translate — on an <svg> framer would
+  // treat `x` as the SVG position attribute and nothing would move.
   return (
-    <motion.svg
-      className="absolute left-0 w-[200%]"
+    <motion.div
+      className="pointer-events-none absolute left-0 w-[200%]"
       style={{ top: -4, height: 8 }}
-      viewBox="0 0 200 10"
-      preserveAspectRatio="none"
       aria-hidden
       initial={false}
       animate={{ x: ["0%", "-50%"] }}
       transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
     >
-      <path
-        d="M0 6 Q12.5 1 25 6 T50 6 T75 6 T100 6 T125 6 T150 6 T175 6 T200 6 V10 H0 Z"
-        fill="var(--color-accent)"
-      />
-    </motion.svg>
+      <svg className="h-full w-full" viewBox="0 0 200 10" preserveAspectRatio="none">
+        <path
+          d="M0 6 Q12.5 1 25 6 T50 6 T75 6 T100 6 T125 6 T150 6 T175 6 T200 6 V10 H0 Z"
+          fill="var(--color-accent)"
+        />
+      </svg>
+    </motion.div>
   );
 }
 
@@ -156,9 +158,14 @@ function PipelineNode({
   const inner = (
     <span className={`relative z-0 grid h-9 w-9 place-items-center overflow-hidden rounded-full ${base} ${ring}`}>
       {state === "active" && (
-        <span className="absolute inset-x-0 bottom-0 bg-accent" style={{ height: `${fill * 100}%` }}>
+        <motion.div
+          className="absolute inset-x-0 bottom-0 bg-accent"
+          initial={{ height: "0%" }}
+          animate={{ height: `${fill * 100}%` }}
+          transition={reduced ? { duration: 0 } : { duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
           {!reduced && <Wave />}
-        </span>
+        </motion.div>
       )}
       <span className={`relative z-10 ${state === "active" ? (fill > 0.5 ? "text-white" : "text-primary") : ""}`}>
         <BoxIcon name={icon} />
