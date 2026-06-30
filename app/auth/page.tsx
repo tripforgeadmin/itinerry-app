@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
-import { LIFF_URL } from "@/lib/constants";
+import { LIFF_DEEPLINK } from "@/lib/constants";
 
 const TAGLINES = [
   "ประเมินความเสี่ยงล่วงหน้าก่อนยื่นวีซ่า",
@@ -58,13 +58,17 @@ export default function AuthPage() {
             </p>
           </div>
           <a
-            href={LIFF_URL}
+            href={LIFF_DEEPLINK}
             className="w-full flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-bold text-base shadow-lg"
             style={{ backgroundColor: "#06c755", boxShadow: "0 4px 24px rgba(6,199,85,0.3)" }}
           >
             <LineIcon />
             เปิดใน LINE
           </a>
+          <p className="text-xs text-muted text-center leading-relaxed">
+            หากกดแล้วไม่มีอะไรเกิดขึ้น<br />
+            ให้คัดลอก URL แล้วเปิดในแอป LINE แทน
+          </p>
         </div>
       </main>
     );
