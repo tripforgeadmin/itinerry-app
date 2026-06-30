@@ -7,6 +7,8 @@ export interface NavContextValue {
   onJump?: (categoryIndex: number) => void;
   /** Highest category index the user has reached — boxes ≤ this are clickable. */
   reachedMax?: number;
+  /** Travel direction of the last navigation: +1 forward, -1 back. Drives the screen slide. */
+  direction?: number;
 }
 
 /** Lets the (deeply nested) ProgressTopBar trigger category navigation without threading a callback

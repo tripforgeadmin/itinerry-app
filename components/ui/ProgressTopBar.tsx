@@ -15,9 +15,9 @@ export interface ProgressBox {
 }
 
 interface ProgressTopBarProps {
-  /** "questions" = back + liquid boxes + TH/EN toggle; "bare" = centered wordmark. */
+  /** "questions" = back + pipeline + TH/EN toggle; "bare" = centered wordmark. */
   variant?: "questions" | "bare";
-  /** 3, 5, or 6 category boxes (gradients --gradient-progress-1..6). */
+  /** 3, 5, or 6 category nodes. */
   boxes?: ProgressBox[];
   /** Index of the currently active category, or -1 for none. */
   activeIndex?: number;
@@ -30,8 +30,8 @@ interface ProgressTopBarProps {
 }
 
 const SVG = {
-  width: 20,
-  height: 20,
+  width: 18,
+  height: 18,
   viewBox: "0 0 24 24",
   fill: "none",
   stroke: "currentColor",
@@ -106,66 +106,138 @@ function BackButton({ onBack }: { onBack?: () => void }) {
   );
 }
 
-function WaterBox({
+/** Hand-rolled liquid wave (react-wavify-style, no dependency): a 200-wide periodic crest path
+ * scrolled left forever — period 50 over a 200 viewBox tiles seamlessly at x: -50%. */
+function Wave() {
+  return (
+    <motion.svg
+      className="absolute left-0 w-[200%]"
+      style={{ top: -4, height: 8 }}
+      viewBox="0 0 200 10"
+      preserveAspectRatio="none"
+      aria-hidden
+      initial={false}
+      animate={{ x: ["0%", "-50%"] }}
+      transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+    >
+      <path
+        d="M0 6 Q12.5 1 25 6 T50 6 T75 6 T100 6 T125 6 T150 6 T175 6 T200 6 V10 H0 Z"
+        fill="var(--color-accent)"
+      />
+    </motion.svg>
+  );
+}
+
+type NodeState = "complete" | "active" | "pending";
+
+function PipelineNode({
   box,
-  active,
   index,
+  state,
+  fill,
   reduced,
   clickable,
   onClick,
 }: {
   box: ProgressBox;
-  active: boolean;
   index: number;
+  state: NodeState;
+  fill: number;
   reduced: boolean | null;
   clickable: boolean;
   onClick: () => void;
 }) {
-  const fill = Math.min(Math.max(box.fill, 0), 1);
-  const full = fill >= 1;
-  const iconName = box.icon ?? DEFAULT_ICON[index] ?? "shield";
+  const icon = box.icon ?? DEFAULT_ICON[index] ?? "shield";
+  const ring =
+    state === "active" ? "ring-2 ring-accent" : state === "complete" ? "ring-1 ring-accent" : "ring-1 ring-border";
+  const base =
+    state === "complete" ? "bg-accent text-white" : state === "active" ? "bg-surface-soft" : "bg-surface-soft text-muted-soft";
+
   const inner = (
-    <>
-      <div className={`relative h-11 w-11 overflow-hidden rounded-xl bg-surface-soft transition-shadow ${active ? "ring-2 ring-accent" : "ring-1 ring-border"}`}>
-        <motion.div
-          className="absolute inset-x-0 bottom-0"
-          style={{ background: `var(--gradient-progress-${index + 1})` }}
-          initial={false}
-          animate={{ height: `${fill * 100}%` }}
-          transition={reduced ? { duration: 0 } : { duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div className="absolute inset-x-0 top-0 h-[3px] bg-white/35" />
-        </motion.div>
-        <div className={`absolute inset-0 grid place-items-center transition-colors ${fill > 0.5 ? "text-white" : "text-muted-soft"}`}>
-          <BoxIcon name={iconName} />
-        </div>
-        {full && (
-          <span className="absolute right-0.5 top-0.5 grid h-3.5 w-3.5 place-items-center rounded-full bg-success text-white">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m5 13 4 4L19 7" />
-            </svg>
-          </span>
-        )}
-      </div>
-      <span className={`max-w-full truncate text-[10px] font-semibold leading-none ${active ? "text-accent" : "text-muted-soft"}`}>
-        {box.label}
+    <span className={`relative z-0 grid h-9 w-9 place-items-center overflow-hidden rounded-full ${base} ${ring}`}>
+      {state === "active" && (
+        <span className="absolute inset-x-0 bottom-0 bg-accent" style={{ height: `${fill * 100}%` }}>
+          {!reduced && <Wave />}
+        </span>
+      )}
+      <span className={`relative z-10 ${state === "active" ? (fill > 0.5 ? "text-white" : "text-primary") : ""}`}>
+        <BoxIcon name={icon} />
       </span>
-    </>
+      {state === "complete" && (
+        <span className="absolute right-0 top-0 grid h-3.5 w-3.5 place-items-center rounded-full bg-success text-white ring-1 ring-card">
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m5 13 4 4L19 7" />
+          </svg>
+        </span>
+      )}
+    </span>
   );
 
-  if (clickable) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={`ไปยังหมวด ${box.label}`}
-        className="flex min-w-0 flex-1 flex-col items-center gap-1 transition active:scale-95"
-      >
-        {inner}
-      </button>
-    );
-  }
-  return <div className="flex min-w-0 flex-1 flex-col items-center gap-1">{inner}</div>;
+  return clickable ? (
+    <button type="button" onClick={onClick} aria-label={`ไปยังหมวด ${box.label}`} className="transition active:scale-90">
+      {inner}
+    </button>
+  ) : (
+    <div>{inner}</div>
+  );
+}
+
+/** Connected step pipeline: nodes joined by a rail that fills as you advance (so it reads as a
+ * sequence, not a menu). Only the active node holds rippling water; done nodes are solid + checked. */
+function Pipeline({
+  boxes,
+  activeIndex,
+  reduced,
+  onJump,
+  reachedMax,
+  lang,
+}: {
+  boxes: ProgressBox[];
+  activeIndex: number;
+  reduced: boolean | null;
+  onJump?: (i: number) => void;
+  reachedMax: number;
+  lang: Lang;
+}) {
+  const n = boxes.length;
+  const railFrac = n > 1 ? Math.min(1, Math.max(0, activeIndex / (n - 1))) : 0;
+  const activeLabel = boxes[activeIndex]?.label;
+
+  return (
+    <div>
+      <div className="relative">
+        <div className="absolute left-[18px] right-[18px] top-[17px] h-[3px] rounded-full bg-border" />
+        <motion.div
+          className="absolute left-[18px] right-[18px] top-[17px] h-[3px] origin-left rounded-full bg-accent"
+          initial={false}
+          animate={{ scaleX: railFrac }}
+          transition={reduced ? { duration: 0 } : { duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        />
+        <div className="relative flex justify-between">
+          {boxes.map((b, i) => {
+            const state: NodeState = i < activeIndex ? "complete" : i === activeIndex ? "active" : "pending";
+            return (
+              <PipelineNode
+                key={i}
+                box={b}
+                index={i}
+                state={state}
+                fill={Math.min(Math.max(b.fill, 0), 1)}
+                reduced={reduced}
+                clickable={!!onJump && i <= reachedMax && i !== activeIndex}
+                onClick={() => onJump?.(i)}
+              />
+            );
+          })}
+        </div>
+      </div>
+      {activeLabel && (
+        <p className="mt-1.5 text-center text-[11px] font-semibold text-accent">
+          {lang === "th" ? `หมวด ${activeIndex + 1}/${n}` : `Step ${activeIndex + 1}/${n}`} · {activeLabel}
+        </p>
+      )}
+    </div>
+  );
 }
 
 const DEFAULT_BOXES: ProgressBox[] = [
@@ -175,8 +247,8 @@ const DEFAULT_BOXES: ProgressBox[] = [
 ];
 
 /**
- * Top bar (design spec §3/§4). On question screens: back + liquid progress boxes (clickable to jump
- * back to a past category via NavContext) + the locked TH/EN toggle (and the wordmark when `logo`).
+ * Top bar (design spec §3/§4). On question screens: back + the step pipeline (clickable to jump back
+ * to a past category via NavContext) + the locked TH/EN toggle (and the wordmark when `logo`).
  * Publishes its measured height as --topbar-h so the sticky headline can pin right below it.
  */
 export function ProgressTopBar({
@@ -204,17 +276,9 @@ export function ProgressTopBar({
   }, []);
 
   const back = showBack ? <BackButton onBack={onBack} /> : <span className="w-[34px] shrink-0" />;
-  const boxesEls = boxes.map((b, i) => (
-    <WaterBox
-      key={i}
-      box={b}
-      index={i}
-      active={i === activeIndex}
-      reduced={reduced}
-      clickable={!!onJump && i <= reachedMax && i !== activeIndex}
-      onClick={() => onJump?.(i)}
-    />
-  ));
+  const pipeline = (
+    <Pipeline boxes={boxes} activeIndex={activeIndex} reduced={reduced} onJump={onJump} reachedMax={reachedMax} lang={lang} />
+  );
 
   return (
     <header ref={headerRef} className="sticky top-0 z-30 border-b border-border bg-card px-4 py-3">
@@ -236,13 +300,15 @@ export function ProgressTopBar({
               </div>
               <LangToggle lang={lang} onLangChange={onLangChange} />
             </div>
-            <div className="flex items-start gap-1.5">{boxesEls}</div>
+            {pipeline}
           </div>
         ) : (
-          <div className="flex min-h-[44px] items-center gap-3">
-            {back}
-            <div className="flex min-w-0 flex-1 items-start gap-1.5">{boxesEls}</div>
-            <LangToggle lang={lang} onLangChange={onLangChange} />
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-3">
+              {back}
+              <div className="min-w-0 flex-1">{pipeline}</div>
+              <LangToggle lang={lang} onLangChange={onLangChange} />
+            </div>
           </div>
         )}
       </div>

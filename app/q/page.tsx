@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { QuestionScreen } from "@/components/form/QuestionScreen";
-import type { Lang } from "@/components/form/QuestionScreen";
+import type { Lang } from "@/components/ui/LangToggle";
 import { useFormStore } from "@/store/formStore";
 import { QUESTIONS_MAP } from "@/lib/questions";
 import type { Question } from "@/lib/questions";
@@ -155,8 +154,6 @@ export default function QuestionnairePage() {
     return nextId;
   }
 
-  const isLast = getNextId() === undefined;
-
   function handleNext() {
     const nextId = getNextId();
     if (!nextId) {
@@ -211,53 +208,30 @@ export default function QuestionnairePage() {
   );
 
   const Reskinned = RESKINNED_SCREENS[currentId];
-  if (Reskinned) {
-    const { boxes, activeIndex } = computeBoxes(currentId);
-    const reachedMax = Math.max(0, ...history.map((id) => categoryIndexOf(id)));
-    return (
-      <NavContext.Provider value={{ onJump: handleJump, reachedMax }}>
-        <Reskinned
-          question={question}
-          value={answers[currentId] ?? ""}
-          otherValue={answers[`${currentId}_other`] ?? ""}
-          answers={answers}
-          onAnswer={setAnswer}
-          onOther={(v) => setAnswer(`${currentId}_other`, v)}
-          onNext={handleNext}
-          advanceTo={(id) => pushQuestion(id)}
-          onBack={handleBack}
-          isFirst={pos === 0}
-          lang={lang}
-          onLangChange={setLang}
-          boxes={boxes}
-          activeIndex={activeIndex}
-          submitting={submitting}
-        />
-        {loaderEl}
-      </NavContext.Provider>
-    );
-  }
+  if (!Reskinned) return null; // every rendered question maps to a reskinned screen
 
+  const { boxes, activeIndex } = computeBoxes(currentId);
+  const reachedMax = Math.max(0, ...history.map((id) => categoryIndexOf(id)));
   return (
-    <>
-      <QuestionScreen
+    <NavContext.Provider value={{ onJump: handleJump, reachedMax, direction }}>
+      <Reskinned
         question={question}
-        sectionTitle={question.sectionTitle}
-        sectionTitleEn={question.sectionTitleEn}
-        sectionEmoji={question.sectionEmoji}
-        qIndex={history.filter((id) => QUESTIONS_MAP[id]?.type !== "consent").length}
+        value={answers[currentId] ?? ""}
+        otherValue={answers[`${currentId}_other`] ?? ""}
         answers={answers}
-        lang={lang}
-        onLangChange={setLang}
         onAnswer={setAnswer}
+        onOther={(v) => setAnswer(`${currentId}_other`, v)}
         onNext={handleNext}
+        advanceTo={(id) => pushQuestion(id)}
         onBack={handleBack}
         isFirst={pos === 0}
-        isLast={isLast}
-        direction={direction}
+        lang={lang}
+        onLangChange={setLang}
+        boxes={boxes}
+        activeIndex={activeIndex}
         submitting={submitting}
       />
       {loaderEl}
-    </>
+    </NavContext.Provider>
   );
 }
