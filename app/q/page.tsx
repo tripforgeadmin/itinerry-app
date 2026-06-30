@@ -44,12 +44,12 @@ const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
   q8: CountryScreen,
   q9: VisatypeScreen,
   // Group B · เดินทาง (visa-branch questions q10–q23, generic by field type)
-  q10: DateScreen, q11: DateScreen, q13: DateScreen, q17: DateScreen, q18: DateScreen, q21: DateScreen,
+  q10: DateScreen, q11: DateScreen, q13: DateScreen, q17: DateScreen, q18: DateScreen, q21: DateScreen, q39: DateScreen,
   q14: ChoiceScreen, q15: ChoiceScreen, q19: ChoiceScreen, q22: ChoiceScreen, q23: ChoiceScreen,
   q12: PriorVisasScreen, q16: MultiSelectScreen, q20: PriorVisasScreen,
   // Group C · อาชีพ (occupation + employment-document branches q24–q29)
   q24: OccupationScreen,
-  q25: SegmentedScreen, q26: SegmentedScreen, q27: SegmentedScreen, q28: SegmentedScreen,
+  q25: SegmentedScreen, q26: MultiSelectScreen, q27: SegmentedScreen, q28: SegmentedScreen,
   q29: ExpensesScreen,
   // Group C · คุณสมบัติ (q30 refused + q32 overstay combine their detail q31/q33 via advanceTo)
   q30: RefusedScreen, q32: OverstayScreen,
@@ -71,6 +71,13 @@ const PHASE_END_LOADER: Record<string, { cap: string; sub?: string }> = {
   q28: WORK_END,
   q29: WORK_END,
   q35: { cap: "เกือบเสร็จแล้ว!", sub: "เตรียมส่วนข้อมูลติดต่อ…" },
+};
+
+// Steps skipped based on the visa type: "อื่นๆ" has an arrival date but no return (q11), and
+// students skip the savings step (q34). getNextId() walks past any skipped id to the next real one.
+const SKIP_IF: Record<string, (a: Record<string, string>) => boolean> = {
+  q11: (a) => a.q9 === "other",
+  q34: (a) => a.q9 === "student",
 };
 
 export default function QuestionnairePage() {
@@ -127,14 +134,25 @@ export default function QuestionnairePage() {
 
   if (!question) return null;
 
-  function getNextId(): string | undefined {
-    const freshAnswers = useFormStore.getState().answers;
-    const value = freshAnswers[currentId];
-    const selectedOption = question.options?.find((o) => o.value === value);
+  function rawNextId(id: string, a: Record<string, string>): string | undefined {
+    const q = questionsMap[id];
+    if (!q) return undefined;
+    const selectedOption = q.options?.find((o) => o.value === a[id]);
     if (selectedOption && Object.prototype.hasOwnProperty.call(selectedOption, "nextId")) {
       return selectedOption.nextId;
     }
-    return question.defaultNextId;
+    return q.defaultNextId;
+  }
+
+  function getNextId(): string | undefined {
+    const a = useFormStore.getState().answers;
+    let nextId = rawNextId(currentId, a);
+    const seen = new Set<string>();
+    while (nextId && SKIP_IF[nextId]?.(a) && !seen.has(nextId)) {
+      seen.add(nextId);
+      nextId = rawNextId(nextId, a);
+    }
+    return nextId;
   }
 
   const isLast = getNextId() === undefined;

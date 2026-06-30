@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     q28: "business_registration",
     q29: "dependent_expense_sponsor",
   };
-  const multiSelectBranchKeys = new Set(["q12", "q16", "q20"]);
+  const multiSelectBranchKeys = new Set(["q12", "q16", "q20", "q26"]);
 
   // tourist_previous_visas (q12) stored separately with semantic key
   if (answers.q12 && answers.q12 !== "") {
@@ -81,6 +81,11 @@ export async function POST(request: NextRequest) {
     if (val && val !== "") {
       branchAnswers[semanticKey] = multiSelectBranchKeys.has(qKey) ? toArray(val) : val;
     }
+  }
+
+  // "อื่นๆ (โปรดระบุ)" visa type — keep the write-in alongside visa_type = "other"
+  if (answers.q9_other && answers.q9_other !== "") {
+    branchAnswers["visa_type_other"] = answers.q9_other;
   }
 
   // ---- name + phone (accept split keys, else derive) ----
@@ -126,7 +131,7 @@ export async function POST(request: NextRequest) {
       destination:    answers.q8 ?? "",
       visa_type:      answers.q9 ?? "",
       travel_arrival: toDate(answers.q10 ?? answers.q13 ?? answers.q17),
-      travel_return:  toDate(answers.q11 ?? answers.q18),
+      travel_return:  toDate(answers.q11 ?? answers.q39 ?? answers.q18),
       study_start:    toDate(answers.q21),
     })
     .select("id")
@@ -175,7 +180,7 @@ export async function POST(request: NextRequest) {
       visaType: answers.q9 ?? "",
       destination: answers.q8 ?? "",
       travelArrival: answers.q10 ?? answers.q13 ?? answers.q17 ?? "",
-      travelReturn: answers.q11 ?? answers.q18 ?? "",
+      travelReturn: answers.q11 ?? answers.q39 ?? answers.q18 ?? "",
       contactPreference: answers.q36 ?? "",
       appUrl,
       pdfBuffer,

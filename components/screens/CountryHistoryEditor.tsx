@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CountrySelect } from "@/components/ui/CountrySelect";
 import { TextField } from "@/components/ui/TextField";
+import { YearSelect, MIN_YEAR } from "@/components/ui/YearSelect";
 import { flagEmoji } from "@/lib/countries";
 import type { Lang } from "@/components/ui/LangToggle";
 
@@ -21,11 +22,15 @@ interface Row {
 }
 const blank = (): Row => ({ country: "", code: "", year: "", days: "" });
 
+function yearValid(year: string): boolean {
+  const y = parseInt(year, 10);
+  return /^\d{4}$/.test(year) && y >= MIN_YEAR && y <= new Date().getFullYear();
+}
+
 function rowValid(r: Row, withDays: boolean): boolean {
-  const yearOk = /^\d{4}$/.test(r.year);
   const d = parseInt(r.days, 10);
   const daysOk = !withDays || (/^\d+$/.test(r.days) && d > 0 && d < 1000);
-  return r.country.trim().length > 0 && yearOk && daysOk;
+  return r.country.trim().length > 0 && yearValid(r.year) && daysOk;
 }
 
 interface Props {
@@ -66,7 +71,7 @@ export function CountryHistoryEditor({ entries, onChange, withDays = false, lang
   return (
     <div className="flex flex-col gap-3 pt-3">
       {rows.map((r, i) => {
-        const yearErr = r.year && !/^\d{4}$/.test(r.year);
+        const yearErr = r.year && !yearValid(r.year);
         const dNum = parseInt(r.days, 10);
         const daysErr = withDays && r.days && !(/^\d+$/.test(r.days) && dNum > 0 && dNum < 1000);
         return (
@@ -94,12 +99,17 @@ export function CountryHistoryEditor({ entries, onChange, withDays = false, lang
                 onPickCountry={(c) => setRow(i, { country: lang === "th" ? c.th : c.en, code: c.code })}
                 lang={lang}
               />
-              <TextField
+              <YearSelect
                 label={lang === "th" ? "ปี (ค.ศ.)" : "Year (CE)"}
                 value={r.year}
-                onChange={(e) => setRow(i, { year: e.target.value.replace(/\D/g, "").slice(0, 4) })}
-                placeholder="2022"
-                error={yearErr ? (lang === "th" ? "กรอกปี ค.ศ. 4 หลัก" : "Enter a 4-digit year") : null}
+                onChange={(year) => setRow(i, { year })}
+                error={
+                  yearErr
+                    ? lang === "th"
+                      ? `กรอกปี ค.ศ. (${MIN_YEAR}–${new Date().getFullYear()})`
+                      : `Enter a CE year (${MIN_YEAR}–${new Date().getFullYear()})`
+                    : null
+                }
               />
               {withDays && (
                 <TextField
