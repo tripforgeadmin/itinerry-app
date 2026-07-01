@@ -10,7 +10,9 @@ import { DIAL_CODES, DEFAULT_DIAL_CODE, dialCodeOf, isValidPhone } from "@/lib/d
 import { flagEmoji } from "@/lib/countries";
 import type { ScreenProps } from "@/components/screens/types";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Standard email, ASCII/English only — rejects Thai and other non-Latin characters.
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+const NON_ASCII = /[^\x00-\x7F]/;
 const CHANNEL_IMG: Record<string, string> = { line: "/icons/line.png", call: "/icons/phone.png" };
 
 /**
@@ -50,7 +52,17 @@ export function ContactScreen({
   const nameOk = first.trim().length > 0 && last.trim().length > 0;
   const phoneOk = isValidPhone(cc, phone);
   const phoneErr = phone && !phoneOk ? (lang === "th" ? "รูปแบบเบอร์โทรไม่ถูกต้อง" : "Invalid phone number") : null;
-  const emailErr = email && !EMAIL_RE.test(email) ? (lang === "th" ? "รูปแบบอีเมลไม่ถูกต้อง" : "Invalid email") : null;
+  const emailErr = !email
+    ? null
+    : NON_ASCII.test(email)
+      ? lang === "th"
+        ? "อีเมลต้องเป็นตัวอักษรภาษาอังกฤษเท่านั้น"
+        : "Email must use English letters only"
+      : !EMAIL_RE.test(email)
+        ? lang === "th"
+          ? "รูปแบบอีเมลไม่ถูกต้อง"
+          : "Invalid email"
+        : null;
   const timeOk = !isCall || (!!time && (time !== "other" || timeOther.trim().length > 0));
   const gateOk = nameOk && phoneOk && EMAIL_RE.test(email) && !!channel && timeOk;
 
