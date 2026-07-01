@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useLayoutEffect, useState } from "react";
 import { ProgressTopBar, type ProgressBox } from "@/components/ui/ProgressTopBar";
 import { StickyFooter } from "@/components/ui/StickyFooter";
 import { ScrollMoreHint } from "@/components/ui/ScrollMoreHint";
@@ -89,6 +89,10 @@ export function QuestionShell({
   children,
 }: QuestionShellProps) {
   const kbOpen = useKeyboardOpen();
+  // Every step change resets the page to the top (before paint → no flash of the old scroll).
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [screenKey]);
   return (
     <main className="relative min-h-screen bg-surface">
       <div className="mx-auto max-w-[480px]">
