@@ -1,7 +1,7 @@
 "use client";
 
-import { useContext, useLayoutEffect, useRef } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useContext, useEffect, useLayoutEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
 import { LangToggle, type Lang } from "@/components/ui/LangToggle";
 import { NavContext } from "@/lib/navContext";
@@ -10,7 +10,7 @@ export type BoxIconName = "passport" | "plane" | "briefcase" | "shield" | "chat"
 
 export interface ProgressBox {
   label: string; // พื้นฐาน / เดินทาง / …
-  fill: number; // 0..1
+  fill: number; // 0..1 — cached, monotonic progress in that category
   icon?: BoxIconName; // defaults by position when omitted
 }
 
@@ -91,6 +91,12 @@ function BoxIcon({ name }: { name: BoxIconName }) {
 
 const DEFAULT_ICON: BoxIconName[] = ["passport", "plane", "briefcase", "shield", "chat", "summary"];
 
+// ProgressTopBar re-mounts on every screen swap, which would replay water/rail from 0 each time.
+// Persist the last-rendered levels at module scope so they animate from where they were — rising
+// when progress grows, holding on step-back — instead of dropping to 0 and refilling.
+const lastFill: Record<number, number> = {};
+const lastRail = { v: 0 };
+
 function BackButton({ onBack }: { onBack?: () => void }) {
   return (
     <button
@@ -107,7 +113,8 @@ function BackButton({ onBack }: { onBack?: () => void }) {
 }
 
 /** Hand-rolled liquid wave (react-wavify-style, no dependency): a 200-wide periodic crest path
- * scrolled left forever — period 50 over a 200 viewBox tiles seamlessly at x: -50%. */
+ * scrolled left forever — period 50 over a 200 viewBox tiles seamlessly at x: -50%. Always animates
+ * (independent of prefers-reduced-motion) so it stays visible on phones with Reduce Motion on. */
 function Wave() {
   // motion.div (not motion.svg) so `x` is a real transform translate — on an <svg> framer would
   // treat `x` as the SVG position attribute and nothing would move.
@@ -118,7 +125,7 @@ function Wave() {
       aria-hidden
       initial={false}
       animate={{ x: ["0%", "-50%"] }}
-      transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
     >
       <svg className="h-full w-full" viewBox="0 0 200 10" preserveAspectRatio="none">
         <path
@@ -130,48 +137,47 @@ function Wave() {
   );
 }
 
-type NodeState = "complete" | "active" | "pending";
-
 function PipelineNode({
   box,
   index,
-  state,
   fill,
-  reduced,
+  isActive,
   clickable,
   onClick,
 }: {
   box: ProgressBox;
   index: number;
-  state: NodeState;
-  fill: number;
-  reduced: boolean | null;
+  fill: number; // 0..1 cached water level
+  isActive: boolean; // the cursor's category → yellow CTA ring
   clickable: boolean;
   onClick: () => void;
 }) {
   const icon = box.icon ?? DEFAULT_ICON[index] ?? "shield";
-  const ring =
-    state === "active" ? "ring-2 ring-accent" : state === "complete" ? "ring-1 ring-accent" : "ring-1 ring-border";
-  const base =
-    state === "complete" ? "bg-accent text-white" : state === "active" ? "bg-surface-soft" : "bg-surface-soft text-muted-soft";
+  const complete = fill >= 1 && !isActive;
+  const ring = isActive ? "border-2 border-yellow" : fill > 0 ? "border border-accent" : "border border-border";
+  const iconColor = fill > 0.5 ? "text-white" : isActive ? "text-primary" : "text-muted-soft";
+
+  const prevFill = lastFill[index] ?? 0;
+  useEffect(() => {
+    lastFill[index] = fill;
+  }, [index, fill]);
 
   const inner = (
-    <span className={`relative z-0 grid h-9 w-9 place-items-center overflow-hidden rounded-full ${base} ${ring}`}>
-      {state === "active" && (
-        <motion.div
-          className="absolute inset-x-0 bottom-0 bg-accent"
-          initial={{ height: "0%" }}
-          animate={{ height: `${fill * 100}%` }}
-          transition={reduced ? { duration: 0 } : { duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        >
-          {!reduced && <Wave />}
-        </motion.div>
-      )}
-      <span className={`relative z-10 ${state === "active" ? (fill > 0.5 ? "text-white" : "text-primary") : ""}`}>
+    <span className={`relative z-0 grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-surface-soft ${ring}`}>
+      {/* water rises from its previous cached level (never drops on step-back); waves only when active */}
+      <motion.div
+        className="absolute inset-x-0 bottom-0 bg-accent"
+        initial={{ height: `${prevFill * 100}%` }}
+        animate={{ height: `${fill * 100}%` }}
+        transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {isActive && <Wave />}
+      </motion.div>
+      <span className={`relative z-10 ${iconColor}`}>
         <BoxIcon name={icon} />
       </span>
-      {state === "complete" && (
-        <span className="absolute right-0 top-0 grid h-3.5 w-3.5 place-items-center rounded-full bg-success text-white ring-1 ring-card">
+      {complete && (
+        <span className="absolute right-0 top-0 grid h-3.5 w-3.5 place-items-center rounded-full border border-card bg-success text-white">
           <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="m5 13 4 4L19 7" />
           </svg>
@@ -189,53 +195,68 @@ function PipelineNode({
   );
 }
 
-/** Connected step pipeline: nodes joined by a rail that fills as you advance (so it reads as a
- * sequence, not a menu). Only the active node holds rippling water; done nodes are solid + checked. */
+/** Connected step pipeline: nodes joined by a rounded water pipe whose fill flows left→right to the
+ * current node (with a continuous sheen). Each node's water = its cached progress; only the active
+ * node ripples and wears the yellow CTA ring. */
 function Pipeline({
   boxes,
   activeIndex,
-  reduced,
   onJump,
   reachedMax,
   lang,
 }: {
   boxes: ProgressBox[];
   activeIndex: number;
-  reduced: boolean | null;
   onJump?: (i: number) => void;
   reachedMax: number;
   lang: Lang;
 }) {
   const n = boxes.length;
-  const railFrac = n > 1 ? Math.min(1, Math.max(0, activeIndex / (n - 1))) : 0;
+  // Rail reaches the furthest category that has any water (monotonic) — not the cursor — so stepping
+  // back doesn't retract the pipe; completing a category flows it forward to the next node.
+  const maxReachedIdx = boxes.reduce((m, b, i) => (b.fill > 0 ? i : m), -1);
+  const railFrac = n > 1 && maxReachedIdx >= 0 ? maxReachedIdx / (n - 1) : 0;
+  const prevRail = lastRail.v;
+  useEffect(() => {
+    lastRail.v = railFrac;
+  }, [railFrac]);
   const activeLabel = boxes[activeIndex]?.label;
 
   return (
     <div>
       <div className="relative">
-        <div className="absolute left-[18px] right-[18px] top-[17px] h-[3px] rounded-full bg-border" />
-        <motion.div
-          className="absolute left-[18px] right-[18px] top-[17px] h-[3px] origin-left rounded-full bg-accent"
-          initial={false}
-          animate={{ scaleX: railFrac }}
-          transition={reduced ? { duration: 0 } : { duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        />
+        {/* rounded water pipe */}
+        <div className="absolute left-[18px] right-[18px] top-[15px] h-[6px] overflow-hidden rounded-full bg-border">
+          <div className="absolute inset-x-0 top-0 h-[1.5px] bg-white/30" />
+          {/* filled water — flows left→right to the current node */}
+          <motion.div
+            className="absolute inset-y-0 left-0 overflow-hidden rounded-full bg-accent"
+            initial={{ width: `${prevRail * 100}%` }}
+            animate={{ width: `${railFrac * 100}%` }}
+            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <motion.div
+              className="absolute inset-y-0 w-1/3"
+              style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)" }}
+              initial={false}
+              animate={{ x: ["-60%", "360%"] }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
+            />
+          </motion.div>
+        </div>
+        {/* nodes */}
         <div className="relative flex justify-between">
-          {boxes.map((b, i) => {
-            const state: NodeState = i < activeIndex ? "complete" : i === activeIndex ? "active" : "pending";
-            return (
-              <PipelineNode
-                key={i}
-                box={b}
-                index={i}
-                state={state}
-                fill={Math.min(Math.max(b.fill, 0), 1)}
-                reduced={reduced}
-                clickable={!!onJump && i <= reachedMax && i !== activeIndex}
-                onClick={() => onJump?.(i)}
-              />
-            );
-          })}
+          {boxes.map((b, i) => (
+            <PipelineNode
+              key={i}
+              box={b}
+              index={i}
+              fill={Math.min(Math.max(b.fill, 0), 1)}
+              isActive={i === activeIndex}
+              clickable={!!onJump && i <= reachedMax && i !== activeIndex}
+              onClick={() => onJump?.(i)}
+            />
+          ))}
         </div>
       </div>
       {activeLabel && (
@@ -268,7 +289,6 @@ export function ProgressTopBar({
   lang,
   onLangChange,
 }: ProgressTopBarProps) {
-  const reduced = useReducedMotion();
   const { onJump, reachedMax = -1 } = useContext(NavContext);
   const headerRef = useRef<HTMLElement>(null);
 
@@ -283,9 +303,7 @@ export function ProgressTopBar({
   }, []);
 
   const back = showBack ? <BackButton onBack={onBack} /> : <span className="w-[34px] shrink-0" />;
-  const pipeline = (
-    <Pipeline boxes={boxes} activeIndex={activeIndex} reduced={reduced} onJump={onJump} reachedMax={reachedMax} lang={lang} />
-  );
+  const pipeline = <Pipeline boxes={boxes} activeIndex={activeIndex} onJump={onJump} reachedMax={reachedMax} lang={lang} />;
 
   return (
     <header ref={headerRef} className="sticky top-0 z-30 border-b border-border bg-card px-4 py-3">

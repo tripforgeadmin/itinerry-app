@@ -49,22 +49,32 @@ export function firstVisitedIdOfCategory(categoryIndex: number, history: string[
 }
 
 /**
- * Positional progress: categories before the active one read full, the active one fills by the
- * current screen's position within it, later ones read empty. Positional (not answer-scan) so it
- * stays coherent regardless of the as-is flow order — the precise per-branch denominators land in
- * Phase 4.
+ * Cached progress: each category fills by the FURTHEST question of that category the user has
+ * reached in the `history` trail — so the water level reflects real answered progress and never
+ * drops on step-back (popQuestion keeps history; only a real branch truncates it). `activeIndex`
+ * is the cursor's category (drives the highlighted node only).
  */
-export function computeBoxes(currentId: string): { boxes: ProgressBox[]; activeIndex: number } {
+export function computeBoxes(
+  currentId: string,
+  history: string[] = []
+): { boxes: ProgressBox[]; activeIndex: number } {
   const active = categoryIndexOf(currentId);
+  const visited = new Set(history);
+  // Furthest category reached across the whole trail — monotonic, since popQuestion keeps history
+  // and only a real branch truncates it. (CATEGORY_ORDER mixes all visa branches, so we tier by
+  // category reached rather than by index-within-order, which would undercount a passed category.)
+  let maxCat = -1;
+  for (const id of history) {
+    const ci = categoryIndexOf(id);
+    if (ci > maxCat) maxCat = ci;
+  }
   const boxes: ProgressBox[] = CATEGORIES.map((c, i) => {
     let fill = 0;
-    if (i < active) {
-      fill = 1;
-    } else if (i === active) {
-      const order = CATEGORY_ORDER[i] ?? [];
-      const pos = Math.max(order.indexOf(currentId), 0);
-      const total = Math.max(order.length, 1);
-      fill = Math.min(1, (pos + 0.45) / total);
+    if (i < maxCat) {
+      fill = 1; // passed → the user reached a later category
+    } else if (i === maxCat) {
+      const answered = (CATEGORY_ORDER[i] ?? []).filter((id) => visited.has(id)).length;
+      fill = answered > 0 ? answered / (answered + 1) : 0; // rises with each answered question
     }
     return { label: c.label, fill, icon: c.icon };
   });

@@ -210,7 +210,7 @@ export default function QuestionnairePage() {
   const Reskinned = RESKINNED_SCREENS[currentId];
   if (!Reskinned) return null; // every rendered question maps to a reskinned screen
 
-  const { boxes, activeIndex } = computeBoxes(currentId);
+  const { boxes, activeIndex } = computeBoxes(currentId, history);
   const reachedMax = Math.max(0, ...history.map((id) => categoryIndexOf(id)));
   return (
     <NavContext.Provider value={{ onJump: handleJump, reachedMax, direction }}>
