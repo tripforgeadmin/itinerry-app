@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { RevealBlock } from "@/components/ui/RevealBlock";
@@ -40,6 +41,9 @@ export function ContactScreen({
   const time = answers["q37"] ?? "";
   const timeOther = answers["q37_other"] ?? "";
   const isCall = channel === "call";
+
+  // Errors only surface once a field has been blurred — no red flash while the user is still typing.
+  const [touched, setTouched] = useState<{ q5?: boolean; q6?: boolean }>({});
 
   function setNickname(v: string) {
     onAnswer("q3", v);
@@ -131,9 +135,15 @@ export function ContactScreen({
       </RevealBlock>
 
       {/* contact details — below */}
-      <h3 className="mb-2 mt-7 font-bold text-primary">{lang === "th" ? "ข้อมูลสำหรับติดต่อกลับ" : "Your contact details"}</h3>
+      <div className="mb-2 mt-7 flex items-center justify-between">
+        <h3 className="font-bold text-primary">{lang === "th" ? "ข้อมูลสำหรับติดต่อกลับ" : "Your contact details"}</h3>
+        <span className="text-xs text-muted-soft">
+          <span className="text-red-alert">*</span> {lang === "th" ? "จำเป็นต้องกรอก" : "required"}
+        </span>
+      </div>
       <TextField
         label={lang === "th" ? "ชื่อเล่น" : "Nickname"}
+        required
         value={nickname}
         onChange={(e) => setNickname(e.target.value)}
         placeholder={lang === "th" ? "ชื่อเล่นของคุณ" : "Your nickname"}
@@ -141,7 +151,10 @@ export function ContactScreen({
 
       {/* phone — dial code + local number */}
       <div className="mt-3">
-        <span className="mb-1.5 block text-sm font-semibold text-primary">{lang === "th" ? "เบอร์โทรศัพท์" : "Phone"}</span>
+        <span className="mb-1.5 block text-sm font-semibold text-primary">
+          {lang === "th" ? "เบอร์โทรศัพท์" : "Phone"}
+          <span className="text-red-alert"> *</span>
+        </span>
         <div className="grid grid-cols-[auto_1fr] gap-2">
           <select
             value={cc}
@@ -159,25 +172,31 @@ export function ContactScreen({
             type="tel"
             value={phone}
             onChange={(e) => onAnswer("q5", e.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, q5: true }))}
             placeholder={cc === "+66" ? "08x-xxx-xxxx" : "phone number"}
-            className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-primary outline-none transition-colors placeholder:text-muted-soft focus:border-accent"
+            className={
+              "w-full rounded-2xl border bg-card px-4 py-3.5 text-primary outline-none transition-colors placeholder:text-muted-soft focus:border-accent " +
+              (touched.q5 && phoneErr ? "border-red-alert" : "border-border")
+            }
           />
         </div>
         <p className="mt-1 text-xs text-muted-soft">
           {dialCodeOf(cc)?.[lang === "th" ? "th" : "en"]} ({cc})
         </p>
-        {phoneErr && <p className="mt-1 text-xs text-red-alert">{phoneErr}</p>}
+        {touched.q5 && phoneErr && <p className="mt-1 text-xs text-red-alert">{phoneErr}</p>}
       </div>
 
       {/* email */}
       <div className="mt-3">
         <TextField
           label={lang === "th" ? "อีเมล" : "Email"}
+          required
           type="email"
           value={email}
           onChange={(e) => onAnswer("q6", e.target.value)}
+          onBlur={() => setTouched((t) => ({ ...t, q6: true }))}
           placeholder="example@email.com"
-          error={emailErr}
+          error={touched.q6 ? emailErr : null}
         />
       </div>
       <p className="mt-2 text-xs text-muted-soft">

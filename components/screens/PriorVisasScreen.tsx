@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { QuestionShell } from "@/components/screens/QuestionShell";
-import { COUNTRIES, flagEmoji, type Country } from "@/lib/countries";
+import { COUNTRIES, sortedCountries, flagEmoji, type Country } from "@/lib/countries";
 import type { ScreenProps } from "@/components/screens/types";
 
 const EXCLUSIVE = "never";
@@ -22,7 +22,7 @@ function Check() {
 }
 
 /**
- * Prior-visa history (q12 / q20). Preset flag chips + a repeatable "เพิ่มประเทศอื่น" picker: any
+ * Prior-visa history (q12 — now shown on every visa branch). Preset flag chips + a repeatable "เพิ่มประเทศอื่น" picker: any
  * extra country (ISO code, lowercase) is appended straight into the answer value (so it's saved on
  * submit), up to MAX_ADDED. The picker flips above the button when it would overflow the viewport.
  */
@@ -87,9 +87,9 @@ export function PriorVisasScreen({
   const filtered = useMemo(() => {
     const picked = new Set(selected);
     const q = query.trim().toLowerCase();
-    const list = COUNTRIES.filter((c) => !picked.has(c.code.toLowerCase()));
+    const list = sortedCountries(lang).filter((c) => !picked.has(c.code.toLowerCase()));
     return (q ? list.filter((c) => `${c.th} ${c.en} ${c.code}`.toLowerCase().includes(q)) : list).slice(0, 60);
-  }, [query, selected]);
+  }, [query, selected, lang]);
 
   const atMax = addedCodes.length >= MAX_ADDED;
   const gateOk = selected.length > 0;
@@ -180,8 +180,10 @@ export function PriorVisasScreen({
         {open && (
           <div
             className={
-              "absolute left-0 z-50 w-72 max-w-[88vw] rounded-2xl border border-border bg-card shadow-card " +
-              (openUp ? "bottom-full mb-2" : "top-full mt-2")
+              // flex-col-reverse when opening upward keeps the search box adjacent to the trigger
+              // (always on-screen) with the list scrolling above it.
+              "absolute left-0 z-50 flex w-72 max-w-[88vw] rounded-2xl border border-border bg-card shadow-card " +
+              (openUp ? "bottom-full mb-2 flex-col-reverse" : "top-full mt-2 flex-col")
             }
           >
             <div className="p-2">

@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
-import { TextField } from "@/components/ui/TextField";
+import { CountrySelect } from "@/components/ui/CountrySelect";
 import { RevealBlock } from "@/components/ui/RevealBlock";
 import { QuestionShell } from "@/components/screens/QuestionShell";
 import type { ScreenProps } from "@/components/screens/types";
@@ -77,11 +77,14 @@ export function NationalityScreen({
         ))}
         <RevealBlock open={isOther}>
           <div className="pt-1">
-            <TextField
-              label={lang === "th" ? "ระบุสัญชาติ" : "Enter your nationality"}
+            <span className="mb-1.5 block text-sm font-semibold text-primary">
+              {lang === "th" ? "ระบุสัญชาติ" : "Enter your nationality"}
+            </span>
+            <CountrySelect
               value={otherValue}
-              onChange={(e) => onOther(e.target.value)}
-              placeholder={lang === "th" ? question.otherPlaceholder : question.otherPlaceholderEn}
+              onChange={onOther}
+              lang={lang}
+              placeholder={lang === "th" ? "ค้นหาสัญชาติ / ประเทศ..." : "Search nationality / country..."}
             />
           </div>
         </RevealBlock>

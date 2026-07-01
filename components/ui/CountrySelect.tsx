@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { COUNTRIES, flagEmoji, type Country } from "@/lib/countries";
+import { sortedCountries, flagEmoji, type Country } from "@/lib/countries";
 
 interface CountrySelectProps {
   value: string; // selected country display name
@@ -33,9 +33,10 @@ export function CountrySelect({ value, onChange, onPickCountry, placeholder, lan
   }, []);
 
   const filtered = useMemo(() => {
+    const sorted = sortedCountries(lang);
     const q = query.trim().toLowerCase();
-    return q ? COUNTRIES.filter((c) => `${c.th} ${c.en} ${c.code}`.toLowerCase().includes(q)) : COUNTRIES;
-  }, [query]);
+    return q ? sorted.filter((c) => `${c.th} ${c.en} ${c.code}`.toLowerCase().includes(q)) : sorted;
+  }, [query, lang]);
 
   function pick(c: Country) {
     onChange(nameOf(c));

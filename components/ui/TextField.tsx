@@ -2,20 +2,27 @@
 
 import { InputHTMLAttributes } from "react";
 
-interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
+interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "required"> {
   label?: string;
   type?: "text" | "email" | "tel";
   /** Validation message (from getValidationError); shown in red under the field. */
   error?: string | null;
+  /** Appends a red "*" to the label to mark the field as required. */
+  required?: boolean;
 }
 
 const INPUT_MODE = { text: "text", email: "email", tel: "tel" } as const;
 
 /** Labeled input for text/email/tel fields (contact, "other" specify, reveal details). */
-export function TextField({ label, type = "text", error, className = "", ...props }: TextFieldProps) {
+export function TextField({ label, type = "text", error, required = false, className = "", ...props }: TextFieldProps) {
   return (
     <label className="block">
-      {label && <span className="mb-1.5 block text-sm font-semibold text-primary">{label}</span>}
+      {label && (
+        <span className="mb-1.5 block text-sm font-semibold text-primary">
+          {label}
+          {required && <span className="text-red-alert"> *</span>}
+        </span>
+      )}
       <input
         type={type}
         inputMode={INPUT_MODE[type]}

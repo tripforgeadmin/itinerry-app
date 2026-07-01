@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { QuestionShell } from "@/components/screens/QuestionShell";
-import { COUNTRIES, flagEmoji, type Country } from "@/lib/countries";
+import { sortedCountries, flagEmoji, type Country } from "@/lib/countries";
 import { useTypewriter } from "@/lib/useTypewriter";
 import type { ScreenProps } from "@/components/screens/types";
 
@@ -36,7 +36,7 @@ export function CountryScreen({
     () => new Set(opts.filter((o) => o.value !== OTHER).map((o) => o.value.toUpperCase())),
     [opts]
   );
-  const otherList = useMemo(() => COUNTRIES.filter((c) => !cardCodes.has(c.code)), [cardCodes]);
+  const otherList = useMemo(() => sortedCountries(lang).filter((c) => !cardCodes.has(c.code)), [cardCodes, lang]);
 
   const q = query.trim().toLowerCase();
   const filteredCards = q

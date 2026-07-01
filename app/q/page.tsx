@@ -45,7 +45,7 @@ const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
   // Group B · เดินทาง (visa-branch questions q10–q23, generic by field type)
   q10: DateScreen, q11: DateScreen, q13: DateScreen, q17: DateScreen, q18: DateScreen, q21: DateScreen, q39: DateScreen,
   q14: ChoiceScreen, q15: ChoiceScreen, q19: ChoiceScreen, q22: ChoiceScreen, q23: ChoiceScreen,
-  q12: PriorVisasScreen, q16: MultiSelectScreen, q20: PriorVisasScreen,
+  q12: PriorVisasScreen, q16: MultiSelectScreen,
   // Group C · อาชีพ (occupation + employment-document branches q24–q29)
   q24: OccupationScreen,
   q25: SegmentedScreen, q26: MultiSelectScreen, q27: SegmentedScreen, q28: SegmentedScreen,

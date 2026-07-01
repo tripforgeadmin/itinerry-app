@@ -19,7 +19,7 @@ export const CATEGORIES: Category[] = [
 // Question id → category index (0–4). Consent (q2) belongs to none → -1.
 const CATEGORY_INDEX_BY_ID: Record<string, number> = {
   q4: 0, q8: 0, q9: 0,
-  q10: 1, q11: 1, q12: 1, q13: 1, q39: 1, q14: 1, q15: 1, q16: 1, q17: 1, q18: 1, q19: 1, q20: 1, q21: 1, q22: 1, q23: 1,
+  q10: 1, q11: 1, q12: 1, q13: 1, q39: 1, q14: 1, q15: 1, q16: 1, q17: 1, q18: 1, q19: 1, q21: 1, q22: 1, q23: 1,
   q24: 2, q25: 2, q26: 2, q27: 2, q28: 2, q29: 2,
   q30: 3, q31: 3, q32: 3, q33: 3, q34: 3, q35: 3,
   q3: 4, q5: 4, q6: 4, q7: 4, q36: 4, q37: 4, q38: 4,
@@ -42,11 +42,13 @@ export function categoryIndexOf(id: string): number {
   return CATEGORY_INDEX_BY_ID[id] ?? -1;
 }
 
-/** True for questions that live on only one branch — travel (cat 1: q10–q23, q39) and the
- * occupation-document branches (cat 2 except the occupation question q24). */
+/** True for questions that live on only one branch — travel (cat 1: q10–q23, q39, EXCEPT the
+ * prior-visa q12 which now converges from every visa branch) and the occupation-document branches
+ * (cat 2 except the occupation question q24). Convergence questions (q12, q24) are always on-path,
+ * so their answers are never scoped out by isOnCurrentPath. */
 export function isBranchQuestion(id: string): boolean {
   const c = categoryIndexOf(id);
-  return c === 1 || (c === 2 && id !== "q24");
+  return (c === 1 && id !== "q12") || (c === 2 && id !== "q24");
 }
 
 /** A branch question counts only when it's on the user's current trail; everything else always does.

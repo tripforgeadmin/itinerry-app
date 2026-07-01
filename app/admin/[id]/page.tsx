@@ -161,18 +161,19 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
           {visaType === "student" && (
             <Row title="วันเริ่มเรียน" value={trip.study_start} />
           )}
-          {visaType === "tourist" && Array.isArray(b.tourist_previous_visas) && (
-            <Row title="วีซ่าที่เคยได้รับ" value={(b.tourist_previous_visas as string[]).map(v => PAST_VISA_LABELS[v] ?? v).join(", ")} />
-          )}
+          {/* prior-visa history — now universal across all visa types (fallback to legacy per-type keys) */}
+          {(() => {
+            const pv = b.previous_visas ?? b.tourist_previous_visas ?? b.business_previous_visas;
+            return Array.isArray(pv) ? (
+              <Row title="วีซ่าที่เคยได้รับ (5 ปี)" value={(pv as string[]).map(v => PAST_VISA_LABELS[v] ?? v).join(", ")} />
+            ) : null;
+          })()}
           {visaType === "visitor" && <Row title="สถานะผู้เชิญ" value={label("visitor_host_status", b.visitor_host_status as string)} />}
           {visaType === "visitor" && <Row title="ความสัมพันธ์" value={label("visitor_relationship", b.visitor_relationship as string)} />}
           {visaType === "visitor" && Array.isArray(b.visitor_host_documents) && (
             <Row title="เอกสารที่ผู้เชิญมี" value={(b.visitor_host_documents as string[]).map(v => LABELS.visitor_host_documents[v] ?? v).join(", ")} />
           )}
           {visaType === "business" && <Row title="Invitation Letter" value={label("business_invitation_letter", b.business_invitation_letter as string)} />}
-          {visaType === "business" && Array.isArray(b.business_previous_visas) && (
-            <Row title="วีซ่าที่เคยได้รับ" value={(b.business_previous_visas as string[]).map(v => PAST_VISA_LABELS[v] ?? v).join(", ")} />
-          )}
           {visaType === "student" && <Row title="Acceptance Letter" value={label("student_acceptance_letter", b.student_acceptance_letter as string)} />}
           {visaType === "student" && <Row title="ผู้รับผิดชอบค่าเรียน" value={label("student_expense_sponsor", b.student_expense_sponsor as string)} />}
         </Section>

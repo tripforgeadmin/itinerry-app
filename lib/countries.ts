@@ -4,6 +4,13 @@ export interface Country {
   th: string;   // Thai name
 }
 
+/** COUNTRIES sorted for the active language — ก-ฮ for Thai, a-z for English. */
+export function sortedCountries(lang: "th" | "en"): Country[] {
+  return [...COUNTRIES].sort((a, b) =>
+    lang === "th" ? a.th.localeCompare(b.th, "th") : a.en.localeCompare(b.en, "en")
+  );
+}
+
 // All countries, sorted alphabetically by English name.
 export const COUNTRIES: Country[] = [
   { code: "AF", en: "Afghanistan", th: "อัฟกานิสถาน" },

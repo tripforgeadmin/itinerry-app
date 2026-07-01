@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
     q17: "business_arrival",
     q18: "business_return",
     q19: "business_invitation_letter",
-    q20: "business_previous_visas",
     q22: "student_acceptance_letter",
     q23: "student_expense_sponsor",
     q25: "employee_work_letter",
@@ -69,11 +68,11 @@ export async function POST(request: NextRequest) {
     q28: "business_registration",
     q29: "dependent_expense_sponsor",
   };
-  const multiSelectBranchKeys = new Set(["q12", "q16", "q20", "q26"]);
+  const multiSelectBranchKeys = new Set(["q12", "q16", "q26"]);
 
-  // tourist_previous_visas (q12) stored separately with semantic key
+  // previous_visas (q12) — now universal across every visa type (was split tourist/business)
   if (answers.q12 && answers.q12 !== "") {
-    branchAnswers["tourist_previous_visas"] = toArray(answers.q12);
+    branchAnswers["previous_visas"] = toArray(answers.q12);
   }
 
   for (const [qKey, semanticKey] of Object.entries(branchMap)) {

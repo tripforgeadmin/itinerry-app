@@ -48,6 +48,7 @@ export function IntentFoundScreen({
   activeIndex,
 }: ScreenProps) {
   const [open, setOpen] = useState(false);
+  const [srcQuery, setSrcQuery] = useState("");
   const ddRef = useRef<HTMLDivElement>(null);
   const foundRef = useRef<HTMLDivElement>(null);
   const q38 = QUESTIONS_MAP["q38"];
@@ -55,6 +56,19 @@ export function IntentFoundScreen({
   const isOther = value === "other";
   const foundOpt = question.options?.find((o) => o.value === value);
   const gateOk = !!intent && !!value && (!isOther || otherValue.trim().length > 0);
+
+  // Sorted source list (ก-ฮ / a-z), with the "อื่นๆ" catch-all always pinned last, then filtered.
+  const labelOf = (o: { label: string; labelEn?: string }) => (lang === "th" ? o.label : o.labelEn ?? o.label);
+  const sourceOpts = (() => {
+    const q = srcQuery.trim().toLowerCase();
+    return (question.options ?? [])
+      .filter((o) => !q || labelOf(o).toLowerCase().includes(q) || o.value.toLowerCase().includes(q))
+      .sort((a, b) => {
+        if (a.value === "other") return 1;
+        if (b.value === "other") return -1;
+        return labelOf(a).localeCompare(labelOf(b), lang === "th" ? "th" : "en");
+      });
+  })();
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -126,7 +140,10 @@ export function IntentFoundScreen({
         <div ref={ddRef} className="relative">
           <button
             type="button"
-            onClick={() => setOpen((o) => !o)}
+            onClick={() => {
+              setSrcQuery("");
+              setOpen((o) => !o);
+            }}
             className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3 text-left transition-colors focus:border-accent"
           >
             {foundOpt ? (
@@ -145,23 +162,40 @@ export function IntentFoundScreen({
             </svg>
           </button>
           {open && (
-            <ul className="absolute bottom-full z-50 mb-1 max-h-[55vh] w-full overflow-y-auto rounded-2xl border border-border bg-card shadow-card">
-              {question.options?.map((o) => (
-                <li key={o.value}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onAnswer(question.id, o.value);
-                      setOpen(false);
-                    }}
-                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent-bg"
-                  >
-                    <Icon v={o.value} size="h-8 w-8" />
-                    <span className="font-medium text-primary">{lang === "th" ? o.label : o.labelEn ?? o.label}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            // opens upward with flex-col-reverse → the search box stays pinned adjacent to the
+            // trigger (never covered) while the list scrolls above it.
+            <div className="absolute bottom-full left-0 z-50 mb-1 flex w-full flex-col-reverse overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+              <div className="border-t border-border p-2">
+                <input
+                  autoFocus
+                  value={srcQuery}
+                  onChange={(e) => setSrcQuery(e.target.value)}
+                  placeholder={lang === "th" ? "ค้นหาช่องทาง..." : "Search source..."}
+                  className="w-full rounded-xl border border-border bg-surface-soft px-3 py-2 text-sm text-primary outline-none placeholder:text-muted-soft focus:border-accent"
+                />
+              </div>
+              <ul className="max-h-[45vh] overflow-y-auto">
+                {sourceOpts.length === 0 ? (
+                  <li className="px-3 py-3 text-sm text-muted-soft">{lang === "th" ? "ไม่พบช่องทาง" : "No match"}</li>
+                ) : (
+                  sourceOpts.map((o) => (
+                    <li key={o.value}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onAnswer(question.id, o.value);
+                          setOpen(false);
+                        }}
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent-bg"
+                      >
+                        <Icon v={o.value} size="h-8 w-8" />
+                        <span className="font-medium text-primary">{lang === "th" ? o.label : o.labelEn ?? o.label}</span>
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
           )}
         </div>
 
