@@ -104,7 +104,6 @@ export function PriorVisasScreen({
       onLangChange={onLangChange}
       screenKey={question.id}
       title={lang === "th" ? question.question : question.questionEn ?? question.question}
-      subtitle="UK · Schengen · USA · Canada · Australia · NZ"
       footer={
         <Button disabled={!gateOk} onClick={onNext}>
           {lang === "th" ? "ถัดไป" : "Next"}

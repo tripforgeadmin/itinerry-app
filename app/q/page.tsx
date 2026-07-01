@@ -83,12 +83,13 @@ export default function QuestionnairePage() {
   const router = useRouter();
   const { history, pos, answers, setAnswer, pushQuestion, popQuestion, goToIndex } = useFormStore();
   const [submitting, setSubmitting] = useState(false);
-  const [direction, setDirection] = useState(1);
   const [mounted, setMounted] = useState(false);
   const [lang, setLang] = useState<Lang>("th");
   const [loaderState, setLoaderState] = useState<{ cap: string; sub?: string } | null>(null);
   const [questionsMap, setQuestionsMap] = useState<Record<string, Question>>(QUESTIONS_MAP);
-  const prevPosRef = useRef(pos);
+  // Slide direction (+1 forward/right, -1 back/left) — set at the moment of the action so the screen
+  // transition is never a step behind (the previous effect-derived version lagged by one nav).
+  const dirRef = useRef(1);
   const loaderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -116,11 +117,6 @@ export default function QuestionnairePage() {
   }, []);
 
   useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    setDirection(pos >= prevPosRef.current ? 1 : -1);
-    prevPosRef.current = pos;
-  }, [pos]);
 
   if (!mounted) return (
     <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -155,6 +151,7 @@ export default function QuestionnairePage() {
   }
 
   function handleNext() {
+    dirRef.current = 1;
     const nextId = getNextId();
     if (!nextId) {
       handleSubmit();
@@ -174,6 +171,7 @@ export default function QuestionnairePage() {
   }
 
   function handleBack() {
+    dirRef.current = -1;
     popQuestion();
   }
 
@@ -181,6 +179,7 @@ export default function QuestionnairePage() {
   function handleJump(categoryIndex: number) {
     const idx = history.findIndex((id) => categoryIndexOf(id) === categoryIndex);
     if (idx < 0 || idx === pos) return;
+    dirRef.current = idx > pos ? 1 : -1; // jump to a right/left node slides right/left
     if (loaderTimer.current) clearTimeout(loaderTimer.current);
     setLoaderState(null);
     goToIndex(idx);
@@ -222,7 +221,7 @@ export default function QuestionnairePage() {
   const { boxes, activeIndex } = computeBoxes(currentId, history);
   const reachedMax = Math.max(0, ...history.map((id) => categoryIndexOf(id)));
   return (
-    <NavContext.Provider value={{ onJump: handleJump, reachedMax, direction }}>
+    <NavContext.Provider value={{ onJump: handleJump, reachedMax, direction: dirRef.current }}>
       <Reskinned
         question={question}
         value={answers[currentId] ?? ""}

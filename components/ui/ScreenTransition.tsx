@@ -38,7 +38,7 @@ export function ScreenTransition({ screenKey, children, scrollRef }: ScreenTrans
         key={screenKey}
         initial={{ x: direction >= 0 ? "30%" : "-30%", opacity: 0 }}
         animate={{ x: "0%", opacity: 1 }}
-        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
       >
         {children}
       </motion.div>

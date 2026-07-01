@@ -264,14 +264,14 @@ function Pipeline({
             className="absolute inset-y-0 left-0 overflow-hidden rounded-full bg-accent"
             initial={{ width: `${prevRail * 100}%` }}
             animate={{ width: `${railFrac * 100}%` }}
-            transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 4.8, ease: [0.22, 1, 0.36, 1] }}
           >
             <motion.div
               className="absolute inset-y-0 w-1/3"
               style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)" }}
               initial={false}
               animate={{ x: ["-60%", "360%"] }}
-              transition={{ duration: 4.8, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 9.6, repeat: Infinity, ease: "linear" }}
             />
           </motion.div>
         </div>
