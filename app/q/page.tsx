@@ -24,7 +24,7 @@ import { ContactScreen } from "@/components/screens/ContactScreen";
 import { IntentFoundScreen } from "@/components/screens/IntentFoundScreen";
 import { SummaryScreen } from "@/components/screens/SummaryScreen";
 import { ElephantLoader } from "@/components/ui/ElephantLoader";
-import { computeBoxes, categoryIndexOf, isOnCurrentPath } from "@/lib/categories";
+import { computeBoxes, categoryIndexOf, isOnCurrentPath, isRevealed } from "@/lib/categories";
 import { NavContext } from "@/lib/navContext";
 import type { ScreenComponent } from "@/components/screens/types";
 
@@ -195,7 +195,9 @@ export default function QuestionnairePage() {
       const clean: Record<string, string> = {};
       for (const [k, v] of Object.entries(freshAnswers)) {
         const base = k.replace(/_(other|cc|first|last|entries)$/, "");
-        if (isOnCurrentPath(base, path)) clean[k] = v;
+        // stale write-in: keep an X_other only while X is still "other" (q8's "other" is an ISO code)
+        const staleWriteIn = k.endsWith("_other") && base !== "q8" && freshAnswers[base] !== "other";
+        if (isOnCurrentPath(base, path) && isRevealed(base, freshAnswers) && !staleWriteIn) clean[k] = v;
       }
       const res = await fetch("/api/submit", {
         method: "POST",

@@ -7,7 +7,7 @@ import { RevealBlock } from "@/components/ui/RevealBlock";
 import { QuestionShell } from "@/components/screens/QuestionShell";
 import { RowEditor } from "@/components/screens/RowEditor";
 import { QUESTIONS_MAP } from "@/lib/questions";
-import { CATEGORIES, categoryIndexOf, isOnCurrentPath } from "@/lib/categories";
+import { CATEGORIES, categoryIndexOf, isOnCurrentPath, isRevealed } from "@/lib/categories";
 import { useFormStore } from "@/store/formStore";
 import type { ScreenProps } from "@/components/screens/types";
 
@@ -64,7 +64,7 @@ export function SummaryScreen({
   // Show only the current branch's answers — stale dates/docs left behind when the user switched
   // visa type or occupation are filtered out. (An open row stays visible while being edited.)
   const answered = ROWS.map(([label, qid]) => ({ label, qid, value: display(qid, answers, lang) })).filter(
-    (r) => (r.value || (editing && r.qid === openQid)) && isOnCurrentPath(r.qid, history)
+    (r) => (r.value || (editing && r.qid === openQid)) && isOnCurrentPath(r.qid, history) && isRevealed(r.qid, answers)
   );
   const groups = CATEGORIES.map((cat, i) => ({
     cat,

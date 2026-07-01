@@ -55,6 +55,20 @@ export function isOnCurrentPath(id: string, history: string[]): boolean {
   return !isBranchQuestion(id) || history.includes(id);
 }
 
+/** Conditionally-revealed detail questions → the parent answer that unlocks them. */
+const REVEAL_IF: Record<string, [string, string]> = {
+  q31: ["q30", "yes"], // refusal detail — only when "เคยถูกปฏิเสธ" = yes
+  q33: ["q32", "yes"], // overstay detail — only when "เคย overstay" = yes
+  q37: ["q36", "call"], // callback time — only when contact channel = call
+};
+
+/** False when a conditional detail question's parent no longer unlocks it — so a stale answer left
+ * behind after toggling the parent (e.g. refused yes→no) is dropped from the summary + submit. */
+export function isRevealed(id: string, answers: Record<string, string>): boolean {
+  const g = REVEAL_IF[id];
+  return !g || answers[g[0]] === g[1];
+}
+
 /** First question of a category that the user actually visited (scans real history, so it skips
  * merged/advanceTo-captured ids and returns the branch-correct entry). undefined if not reached. */
 export function firstVisitedIdOfCategory(categoryIndex: number, history: string[]): string | undefined {
