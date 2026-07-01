@@ -45,7 +45,7 @@ function BoxIcon({ name }: { name: BoxIconName }) {
     case "plane":
       return (
         <svg {...SVG}>
-          <path d="M10.5 13.5 3 12l1-2 6 .5 4-5.5a1.5 1.5 0 0 1 2.5 1.6L13.5 12l.5 6-2 1-1.5-5.5Z" />
+          <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2Z" />
         </svg>
       );
     case "briefcase":
@@ -142,56 +142,71 @@ function PipelineNode({
   index,
   fill,
   isActive,
+  isFrontier,
   clickable,
   onClick,
 }: {
   box: ProgressBox;
   index: number;
   fill: number; // 0..1 cached water level
-  isActive: boolean; // the cursor's category → yellow CTA ring
+  isActive: boolean; // the cursor's category → reflective yellow ring
+  isFrontier: boolean; // furthest-progress category → keeps rippling even if the cursor moved away
   clickable: boolean;
   onClick: () => void;
 }) {
   const icon = box.icon ?? DEFAULT_ICON[index] ?? "shield";
-  const complete = fill >= 1 && !isActive;
-  const ring = isActive ? "border-2 border-yellow" : fill > 0 ? "border border-accent" : "border border-border";
-  const iconColor = fill > 0.5 ? "text-white" : isActive ? "text-primary" : "text-muted-soft";
+  const border = isActive ? "" : fill > 0 ? "border border-accent" : "border border-border";
+  const iconColor = fill > 0.5 ? "text-white" : isActive || isFrontier ? "text-primary" : "text-muted-soft";
 
   const prevFill = lastFill[index] ?? 0;
   useEffect(() => {
     lastFill[index] = fill;
   }, [index, fill]);
 
-  const inner = (
-    <span className={`relative z-0 grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-surface-soft ${ring}`}>
-      {/* water rises from its previous cached level (never drops on step-back); waves only when active */}
+  const circle = (
+    <span className={`relative z-10 grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-surface-soft ${border}`}>
+      {/* water rises from its previous cached level (never drops on step-back) — rippling on the
+          furthest-progress node, which stays lit even when the cursor steps back to another node */}
       <motion.div
         className="absolute inset-x-0 bottom-0 bg-accent"
         initial={{ height: `${prevFill * 100}%` }}
         animate={{ height: `${fill * 100}%` }}
-        transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 2.1, ease: [0.22, 1, 0.36, 1] }}
       >
-        {isActive && <Wave />}
+        {isFrontier && <Wave />}
       </motion.div>
       <span className={`relative z-10 ${iconColor}`}>
         <BoxIcon name={icon} />
       </span>
-      {complete && (
-        <span className="absolute right-0 top-0 grid h-3.5 w-3.5 place-items-center rounded-full border border-card bg-success text-white">
-          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m5 13 4 4L19 7" />
-          </svg>
-        </span>
-      )}
     </span>
+  );
+
+  // Active node wears a rotating reflection on its yellow rim (the conic disc IS the ring; the
+  // opaque circle sits on top and hides its centre, so only the lit rim shows).
+  const node = isActive ? (
+    <span className="relative inline-grid">
+      <motion.span
+        className="pointer-events-none absolute -inset-[2.5px] z-0 rounded-full"
+        style={{
+          background:
+            "conic-gradient(from 0deg, #ffd166 0deg, #ffd166 30deg, #fff2c4 52deg, #ffffff 70deg, #fff2c4 88deg, #ffd166 115deg, #ffd166 360deg)",
+        }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+        aria-hidden
+      />
+      {circle}
+    </span>
+  ) : (
+    circle
   );
 
   return clickable ? (
     <button type="button" onClick={onClick} aria-label={`ไปยังหมวด ${box.label}`} className="transition active:scale-90">
-      {inner}
+      {node}
     </button>
   ) : (
-    <div>{inner}</div>
+    <div>{node}</div>
   );
 }
 
@@ -233,14 +248,14 @@ function Pipeline({
             className="absolute inset-y-0 left-0 overflow-hidden rounded-full bg-accent"
             initial={{ width: `${prevRail * 100}%` }}
             animate={{ width: `${railFrac * 100}%` }}
-            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1] }}
           >
             <motion.div
               className="absolute inset-y-0 w-1/3"
               style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)" }}
               initial={false}
               animate={{ x: ["-60%", "360%"] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
+              transition={{ duration: 4.8, repeat: Infinity, ease: "linear" }}
             />
           </motion.div>
         </div>
@@ -253,6 +268,7 @@ function Pipeline({
               index={i}
               fill={Math.min(Math.max(b.fill, 0), 1)}
               isActive={i === activeIndex}
+              isFrontier={i === maxReachedIdx}
               clickable={!!onJump && i <= reachedMax && i !== activeIndex}
               onClick={() => onJump?.(i)}
             />
