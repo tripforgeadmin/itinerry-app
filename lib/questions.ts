@@ -252,8 +252,8 @@ export const QUESTIONS: Question[] = [
   {
     id: "q12",
     type: "multiCheckbox",
-    question: "เคยได้รับวีซ่าประเทศเหล่านี้ภายใน 5 ปีที่ผ่านมาไหม? (เลือกได้มากกว่า 1)",
-    questionEn: "Have you received any of these visas in the last 5 years? (select all that apply)",
+    question: "เคยได้รับวีซ่าประเทศเหล่านี้ภายใน 10 ปีที่ผ่านมาไหม? (เลือกได้มากกว่า 1)",
+    questionEn: "Have you received any of these visas in the last 10 years? (select all that apply)",
     required: true,
     defaultNextId: "q24",
     section: "S2A",
