@@ -181,6 +181,17 @@ function PipelineNode({
     </span>
   );
 
+  // A completed (passed) category gets a green check badge, placed OUTSIDE the overflow-hidden
+  // circle so it isn't clipped at the rim.
+  const showBadge = fill >= 1 && !isActive && !isFrontier;
+  const badge = (
+    <span className="pointer-events-none absolute -right-0.5 -top-0.5 z-20 grid h-3.5 w-3.5 place-items-center rounded-full border border-card bg-success text-white">
+      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m5 13 4 4L19 7" />
+      </svg>
+    </span>
+  );
+
   // Active node wears a rotating reflection on its yellow rim (the conic disc IS the ring; the
   // opaque circle sits on top and hides its centre, so only the lit rim shows).
   const node = isActive ? (
@@ -196,6 +207,11 @@ function PipelineNode({
         aria-hidden
       />
       {circle}
+    </span>
+  ) : showBadge ? (
+    <span className="relative inline-grid">
+      {circle}
+      {badge}
     </span>
   ) : (
     circle
