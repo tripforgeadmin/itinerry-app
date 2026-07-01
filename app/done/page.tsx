@@ -115,8 +115,8 @@ export default function DonePage() {
               href={LINE_OA_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-[0.98]"
-              style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)" }}
+              className="w-full flex min-h-[55px] items-center justify-center gap-2.5 py-3.5 rounded-2xl font-bold text-sm text-white transition-all active:scale-[0.98]"
+              style={{ backgroundColor: "#06c755" }}
             >
               <LineIcon />
               กลับไปที่แชท LINE
