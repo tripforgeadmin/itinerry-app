@@ -30,17 +30,38 @@ interface QuestionShellProps {
   children: ReactNode;
 }
 
-/** True while a mobile soft keyboard is open — detected via the visual viewport shrinking well
- * below the layout viewport (never fires on desktop, where the two stay equal). */
+/** True while a mobile soft keyboard is (about to be) open. Detected by focus landing on a text
+ * entry field on a touch device — deterministic and identical across browsers (Safari, LINE's
+ * in-app webview, etc.), unlike measuring visualViewport shrink, which varies per browser chrome.
+ * On desktop (fine pointer) focusing a field raises no keyboard, so it never fires. */
+function isTextEntry(el: Element | null): boolean {
+  if (!el) return false;
+  if (el.tagName === "TEXTAREA") return true;
+  if (el.tagName === "INPUT") {
+    const t = (el.getAttribute("type") || "text").toLowerCase();
+    return !["button", "submit", "reset", "checkbox", "radio", "file", "range", "color", "hidden", "image"].includes(t);
+  }
+  return (el as HTMLElement).isContentEditable;
+}
+
 function useKeyboardOpen(): boolean {
   const [open, setOpen] = useState(false);
   useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const onResize = () => setOpen(window.innerHeight - vv.height > 140);
-    onResize();
-    vv.addEventListener("resize", onResize);
-    return () => vv.removeEventListener("resize", onResize);
+    // Checked live at focus time so it also handles devices whose pointer type can change.
+    const kbCapable = () => window.matchMedia?.("(pointer: coarse)").matches ?? false;
+    const onFocusIn = (e: FocusEvent) => {
+      if (kbCapable() && isTextEntry(e.target as Element)) setOpen(true);
+    };
+    const onFocusOut = () => {
+      // defer so document.activeElement settles; stay open if focus hopped to another field
+      window.setTimeout(() => setOpen(kbCapable() && isTextEntry(document.activeElement)), 0);
+    };
+    document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("focusout", onFocusOut);
+    return () => {
+      document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("focusout", onFocusOut);
+    };
   }, []);
   return open;
 }
