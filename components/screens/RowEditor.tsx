@@ -43,20 +43,13 @@ export function RowEditor({ qid, answers, onAnswer, lang }: Props) {
 
   // ── composite overrides ───────────────────────────────
   if (qid === "q3") {
-    const first = answers["q3_first"] ?? "";
-    const last = answers["q3_last"] ?? "";
-    const setName = (part: "first" | "last", val: string) => {
-      onAnswer(`q3_${part}`, val);
-      const f = part === "first" ? val : first;
-      const l = part === "last" ? val : last;
-      onAnswer("q3", `${f} ${l}`.trim());
+    const nickname = answers["q3"] ?? "";
+    const setNickname = (val: string) => {
+      onAnswer("q3", val);
+      onAnswer("q3_first", val);
+      onAnswer("q3_last", "");
     };
-    return (
-      <div className="grid grid-cols-2 gap-3">
-        <TextField label={lang === "th" ? "ชื่อ" : "First"} value={first} onChange={(e) => setName("first", e.target.value)} />
-        <TextField label={lang === "th" ? "นามสกุล" : "Last"} value={last} onChange={(e) => setName("last", e.target.value)} />
-      </div>
-    );
+    return <TextField label={lang === "th" ? "ชื่อเล่น" : "Nickname"} value={nickname} onChange={(e) => setNickname(e.target.value)} />;
   }
   if (qid === "q5") {
     const cc = answers["q5_cc"] ?? DEFAULT_DIAL_CODE;

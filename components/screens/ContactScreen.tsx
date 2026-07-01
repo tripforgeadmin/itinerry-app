@@ -32,8 +32,7 @@ export function ContactScreen({
   boxes,
   activeIndex,
 }: ScreenProps) {
-  const first = answers["q3_first"] ?? "";
-  const last = answers["q3_last"] ?? "";
+  const nickname = answers["q3"] ?? "";
   const phone = answers["q5"] ?? "";
   const cc = answers["q5_cc"] ?? DEFAULT_DIAL_CODE;
   const email = answers["q6"] ?? "";
@@ -42,14 +41,13 @@ export function ContactScreen({
   const timeOther = answers["q37_other"] ?? "";
   const isCall = channel === "call";
 
-  function setName(part: "first" | "last", v: string) {
-    onAnswer(`q3_${part}`, v);
-    const f = part === "first" ? v : first;
-    const l = part === "last" ? v : last;
-    onAnswer("q3", `${f} ${l}`.trim());
+  function setNickname(v: string) {
+    onAnswer("q3", v);
+    onAnswer("q3_first", v); // maps to first_name in the DB — the nickname is the contact name
+    onAnswer("q3_last", "");
   }
 
-  const nameOk = first.trim().length > 0 && last.trim().length > 0;
+  const nameOk = nickname.trim().length > 0;
   const phoneOk = isValidPhone(cc, phone);
   const phoneErr = phone && !phoneOk ? (lang === "th" ? "รูปแบบเบอร์โทรไม่ถูกต้อง" : "Invalid phone number") : null;
   const emailErr = !email
@@ -134,20 +132,12 @@ export function ContactScreen({
 
       {/* contact details — below */}
       <h3 className="mb-2 mt-7 font-bold text-primary">{lang === "th" ? "ข้อมูลสำหรับติดต่อกลับ" : "Your contact details"}</h3>
-      <div className="grid grid-cols-2 gap-3">
-        <TextField
-          label={lang === "th" ? "ชื่อ" : "First name"}
-          value={first}
-          onChange={(e) => setName("first", e.target.value)}
-          placeholder={lang === "th" ? "ชื่อจริง" : "First name"}
-        />
-        <TextField
-          label={lang === "th" ? "นามสกุล" : "Last name"}
-          value={last}
-          onChange={(e) => setName("last", e.target.value)}
-          placeholder={lang === "th" ? "นามสกุล" : "Last name"}
-        />
-      </div>
+      <TextField
+        label={lang === "th" ? "ชื่อเล่น" : "Nickname"}
+        value={nickname}
+        onChange={(e) => setNickname(e.target.value)}
+        placeholder={lang === "th" ? "ชื่อเล่นของคุณ" : "Your nickname"}
+      />
 
       {/* phone — dial code + local number */}
       <div className="mt-3">
