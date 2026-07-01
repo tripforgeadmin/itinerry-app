@@ -42,6 +42,19 @@ export function categoryIndexOf(id: string): number {
   return CATEGORY_INDEX_BY_ID[id] ?? -1;
 }
 
+/** True for questions that live on only one branch — travel (cat 1: q10–q23, q39) and the
+ * occupation-document branches (cat 2 except the occupation question q24). */
+export function isBranchQuestion(id: string): boolean {
+  const c = categoryIndexOf(id);
+  return c === 1 || (c === 2 && id !== "q24");
+}
+
+/** A branch question counts only when it's on the user's current trail; everything else always does.
+ * Filters out stale answers left behind when the user switches visa type / occupation. */
+export function isOnCurrentPath(id: string, history: string[]): boolean {
+  return !isBranchQuestion(id) || history.includes(id);
+}
+
 /** First question of a category that the user actually visited (scans real history, so it skips
  * merged/advanceTo-captured ids and returns the branch-correct entry). undefined if not reached. */
 export function firstVisitedIdOfCategory(categoryIndex: number, history: string[]): string | undefined {

@@ -7,7 +7,8 @@ import { RevealBlock } from "@/components/ui/RevealBlock";
 import { QuestionShell } from "@/components/screens/QuestionShell";
 import { RowEditor } from "@/components/screens/RowEditor";
 import { QUESTIONS_MAP } from "@/lib/questions";
-import { CATEGORIES, categoryIndexOf } from "@/lib/categories";
+import { CATEGORIES, categoryIndexOf, isOnCurrentPath } from "@/lib/categories";
+import { useFormStore } from "@/store/formStore";
 import type { ScreenProps } from "@/components/screens/types";
 
 // Curated review order (label, question id). Only answered rows are shown.
@@ -58,10 +59,12 @@ export function SummaryScreen({
   const [editing, setEditing] = useState(false);
   const [openQid, setOpenQid] = useState<string | null>(null);
   const certified = value === "true";
+  const history = useFormStore((s) => s.history);
 
-  // Keep an open row visible even if its value is momentarily cleared while editing.
+  // Show only the current branch's answers — stale dates/docs left behind when the user switched
+  // visa type or occupation are filtered out. (An open row stays visible while being edited.)
   const answered = ROWS.map(([label, qid]) => ({ label, qid, value: display(qid, answers, lang) })).filter(
-    (r) => r.value || (editing && r.qid === openQid)
+    (r) => (r.value || (editing && r.qid === openQid)) && isOnCurrentPath(r.qid, history)
   );
   const groups = CATEGORIES.map((cat, i) => ({
     cat,

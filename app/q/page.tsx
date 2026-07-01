@@ -24,7 +24,7 @@ import { ContactScreen } from "@/components/screens/ContactScreen";
 import { IntentFoundScreen } from "@/components/screens/IntentFoundScreen";
 import { SummaryScreen } from "@/components/screens/SummaryScreen";
 import { ElephantLoader } from "@/components/ui/ElephantLoader";
-import { computeBoxes, categoryIndexOf } from "@/lib/categories";
+import { computeBoxes, categoryIndexOf, isOnCurrentPath } from "@/lib/categories";
 import { NavContext } from "@/lib/navContext";
 import type { ScreenComponent } from "@/components/screens/types";
 
@@ -189,11 +189,18 @@ export default function QuestionnairePage() {
   async function handleSubmit() {
     setSubmitting(true);
     try {
-      const freshAnswers = useFormStore.getState().answers;
+      const { answers: freshAnswers, history: path } = useFormStore.getState();
+      // Drop stale answers from branches the user navigated away from, so only the current path's
+      // dates/docs are stored (mirrors the summary's scoping).
+      const clean: Record<string, string> = {};
+      for (const [k, v] of Object.entries(freshAnswers)) {
+        const base = k.replace(/_(other|cc|first|last|entries)$/, "");
+        if (isOnCurrentPath(base, path)) clean[k] = v;
+      }
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: freshAnswers }),
+        body: JSON.stringify({ answers: clean }),
       });
       if (!res.ok) throw new Error("Submit failed");
       router.push("/done");
