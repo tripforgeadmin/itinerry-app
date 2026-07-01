@@ -734,7 +734,7 @@ export const QUESTIONS: Question[] = [
     // Captured on the final intent+found screen (rendered at q7); not its own routed step.
     id: "q38",
     type: "radio",
-    question: "ตอนนี้คุณต้องการให้ช่วยเหลือ ด้านวีซ่า ส่วนไหนครับ?",
+    question: "ตอนนี้คุณต้องการให้ช่วยเหลือด้านวีซ่าอย่างไรครับ?",
     questionEn: "What kind of visa help do you need right now?",
     required: true,
     section: "S8",
@@ -743,7 +743,7 @@ export const QUESTIONS: Question[] = [
     sectionEmoji: "🎯",
     options: [
       { value: "explore", label: "กำลังศึกษาข้อมูล / ตรวจความพร้อม-โปรไฟล์ก่อนยื่นวีซ่า / มีแผนคร่าวๆ", labelEn: "Researching / checking readiness & profile / rough plan" },
-      { value: "ready", label: "เลือกประเทศปลายทาง-วันเดินทางได้แล้ว / กำลังหาบริการทำวีซ่าที่เหมาะสม", labelEn: "Destination & dates set / looking for the right visa service" },
+      { value: "ready", label: "มีประเทศปลายทาง-วันเดินทางแล้ว / กำลังหาบริการวีซ่าที่เหมาะสม", labelEn: "Destination & dates set / looking for the right visa service" },
       { value: "execute", label: "ช่วยดำเนินการทำวีซ่า / วีซ่าเร่งด่วน / ปิดจุดอ่อนและความเสี่ยง / อยากได้คนช่วยแก้เคส", labelEn: "Handle my visa / urgent / fix weaknesses & risks / want hands-on help" },
     ],
   },
