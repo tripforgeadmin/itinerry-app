@@ -734,7 +734,7 @@ export const QUESTIONS: Question[] = [
     // Captured on the final intent+found screen (rendered at q7); not its own routed step.
     id: "q38",
     type: "radio",
-    question: "ตอนนี้คุณมีความต้องการส่วนไหนสำหรับการช่วยเหลือด้านวีซ่าในครั้งนี้?",
+    question: "ตอนนี้คุณต้องการให้ช่วยเหลือ ด้านวีซ่า ส่วนไหนครับ?",
     questionEn: "What kind of visa help do you need right now?",
     required: true,
     section: "S8",
