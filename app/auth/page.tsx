@@ -32,6 +32,23 @@ export default function AuthPage() {
     if (!isLineBrowser()) setShowOpenInLine(true);
   }, []);
 
+  // After tapping "เริ่มประเมิน" we navigate to LINE login with loading=true. If the user then taps
+  // the LINE browser's back button, the page is restored from the back/forward cache with that
+  // loading=true frozen → the button is stuck spinning. Reset it whenever the page is shown again
+  // (bfcache restore via pageshow, or foregrounding via visibilitychange) so it's clickable again.
+  useEffect(() => {
+    const reset = () => setLoading(false);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") reset();
+    };
+    window.addEventListener("pageshow", reset);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("pageshow", reset);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
+
   function handleLineLogin() {
     setLoading(true);
     useFormStore.getState().reset();
