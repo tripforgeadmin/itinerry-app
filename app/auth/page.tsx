@@ -24,12 +24,20 @@ function isLineBrowser(): boolean {
 }
 
 export default function AuthPage() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<null | "continue" | "new">(null);
   const [showOpenInLine, setShowOpenInLine] = useState(false);
+  // True when localStorage holds an unsubmitted assessment worth resuming (any recorded answer).
+  const [resume, setResume] = useState(false);
   const typed = useTypewriter(TAGLINES);
 
   useEffect(() => {
     if (!isLineBrowser()) setShowOpenInLine(true);
+    try {
+      const s = JSON.parse(localStorage.getItem("itinerry-visa-form-v3") || "null")?.state;
+      setResume(!!s && (Object.keys(s.answers || {}).length > 0 || (s.history?.length ?? 0) > 1));
+    } catch {
+      /* ignore malformed storage */
+    }
   }, []);
 
   // After tapping "เริ่มประเมิน" we navigate to LINE login with loading=true. If the user then taps
@@ -37,7 +45,7 @@ export default function AuthPage() {
   // loading=true frozen → the button is stuck spinning. Reset it whenever the page is shown again
   // (bfcache restore via pageshow, or foregrounding via visibilitychange) so it's clickable again.
   useEffect(() => {
-    const reset = () => setLoading(false);
+    const reset = () => setLoading(null);
     const onVisible = () => {
       if (document.visibilityState === "visible") reset();
     };
@@ -49,10 +57,13 @@ export default function AuthPage() {
     };
   }, []);
 
-  function handleLineLogin() {
-    setLoading(true);
-    useFormStore.getState().reset();
-    localStorage.removeItem("itinerry-visa-form-v3");
+  // `fresh` = start over (wipe saved progress); otherwise resume the persisted assessment at /q.
+  function goToLogin(fresh: boolean) {
+    setLoading(fresh ? "new" : "continue");
+    if (fresh) {
+      useFormStore.getState().reset();
+      localStorage.removeItem("itinerry-visa-form-v3");
+    }
     const state = crypto.randomUUID();
     sessionStorage.setItem("line_state", state);
     window.location.href = `/api/auth/login?state=${state}`;
@@ -191,25 +202,36 @@ export default function AuthPage() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="w-full"
         >
-          <button
-            onClick={handleLineLogin}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-bold text-base transition-all active:scale-95 disabled:opacity-60 shadow-lg"
-            style={{ backgroundColor: "#06c755", boxShadow: "0 4px 24px rgba(6,199,85,0.3)" }}
-          >
-            {loading ? (
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
-                className="w-5 h-5 rounded-full border-2 border-white border-t-transparent"
-              />
-            ) : (
-              <>
-                <LineIcon />
-                เริ่มประเมินฟรี
-              </>
-            )}
-          </button>
+          {resume ? (
+            <div className="flex flex-col gap-3">
+              {/* continue where they left off — primary */}
+              <button
+                onClick={() => goToLogin(false)}
+                disabled={!!loading}
+                className="w-full flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-bold text-base transition-all active:scale-95 disabled:opacity-60 shadow-lg"
+                style={{ backgroundColor: "#06c755", boxShadow: "0 4px 24px rgba(6,199,85,0.3)" }}
+              >
+                {loading === "continue" ? <Spinner /> : (<><LineIcon />ทำประเมินต่อเลย</>)}
+              </button>
+              {/* discard progress + start over — de-emphasized */}
+              <button
+                onClick={() => goToLogin(true)}
+                disabled={!!loading}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl border border-border bg-transparent px-6 py-3.5 text-sm font-bold text-muted transition-all active:scale-95 disabled:opacity-60"
+              >
+                {loading === "new" ? <Spinner /> : "เริ่มทำประเมินใหม่"}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => goToLogin(true)}
+              disabled={!!loading}
+              className="w-full flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-bold text-base transition-all active:scale-95 disabled:opacity-60 shadow-lg"
+              style={{ backgroundColor: "#06c755", boxShadow: "0 4px 24px rgba(6,199,85,0.3)" }}
+            >
+              {loading ? <Spinner /> : (<><LineIcon />เริ่มประเมินฟรี</>)}
+            </button>
+          )}
         </motion.div>
 
         <motion.p
@@ -223,6 +245,16 @@ export default function AuthPage() {
         </motion.p>
       </div>
     </main>
+  );
+}
+
+function Spinner() {
+  return (
+    <motion.span
+      animate={{ rotate: 360 }}
+      transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+      className="w-5 h-5 rounded-full border-2 border-current border-t-transparent"
+    />
   );
 }
 
