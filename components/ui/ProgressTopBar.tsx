@@ -27,6 +27,8 @@ interface ProgressTopBarProps {
   onBack?: () => void;
   lang: Lang;
   onLangChange: (l: Lang) => void;
+  /** Hide the whole bar (e.g. while a mobile keyboard is open) — collapses --topbar-h to 0. */
+  collapsed?: boolean;
 }
 
 const SVG = {
@@ -320,6 +322,7 @@ export function ProgressTopBar({
   onBack,
   lang,
   onLangChange,
+  collapsed = false,
 }: ProgressTopBarProps) {
   const { onJump, reachedMax = -1 } = useContext(NavContext);
   const headerRef = useRef<HTMLElement>(null);
@@ -327,6 +330,8 @@ export function ProgressTopBar({
   useLayoutEffect(() => {
     const el = headerRef.current;
     if (!el) return;
+    // When collapsed (keyboard open) the header is display:none → offsetHeight 0 → --topbar-h 0,
+    // so the sticky headline pins to the top. The ResizeObserver keeps it in sync on show/hide.
     const set = () => document.documentElement.style.setProperty("--topbar-h", `${el.offsetHeight}px`);
     set();
     const ro = new ResizeObserver(set);
@@ -338,7 +343,7 @@ export function ProgressTopBar({
   const pipeline = <Pipeline boxes={boxes} activeIndex={activeIndex} onJump={onJump} reachedMax={reachedMax} lang={lang} />;
 
   return (
-    <header ref={headerRef} className="sticky top-0 z-30 border-b border-border bg-card px-4 py-3">
+    <header ref={headerRef} className={`sticky top-0 z-30 border-b border-border bg-card px-4 py-3 ${collapsed ? "hidden" : ""}`}>
       <div className="mx-auto max-w-[480px]">
         {variant === "bare" ? (
           <div className="flex min-h-[44px] items-center gap-3">

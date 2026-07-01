@@ -39,6 +39,14 @@ export function DateCalendar({ value, onChange, minDate }: DateCalendarProps) {
           .rdp-weekday { color: var(--color-muted); font-size: 0.7rem; }
           .rdp-day_button { color: var(--color-primary-mid); }
           .rdp-day_button:hover { background: var(--rdp-accent-background-color); }
+          /* selected day — soft yellow fill (design token) instead of the accent blue */
+          .rdp-selected .rdp-day_button,
+          .rdp-selected .rdp-day_button:hover {
+            background: var(--color-yellow-mid);
+            color: var(--color-primary);
+            border: 1px solid var(--color-yellow-strong);
+            font-weight: 700;
+          }
           .rdp-nav button { color: var(--color-muted); }
           .rdp-day[data-outside] .rdp-day_button { color: var(--color-muted-soft); }
           .rdp-dropdowns { display: flex; gap: 0.4rem; align-items: center; }

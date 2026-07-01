@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { ProgressTopBar, type ProgressBox } from "@/components/ui/ProgressTopBar";
 import { StickyFooter } from "@/components/ui/StickyFooter";
 import { ScrollMoreHint } from "@/components/ui/ScrollMoreHint";
@@ -25,7 +25,24 @@ interface QuestionShellProps {
   hideTitleDivider?: boolean;
   /** Smaller title (one step down) + tighter gap to the content — for label-style titles. */
   compactTitle?: boolean;
+  /** Optional action rendered on the title/subtitle row, right-aligned (e.g. the summary Edit toggle). */
+  headerRight?: ReactNode;
   children: ReactNode;
+}
+
+/** True while a mobile soft keyboard is open — detected via the visual viewport shrinking well
+ * below the layout viewport (never fires on desktop, where the two stay equal). */
+function useKeyboardOpen(): boolean {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => setOpen(window.innerHeight - vv.height > 140);
+    onResize();
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
+  return open;
 }
 
 /**
@@ -47,8 +64,10 @@ export function QuestionShell({
   footer,
   hideTitleDivider,
   compactTitle,
+  headerRight,
   children,
 }: QuestionShellProps) {
+  const kbOpen = useKeyboardOpen();
   return (
     <main className="relative min-h-screen bg-surface">
       <div className="mx-auto max-w-[480px]">
@@ -61,15 +80,22 @@ export function QuestionShell({
           onBack={onBack}
           lang={lang}
           onLangChange={onLangChange}
+          collapsed={kbOpen}
         />
         {/* Sticky headline — a sibling of (never inside) ScreenTransition, since sticky breaks
-            inside a transformed/animated ancestor. Pins right below the measured top bar. */}
+            inside a transformed/animated ancestor. Pins right below the measured top bar (or to the
+            very top while the keyboard is open and the bar is hidden). */}
         <div
           className={`sticky z-20 bg-surface px-5 ${compactTitle ? "pb-2 pt-6" : "pb-3 pt-4"} ${hideTitleDivider ? "" : "border-b border-border"}`}
-          style={{ top: "var(--topbar-h, 128px)" }}
+          style={{ top: kbOpen ? "0px" : "var(--topbar-h, 128px)" }}
         >
-          <h2 className={`leading-snug ${compactTitle ? "text-xl font-bold text-muted" : "text-2xl font-extrabold text-primary"}`}>{title}</h2>
-          {subtitle && <p className="mt-1.5 text-sm text-muted">{subtitle}</p>}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h2 className={`leading-snug ${compactTitle ? "text-xl font-bold text-muted" : "text-2xl font-extrabold text-primary"}`}>{title}</h2>
+              {subtitle && <p className="mt-1.5 text-sm text-muted">{subtitle}</p>}
+            </div>
+            {headerRight && <div className="shrink-0">{headerRight}</div>}
+          </div>
         </div>
         <ScreenTransition screenKey={screenKey}>
           <div className={`px-5 pb-40 ${compactTitle ? "pt-2" : "pt-5"}`}>{children}</div>

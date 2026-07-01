@@ -31,6 +31,8 @@ function display(qid: string, answers: Record<string, string>, lang: "th" | "en"
     const o = q.options?.find((opt) => opt.value === val);
     return o ? (lang === "th" ? o.label : o.labelEn ?? o.label) : val;
   };
+  // phone → prefix the dial code, e.g. "(+66) 0812345678"
+  if (qid === "q5") return `(${answers["q5_cc"] || "+66"}) ${v}`;
   // radio "other" with a free-text write-in
   if (q.allowOtherText && v === "other") return answers[`${qid}_other`] || label("other");
   if (q.type === "multiCheckbox") return v.split(", ").filter(Boolean).map(label).join(", ");
@@ -82,14 +84,7 @@ export function SummaryScreen({
       screenKey={question.id}
       title={lang === "th" ? "สรุปข้อมูลของคุณ" : "Review your info"}
       subtitle={lang === "th" ? "ตรวจความถูกต้องก่อนส่งให้ทีมวีซ่า" : "Check before sending to our visa team"}
-      footer={
-        <Button disabled={!certified || submitting} onClick={onNext}>
-          {submitting ? (lang === "th" ? "กำลังส่ง…" : "Submitting…") : lang === "th" ? "ส่งแบบประเมิน →" : "Submit →"}
-        </Button>
-      }
-    >
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-sm text-muted-soft">{lang === "th" ? "แตะ “แก้ไข” เพื่อปรับคำตอบ" : "Tap Edit to change answers"}</span>
+      headerRight={
         <button
           type="button"
           onClick={() => {
@@ -100,7 +95,18 @@ export function SummaryScreen({
         >
           {editing ? (lang === "th" ? "เสร็จสิ้น" : "Done") : lang === "th" ? "✎ แก้ไข" : "✎ Edit"}
         </button>
-      </div>
+      }
+      footer={
+        <Button disabled={!certified || submitting} onClick={onNext}>
+          {submitting ? (lang === "th" ? "กำลังส่ง…" : "Submitting…") : lang === "th" ? "ส่งแบบประเมิน →" : "Submit →"}
+        </Button>
+      }
+    >
+      {!editing && (
+        <p className="mb-3 text-right text-sm text-muted-soft">
+          {lang === "th" ? "แตะ “แก้ไข” เพื่อปรับคำตอบ" : "Tap Edit to change answers"}
+        </p>
+      )}
 
       {groups.length === 0 ? (
         <p className="rounded-card border border-border bg-card p-4 text-sm text-muted-soft">

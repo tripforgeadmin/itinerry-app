@@ -106,8 +106,8 @@ export function CountryHistoryEditor({ entries, onChange, withDays = false, lang
                 error={
                   yearErr
                     ? lang === "th"
-                      ? `กรอกปี ค.ศ. (${MIN_YEAR}–${new Date().getFullYear()})`
-                      : `Enter a CE year (${MIN_YEAR}–${new Date().getFullYear()})`
+                      ? `เลือกปีได้ตั้งแต่ ค.ศ. ${MIN_YEAR}–ปีปัจจุบัน`
+                      : `Select a year from ${MIN_YEAR} to the current year`
                     : null
                 }
               />

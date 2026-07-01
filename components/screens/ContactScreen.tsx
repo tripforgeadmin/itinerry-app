@@ -89,6 +89,7 @@ export function ContactScreen({
       }
     >
       {/* channel — the primary choice (the screen header asks it), at the top */}
+      <h3 className="mb-2 font-bold text-primary">{lang === "th" ? "เลือกช่องทาง" : "Choose a channel"}</h3>
       <div className="grid grid-cols-2 gap-3">
         {q36.options?.map((o) => {
           const on = channel === o.value;
