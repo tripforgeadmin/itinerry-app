@@ -54,15 +54,15 @@ export default function DonePage() {
           </p>
         </div>
 
-        {/* LINE CTA Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full rounded-3xl overflow-hidden"
-          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
-        >
-          {isFriend ? (
+        {isFriend ? (
+          /* Friend — frosted card + back-to-chat, unchanged */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full rounded-3xl overflow-hidden"
+            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
+          >
             <div className="px-6 py-6 text-center space-y-2">
               <span className="text-3xl">💬</span>
               <p className="text-white font-bold text-base">พร้อมติดต่อคุณแล้ว!</p>
@@ -71,47 +71,6 @@ export default function DonePage() {
                 และเบอร์โทรที่ให้ไว้ภายใน 24 ชม.
               </p>
             </div>
-          ) : (
-            <>
-              <div className="px-6 pt-6 pb-4 text-center space-y-1">
-                <p className="text-white font-bold text-base">รับผลประเมินของคุณ</p>
-                <p className="text-white/50 text-xs leading-relaxed">
-                  เพิ่มเพื่อน LINE เพื่อรับผลประเมินและ<br />
-                  คำแนะนำจากผู้เชี่ยวชาญภายใน 24 ชม.
-                </p>
-              </div>
-
-              {/* Add Friend Button — above the QR (primary action first) */}
-              <div className="px-4 pb-4">
-                <a
-                  href={LINE_OA_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-white font-bold text-base transition-all active:scale-[0.98]"
-                  style={{ backgroundColor: "#06c755" }}
-                >
-                  <LineIcon />
-                  เพิ่มเพื่อนรับผลประเมิน
-                </a>
-              </div>
-
-              {/* QR */}
-              <div className="flex justify-center pb-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={LINE_OA_QR}
-                  alt="LINE QR @448yxrvh"
-                  width={140}
-                  height={140}
-                  className="rounded-2xl"
-                />
-              </div>
-              <p className="text-center text-white/30 text-xs pb-5">@448yxrvh</p>
-            </>
-          )}
-
-          {/* กลับไปที่แชท LINE — friends only (not-yet-friend variant keeps a single CTA: add friend) */}
-          {isFriend && (
             <div className="px-6 pb-5 pt-1">
               <a
                 href={LINE_OA_URL}
@@ -124,8 +83,64 @@ export default function DonePage() {
                 กลับไปที่แชท LINE
               </a>
             </div>
-          )}
-        </motion.div>
+          </motion.div>
+        ) : (
+          /* Not-yet-friend — no card: bouncing arrow points at a pulsing add-friend button, QR below */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full flex flex-col items-center"
+          >
+            {/* animated down-arrow cue */}
+            <motion.svg
+              width="40" height="40" viewBox="0 0 24 24" fill="none"
+              stroke="#06c755" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+              animate={{ y: [0, 10, 0], opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }}
+              className="mb-3"
+              aria-hidden
+            >
+              <path d="M12 4v13" />
+              <path d="m6 12 6 6 6-6" />
+            </motion.svg>
+
+            {/* Add Friend Button — pulsing glow invites the tap */}
+            <motion.a
+              href={LINE_OA_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-white font-bold text-base"
+              style={{ backgroundColor: "#06c755" }}
+              animate={{
+                scale: [1, 1.035, 1],
+                boxShadow: [
+                  "0 0 0 0 rgba(6,199,85,0.55)",
+                  "0 0 0 16px rgba(6,199,85,0)",
+                  "0 0 0 0 rgba(6,199,85,0)",
+                ],
+              }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
+              whileTap={{ scale: 0.96 }}
+            >
+              <LineIcon />
+              เพิ่มเพื่อนรับผลประเมิน
+            </motion.a>
+
+            {/* QR */}
+            <div className="mt-6 flex justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={LINE_OA_QR}
+                alt="LINE QR @448yxrvh"
+                width={140}
+                height={140}
+                className="rounded-2xl"
+              />
+            </div>
+            <p className="mt-2 text-center text-white/30 text-xs">@448yxrvh</p>
+          </motion.div>
+        )}
 
         {/* Steps */}
         <motion.div
