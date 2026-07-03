@@ -16,11 +16,13 @@ interface DateCalendarProps {
   onChange: (iso: string) => void;
   /** Earliest selectable day (ISO); days before max(today, minDate) are disabled. */
   minDate?: string;
+  /** Drop the mascot below the calendar (dropdown/compact contexts). */
+  hideMascot?: boolean;
 }
 
 /** Inline date picker (design spec §5): Thai month + Gregorian (ค.ศ.) year, both selectable via
  * dropdowns, past days disabled, itin_main mascot below. Wraps react-day-picker, tokenized. */
-export function DateCalendar({ value, onChange, minDate }: DateCalendarProps) {
+export function DateCalendar({ value, onChange, minDate, hideMascot = false }: DateCalendarProps) {
   const selected = value ? new Date(`${value}T00:00:00`) : undefined;
   const today = new Date();
   // Floor at today; if a minDate (e.g. the arrival date) is later, floor there instead.
@@ -67,10 +69,12 @@ export function DateCalendar({ value, onChange, minDate }: DateCalendarProps) {
           formatters={{ formatMonthDropdown: (month) => TH_MONTHS[month.getMonth()] }}
         />
       </div>
-      <div className="mt-5 flex justify-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/mascot/itin_main.png" alt="" className="h-24 w-24 object-contain" />
-      </div>
+      {!hideMascot && (
+        <div className="mt-5 flex justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mascot/itin_main.png" alt="" className="h-24 w-24 object-contain" />
+        </div>
+      )}
     </>
   );
 }

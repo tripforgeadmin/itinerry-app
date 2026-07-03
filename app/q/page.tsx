@@ -10,6 +10,7 @@ import { NationalityScreen } from "@/components/screens/NationalityScreen";
 import { CountryScreen } from "@/components/screens/CountryScreen";
 import { VisatypeScreen } from "@/components/screens/VisatypeScreen";
 import { DateScreen } from "@/components/screens/DateScreen";
+import { TravelDatesScreen } from "@/components/screens/TravelDatesScreen";
 import { ChoiceScreen } from "@/components/screens/ChoiceScreen";
 import { MultiSelectScreen } from "@/components/screens/MultiSelectScreen";
 import { PriorVisasScreen } from "@/components/screens/PriorVisasScreen";
@@ -43,7 +44,11 @@ const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
   q8: CountryScreen,
   q9: VisatypeScreen,
   // Group B · เดินทาง (visa-branch questions q10–q23, generic by field type)
-  q10: DateScreen, q11: DateScreen, q13: DateScreen, q17: DateScreen, q18: DateScreen, q21: DateScreen, q39: DateScreen,
+  // Arrival questions render the combined arrival+return+duration screen, which captures the
+  // return answer (q11/q39/q18) and advanceTo()s past it. The return ids keep a DateScreen
+  // fallback so an in-flight session persisted mid-step before this change still renders.
+  q10: TravelDatesScreen, q13: TravelDatesScreen, q17: TravelDatesScreen, q21: TravelDatesScreen,
+  q11: DateScreen, q18: DateScreen, q39: DateScreen,
   q14: ChoiceScreen, q15: ChoiceScreen, q19: ChoiceScreen, q22: ChoiceScreen, q23: ChoiceScreen,
   q12: PriorVisasScreen, q16: MultiSelectScreen,
   // Group C · อาชีพ (occupation + employment-document branches q24–q29)

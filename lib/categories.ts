@@ -26,10 +26,14 @@ const CATEGORY_INDEX_BY_ID: Record<string, number> = {
   q2: 5, // สรุป — its own category
 };
 
-// Screens captured by another screen (contact-merge on q3; advanceTo on refused q30/overstay q32)
-// and therefore never rendered as the current screen — excluded so the active box's denominator
-// counts only real steps.
-const NON_RENDERED = new Set(["q5", "q6", "q36", "q37", "q31", "q33", "q38"]);
+// Screens captured by another screen (contact-merge on q3; advanceTo on refused q30/overstay q32;
+// return dates on the combined travel-dates screen) and therefore never rendered as the current
+// screen — excluded so the active box's denominator counts only real steps.
+const NON_RENDERED = new Set(["q5", "q6", "q36", "q37", "q31", "q33", "q38", "q11", "q39", "q18"]);
+
+// Return-date questions answered on the combined arrival screen: never in `history` themselves,
+// so they count as on-path whenever their arrival question is.
+const CAPTURED_RETURN: Record<string, string> = { q11: "q10", q39: "q13", q18: "q17" };
 
 // Ordered rendered screens per category, derived from CATEGORY_INDEX_BY_ID (single source of truth)
 // so EVERY visited screen gets a distinct position → the active box fills gradually in all 5
@@ -54,6 +58,8 @@ export function isBranchQuestion(id: string): boolean {
 /** A branch question counts only when it's on the user's current trail; everything else always does.
  * Filters out stale answers left behind when the user switches visa type / occupation. */
 export function isOnCurrentPath(id: string, history: string[]): boolean {
+  const anchor = CAPTURED_RETURN[id];
+  if (anchor) return history.includes(anchor);
   return !isBranchQuestion(id) || history.includes(id);
 }
 
