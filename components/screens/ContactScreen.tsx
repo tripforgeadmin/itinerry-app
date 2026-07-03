@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TextField } from "@/components/ui/TextField";
+import { GlassCard } from "@/components/ui/GlassCard";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { RevealBlock } from "@/components/ui/RevealBlock";
 import { Button } from "@/components/ui/Button";
@@ -90,29 +91,23 @@ export function ContactScreen({
     >
       {/* channel — the primary choice (the screen header asks it), at the top */}
       <h3 className="mb-2 font-bold text-primary">{lang === "th" ? "เลือกช่องทาง" : "Choose a channel"}</h3>
-      <div className="grid grid-cols-2 gap-3">
-        {q36.options?.map((o) => {
-          const on = channel === o.value;
-          return (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() => onAnswer("q36", o.value)}
-              className={
-                "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-5 text-center transition-colors " +
-                (on ? "border-accent bg-accent-subtle text-primary" : "border-border bg-card text-muted hover:border-border-mid")
-              }
-            >
+      {/* frosted GlassCards, same recipe as the Ties-to-Thailand grid */}
+      <div className="grid grid-cols-2 gap-4">
+        {q36.options?.map((o) => (
+          <GlassCard key={o.value} selected={channel === o.value} onSelect={() => onAnswer("q36", o.value)}>
+            <div className="flex flex-col items-center gap-2 p-4 text-center">
               {CHANNEL_IMG[o.value] ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={CHANNEL_IMG[o.value]} alt="" className="h-12 w-12 object-contain" />
+                <img src={CHANNEL_IMG[o.value]} alt="" className="h-20 w-20 object-contain" />
               ) : (
-                <span className="text-3xl leading-none">{o.emoji ?? "•"}</span>
+                <span className="text-4xl leading-none">{o.emoji ?? "•"}</span>
               )}
-              <span className="text-sm font-bold">{lang === "th" ? o.label : o.labelEn ?? o.label}</span>
-            </button>
-          );
-        })}
+              <p className="line-clamp-2 text-sm font-bold leading-tight text-primary">
+                {lang === "th" ? o.label : o.labelEn ?? o.label}
+              </p>
+            </div>
+          </GlassCard>
+        ))}
       </div>
 
       <RevealBlock open={isCall}>
