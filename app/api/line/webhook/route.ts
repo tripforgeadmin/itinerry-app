@@ -6,6 +6,7 @@ export async function GET() {
 }
 import { supabase } from "@/lib/supabase";
 import { replyMessage, confirmDeleteMessage, assessmentReceivedMessage } from "@/lib/line-messaging";
+import { shareCardFlex } from "@/lib/line-flex";
 import { anonymizeAccount } from "@/lib/anonymize";
 
 /** Follow (add friend / unblock): freshen is_friend, then deliver the ticket thank-you message the
@@ -42,7 +43,11 @@ async function handleFollow(userId: string, replyToken?: string) {
   if (!claimed?.length) return;
 
   const msgLang = account.nationality === "other" ? "en" : "th";
-  await replyMessage(replyToken, [assessmentReceivedMessage(pending.ticket_id as string, msgLang)]);
+  // thank-you + the viral share card ride the same (free) reply — one send, two messages
+  await replyMessage(replyToken, [
+    assessmentReceivedMessage(pending.ticket_id as string, msgLang),
+    shareCardFlex(msgLang),
+  ]);
 }
 
 const TRIGGER_KEYWORDS = ["ยกเลิกข้อมูล", "ลบข้อมูล", "pdpa", "ถอนความยินยอม"];
