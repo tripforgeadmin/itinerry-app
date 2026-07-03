@@ -42,10 +42,11 @@ export default function DonePage() {
           <img src="/approve.png" alt="approved" className="w-40 h-40 object-contain" />
         </motion.div>
 
-        {/* Headline */}
+        {/* Headline — not-yet-friend gets the add-friend call-to-action instead
+            (isFriend === null → neutral text, so friends never flash the CTA headline) */}
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold text-white leading-tight">
-            ได้รับข้อมูลของคุณแล้ว!
+            {isFriend === false ? "กดเพิ่มเพื่อนเพื่อเตรียมรับผลประเมิน!" : "ได้รับข้อมูลของคุณแล้ว!"}
           </h1>
           <p className="text-white/60 text-sm leading-relaxed">
             ทีม itinerry กำลังวิเคราะห์ข้อมูลของคุณ<br />
@@ -80,20 +81,7 @@ export default function DonePage() {
                 </p>
               </div>
 
-              {/* QR */}
-              <div className="flex justify-center pb-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={LINE_OA_QR}
-                  alt="LINE QR @448yxrvh"
-                  width={140}
-                  height={140}
-                  className="rounded-2xl"
-                />
-              </div>
-              <p className="text-center text-white/30 text-xs pb-3">@448yxrvh</p>
-
-              {/* Add Friend Button */}
+              {/* Add Friend Button — above the QR (primary action first) */}
               <div className="px-4 pb-4">
                 <a
                   href={LINE_OA_URL}
@@ -106,22 +94,37 @@ export default function DonePage() {
                   เพิ่มเพื่อนรับผลประเมิน
                 </a>
               </div>
+
+              {/* QR */}
+              <div className="flex justify-center pb-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={LINE_OA_QR}
+                  alt="LINE QR @448yxrvh"
+                  width={140}
+                  height={140}
+                  className="rounded-2xl"
+                />
+              </div>
+              <p className="text-center text-white/30 text-xs pb-5">@448yxrvh</p>
             </>
           )}
 
-          {/* Always show: กลับไปที่แชท LINE */}
-          <div className="px-6 pb-5 pt-1">
-            <a
-              href={LINE_OA_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex min-h-[55px] items-center justify-center gap-2.5 py-3.5 rounded-2xl font-bold text-sm text-white transition-all active:scale-[0.98]"
-              style={{ backgroundColor: "#06c755" }}
-            >
-              <LineIcon />
-              กลับไปที่แชท LINE
-            </a>
-          </div>
+          {/* กลับไปที่แชท LINE — friends only (not-yet-friend variant keeps a single CTA: add friend) */}
+          {isFriend && (
+            <div className="px-6 pb-5 pt-1">
+              <a
+                href={LINE_OA_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex min-h-[55px] items-center justify-center gap-2.5 py-3.5 rounded-2xl font-bold text-sm text-white transition-all active:scale-[0.98]"
+                style={{ backgroundColor: "#06c755" }}
+              >
+                <LineIcon />
+                กลับไปที่แชท LINE
+              </a>
+            </div>
+          )}
         </motion.div>
 
         {/* Steps */}
