@@ -209,6 +209,9 @@ export default function QuestionnairePage() {
         body: JSON.stringify({ answers: clean }),
       });
       if (!res.ok) throw new Error("Submit failed");
+      // hand the case ticket to /done (survives the store reset there)
+      const data = await res.json().catch(() => null);
+      if (data?.ticketId) sessionStorage.setItem("itinerry-ticket-id", data.ticketId);
       router.push("/done");
     } catch {
       alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");

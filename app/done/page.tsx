@@ -13,10 +13,12 @@ function getCookie(name: string): string | undefined {
 export default function DonePage() {
   const { reset } = useFormStore();
   const [isFriend, setIsFriend] = useState<boolean | null>(null);
+  const [ticketId, setTicketId] = useState<string | null>(null);
 
   useEffect(() => {
     reset();
     setIsFriend(getCookie("isFriend") === "1");
+    setTicketId(sessionStorage.getItem("itinerry-ticket-id"));
   }, [reset]);
 
   return (
@@ -53,6 +55,17 @@ export default function DonePage() {
             เพื่อเตรียมผลประเมินวีซ่าเฉพาะสำหรับคุณ
           </p>
         </div>
+
+        {/* case ticket */}
+        {ticketId && (
+          <div
+            className="w-full rounded-2xl px-5 py-3 text-center"
+            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.18)" }}
+          >
+            <p className="text-white/50 text-xs mb-0.5">🔖 หมายเลขอ้างอิงของคุณ</p>
+            <p className="text-white font-bold text-lg tracking-widest">{ticketId}</p>
+          </div>
+        )}
 
         {isFriend ? (
           /* Friend — frosted card + back-to-chat, unchanged */

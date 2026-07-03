@@ -15,6 +15,7 @@ const VISA_LABEL: Record<string, string> = {
 
 export interface NewLeadParams {
   assessmentId: string;
+  ticketId?: string;
   fullName: string;
   phone: string;
   visaType: string;
@@ -27,10 +28,10 @@ export interface NewLeadParams {
 }
 
 export async function sendNewLeadEmail(params: NewLeadParams) {
-  const { assessmentId, fullName, phone, visaType, destination, travelArrival, travelReturn, contactPreference, appUrl, pdfBuffer } = params;
+  const { assessmentId, ticketId, fullName, phone, visaType, destination, travelArrival, travelReturn, contactPreference, appUrl, pdfBuffer } = params;
 
   const visaLabel = VISA_LABEL[visaType] ?? visaType;
-  const subject = `[New Lead] ${fullName} · ${visaLabel} · ${destination.toUpperCase()}`;
+  const subject = `[New Lead] ${ticketId ? `${ticketId} · ` : ""}${fullName} · ${visaLabel} · ${destination.toUpperCase()}`;
   const adminUrl = `${appUrl}/admin/${assessmentId}`;
   const contactLabel = contactPreference === "line" ? "LINE OA" : "โทรกลับ";
 
@@ -43,6 +44,7 @@ export async function sendNewLeadEmail(params: NewLeadParams) {
         <h2 style="color:#1e293b;margin-bottom:4px">Lead ใหม่เข้ามาแล้ว 🎉</h2>
         <p style="color:#64748b;margin-top:0">${new Date().toLocaleString("th-TH", { dateStyle: "long", timeStyle: "short" })}</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">
+          ${ticketId ? `<tr><td style="padding:8px 0;color:#64748b;width:130px">Ticket</td><td style="padding:8px 0;font-weight:700;color:#1e293b">${ticketId}</td></tr>` : ""}
           <tr><td style="padding:8px 0;color:#64748b;width:130px">ชื่อ</td><td style="padding:8px 0;font-weight:600;color:#1e293b">${fullName}</td></tr>
           <tr><td style="padding:8px 0;color:#64748b">เบอร์โทร</td><td style="padding:8px 0;color:#1e293b">${phone}</td></tr>
           <tr><td style="padding:8px 0;color:#64748b">วีซ่า</td><td style="padding:8px 0;color:#1e293b">${visaLabel}</td></tr>

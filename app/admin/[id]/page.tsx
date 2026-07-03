@@ -116,6 +116,9 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         <div className="flex items-center gap-3 mb-6">
           <Link href="/admin" className="text-gray-400 hover:text-gray-600 text-sm">← กลับ</Link>
           <h1 className="text-xl font-bold text-gray-800">{name}</h1>
+          {typeof s.ticket_id === "string" && s.ticket_id && (
+            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700">{s.ticket_id}</span>
+          )}
           <span className="text-xs text-gray-400">
             {new Date(s.created_at as string).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
           </span>

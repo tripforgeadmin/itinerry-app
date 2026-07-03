@@ -1,4 +1,5 @@
 const REPLY_URL = "https://api.line.me/v2/bot/message/reply";
+const PUSH_URL = "https://api.line.me/v2/bot/message/push";
 
 function getToken() {
   const token = process.env.LINE_MESSAGING_ACCESS_TOKEN;
@@ -18,6 +19,34 @@ export async function replyMessage(replyToken: string, messages: object[]) {
   if (!res.ok) {
     console.error("LINE reply error:", await res.text());
   }
+}
+
+/** Proactive push to a user (requires the user to be a friend of the OA — LINE rejects pushes
+ * to non-friends, so callers should treat failures as expected/best-effort). */
+export async function pushMessage(to: string, messages: object[]) {
+  const res = await fetch(PUSH_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${getToken()}`,
+    },
+    body: JSON.stringify({ to, messages }),
+  });
+  if (!res.ok) {
+    console.error("LINE push error:", await res.text());
+  }
+}
+
+/** Post-submit thank-you note carrying the case ticket id. */
+export function assessmentReceivedMessage(ticketId: string) {
+  return {
+    type: "text",
+    text:
+      `🙏 ขอขอบคุณที่ทำแบบประเมินกับ itinerry เราได้รับข้อมูลเบื้องต้นแล้ว ✅\n\n` +
+      `🔖 หมายเลขอ้างอิงของคุณคือ\n${ticketId}\n\n` +
+      `⏱️ เราจะส่งผลประเมินให้คุณภายใน 24 ชั่วโมง\n\n` +
+      `💬 หากคุณลูกค้ามีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยครับ`,
+  };
 }
 
 export function confirmDeleteMessage() {

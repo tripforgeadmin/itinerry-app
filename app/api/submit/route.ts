@@ -4,6 +4,8 @@ import { verifySessionToken } from "@/lib/line";
 import { supabase } from "@/lib/supabase";
 import { sendNewLeadEmail } from "@/lib/email";
 import { generateAssessmentPdf } from "@/lib/pdf";
+import { generateTicketId } from "@/lib/ticket";
+import { pushMessage, assessmentReceivedMessage } from "@/lib/line-messaging";
 
 function toNull(v: string | undefined): string | null {
   return v && v !== "" ? v : null;
@@ -141,9 +143,11 @@ export async function POST(request: NextRequest) {
   }
 
   // ===== 3) user_assessment (qualification + screening) =====
+  const ticketId = await generateTicketId(answers.q8 ?? "");
   const { error: assessError } = await supabase.from("user_assessment").insert({
     trip_id:              trip.id,
     account_id:           account.id,
+    ticket_id:            ticketId,
     occupation:           answers.q24 ?? "",
     intent:               toNull(answers.q38),
     visa_refused:         answers.q30 === "yes",
@@ -174,6 +178,7 @@ export async function POST(request: NextRequest) {
   try {
     await sendNewLeadEmail({
       assessmentId: trip.id,
+      ticketId,
       fullName: fullName ?? "",
       phone: answers.q5 ?? "",
       visaType: answers.q9 ?? "",
@@ -188,5 +193,15 @@ export async function POST(request: NextRequest) {
     console.error("email error:", err);
   }
 
-  return NextResponse.json({ ok: true });
+  // Thank-you push with the ticket id — best-effort: LINE rejects pushes to users who haven't
+  // added the OA as a friend, and that must never fail the submit.
+  try {
+    if (profile?.userId) {
+      await pushMessage(profile.userId, [assessmentReceivedMessage(ticketId)]);
+    }
+  } catch (err) {
+    console.error("line push error:", err);
+  }
+
+  return NextResponse.json({ ok: true, ticketId });
 }
