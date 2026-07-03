@@ -198,7 +198,8 @@ export async function POST(request: NextRequest) {
   // in ticket_notified_at so the follow-webhook doesn't re-send later.
   try {
     if (profile?.userId) {
-      const delivered = await pushMessage(profile.userId, [assessmentReceivedMessage(ticketId)]);
+      const msgLang = answers.q4 === "other" ? "en" : "th";
+      const delivered = await pushMessage(profile.userId, [assessmentReceivedMessage(ticketId, msgLang)]);
       if (delivered) {
         await supabase
           .from("user_assessment")

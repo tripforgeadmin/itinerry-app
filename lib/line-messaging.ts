@@ -39,16 +39,20 @@ export async function pushMessage(to: string, messages: object[]): Promise<boole
   return res.ok;
 }
 
-/** Post-submit thank-you note carrying the case ticket id. */
-export function assessmentReceivedMessage(ticketId: string) {
-  return {
-    type: "text",
-    text:
-      `🙏 ขอขอบคุณที่ทำแบบประเมินกับ itinerry เราได้รับข้อมูลเบื้องต้นแล้ว ✅\n\n` +
-      `🔖 หมายเลขอ้างอิงของคุณคือ\n${ticketId}\n\n` +
-      `⏱️ เราจะส่งผลประเมินให้คุณภายใน 24 ชั่วโมง\n\n` +
-      `💬 หากคุณลูกค้ามีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยครับ`,
-  };
+/** Post-submit thank-you note carrying the case ticket id. English for non-Thai nationals
+ * (q4 = "other"), Thai otherwise. */
+export function assessmentReceivedMessage(ticketId: string, lang: "th" | "en" = "th") {
+  const text =
+    lang === "en"
+      ? `🙏 Thank you for completing the itinerry assessment — we have received your information ✅\n\n` +
+        `🔖 Your reference number is\n${ticketId}\n\n` +
+        `⏱️ We will send you your assessment result within 24 hours\n\n` +
+        `💬 If you have any questions or further requests, feel free to chat with us anytime`
+      : `🙏 ขอขอบคุณที่ทำแบบประเมินกับ itinerry เราได้รับข้อมูลเบื้องต้นแล้ว ✅\n\n` +
+        `🔖 หมายเลขอ้างอิงของคุณคือ\n${ticketId}\n\n` +
+        `⏱️ เราจะส่งผลประเมินให้คุณภายใน 24 ชั่วโมง\n\n` +
+        `💬 หากคุณลูกค้ามีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยครับ`;
+  return { type: "text", text };
 }
 
 export function confirmDeleteMessage() {

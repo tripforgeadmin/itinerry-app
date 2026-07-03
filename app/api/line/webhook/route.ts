@@ -16,7 +16,7 @@ async function handleFollow(userId: string, replyToken?: string) {
 
   const { data: account } = await supabase
     .from("account")
-    .select("id")
+    .select("id, nationality")
     .eq("line_user_id", userId)
     .maybeSingle();
   if (!account) return;
@@ -41,7 +41,8 @@ async function handleFollow(userId: string, replyToken?: string) {
     .select("id");
   if (!claimed?.length) return;
 
-  await replyMessage(replyToken, [assessmentReceivedMessage(pending.ticket_id as string)]);
+  const msgLang = account.nationality === "other" ? "en" : "th";
+  await replyMessage(replyToken, [assessmentReceivedMessage(pending.ticket_id as string, msgLang)]);
 }
 
 const TRIGGER_KEYWORDS = ["ยกเลิกข้อมูล", "ลบข้อมูล", "pdpa", "ถอนความยินยอม"];
