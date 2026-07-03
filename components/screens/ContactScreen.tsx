@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { DateCalendar } from "@/components/ui/DateCalendar";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { RevealBlock } from "@/components/ui/RevealBlock";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +17,18 @@ import type { ScreenProps } from "@/components/screens/types";
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const NON_ASCII = /[^\x00-\x7F]/;
 const CHANNEL_IMG: Record<string, string> = { line: "/icons/line.png", call: "/icons/phone.png" };
+
+// Hourly callback slots 00:00–24:00 for the "ระบุเวลาเอง" picker.
+const HOURS = Array.from({ length: 25 }, (_, h) => `${String(h).padStart(2, "0")}:00`);
+
+const TH_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+const EN_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function fmtDate(iso: string, lang: "th" | "en"): string {
+  const d = new Date(`${iso}T00:00:00`);
+  return lang === "th"
+    ? `${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear()}`
+    : `${d.getDate()} ${EN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
 
 /**
  * Contact (rendered at q3) — first/last name (q3_first/q3_last + combined q3), phone with a country
@@ -42,6 +55,17 @@ export function ContactScreen({
   const time = answers["q37"] ?? "";
   const timeOther = answers["q37_other"] ?? "";
   const isCall = channel === "call";
+  // "ระบุเวลาเอง": a calendar date + an hourly time select, composed into q37_other
+  // ("YYYY-MM-DD HH:MM") so the summary/submit/DB path stays unchanged.
+  const cbDate = answers["q37_date"] ?? "";
+  const cbTime = answers["q37_time"] ?? "";
+  const [cbDateOpen, setCbDateOpen] = useState(false);
+
+  function setCallbackSlot(date: string, tm: string) {
+    onAnswer("q37_date", date);
+    onAnswer("q37_time", tm);
+    onAnswer("q37_other", date && tm ? `${date} ${tm}` : "");
+  }
 
   // Errors only surface once a field has been blurred — no red flash while the user is still typing.
   const [touched, setTouched] = useState<{ q5?: boolean; q6?: boolean }>({});
@@ -119,12 +143,66 @@ export function ContactScreen({
             onChange={(v) => onAnswer("q37", v)}
           />
           <RevealBlock open={time === "other"}>
-            <div className="pt-3">
-              <TextField
-                value={timeOther}
-                onChange={(e) => onAnswer("q37_other", e.target.value)}
-                placeholder={lang === "th" ? q37.otherPlaceholder : q37.otherPlaceholderEn}
-              />
+            <div className="space-y-3 pt-3">
+              {/* date — calendar dropdown */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setCbDateOpen((o) => !o)}
+                  className={
+                    "flex w-full items-center gap-3 rounded-2xl border bg-card px-4 py-3.5 text-left transition-colors " +
+                    (cbDateOpen ? "border-accent" : "border-border")
+                  }
+                >
+                  <span aria-hidden>📅</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-semibold text-muted">{lang === "th" ? "วันที่สะดวกให้โทร" : "Preferred date"}</span>
+                    <span className={"block truncate text-sm font-bold " + (cbDate ? "text-primary" : "text-muted-soft")}>
+                      {cbDate ? fmtDate(cbDate, lang) : lang === "th" ? "เลือกวันที่" : "Pick a date"}
+                    </span>
+                  </span>
+                  <svg
+                    width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    className={`shrink-0 text-muted-soft transition-transform ${cbDateOpen ? "rotate-180" : ""}`}
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                <RevealBlock open={cbDateOpen}>
+                  <div className="pt-3">
+                    <DateCalendar
+                      value={cbDate || undefined}
+                      onChange={(iso) => {
+                        setCallbackSlot(iso, cbTime);
+                        setCbDateOpen(false);
+                      }}
+                      hideMascot
+                    />
+                  </div>
+                </RevealBlock>
+              </div>
+
+              {/* time — hourly select 00:00–24:00 */}
+              <div>
+                <span className="mb-1.5 block text-sm font-semibold text-primary">{lang === "th" ? "เวลาที่สะดวก" : "Preferred time"}</span>
+                <select
+                  value={cbTime}
+                  onChange={(e) => setCallbackSlot(cbDate, e.target.value)}
+                  className={
+                    "w-full rounded-2xl border bg-card px-4 py-3.5 outline-none transition-colors focus:border-accent " +
+                    (cbTime ? "border-border text-primary" : "border-border text-muted-soft")
+                  }
+                >
+                  <option value="" disabled>
+                    {lang === "th" ? "เลือกเวลา" : "Pick a time"}
+                  </option>
+                  {HOURS.map((h) => (
+                    <option key={h} value={h}>
+                      {h} {lang === "th" ? "น." : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </RevealBlock>
         </div>
