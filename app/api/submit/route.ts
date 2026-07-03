@@ -194,10 +194,17 @@ export async function POST(request: NextRequest) {
   }
 
   // Thank-you push with the ticket id — best-effort: LINE rejects pushes to users who haven't
-  // added the OA as a friend, and that must never fail the submit.
+  // added the OA as a friend, and that must never fail the submit. Delivered messages are recorded
+  // in ticket_notified_at so the follow-webhook doesn't re-send later.
   try {
     if (profile?.userId) {
-      await pushMessage(profile.userId, [assessmentReceivedMessage(ticketId)]);
+      const delivered = await pushMessage(profile.userId, [assessmentReceivedMessage(ticketId)]);
+      if (delivered) {
+        await supabase
+          .from("user_assessment")
+          .update({ ticket_notified_at: new Date().toISOString() })
+          .eq("ticket_id", ticketId);
+      }
     }
   } catch (err) {
     console.error("line push error:", err);

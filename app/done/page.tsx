@@ -21,6 +21,33 @@ export default function DonePage() {
     setTicketId(sessionStorage.getItem("itinerry-ticket-id"));
   }, [reset]);
 
+  // Not a friend yet? Re-check whenever the user comes back to this page (e.g. after hopping to
+  // LINE to scan the QR / tap add-friend) so the card flips to the friend variant live.
+  useEffect(() => {
+    if (isFriend !== false) return;
+    let cancelled = false;
+    async function check() {
+      try {
+        const res = await fetch("/api/friendship-status");
+        const data = await res.json().catch(() => null);
+        if (!cancelled && data?.isFriend === true) setIsFriend(true);
+      } catch {
+        /* best-effort */
+      }
+    }
+    const onVisible = () => {
+      if (document.visibilityState === "visible") check();
+    };
+    check();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [isFriend]);
+
   return (
     <main
       className="min-h-screen flex flex-col items-center justify-center px-4 py-12"

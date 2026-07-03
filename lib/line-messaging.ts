@@ -22,8 +22,9 @@ export async function replyMessage(replyToken: string, messages: object[]) {
 }
 
 /** Proactive push to a user (requires the user to be a friend of the OA — LINE rejects pushes
- * to non-friends, so callers should treat failures as expected/best-effort). */
-export async function pushMessage(to: string, messages: object[]) {
+ * to non-friends, so callers should treat failures as expected/best-effort). Returns whether
+ * LINE accepted the message, so callers can record actual delivery. */
+export async function pushMessage(to: string, messages: object[]): Promise<boolean> {
   const res = await fetch(PUSH_URL, {
     method: "POST",
     headers: {
@@ -35,6 +36,7 @@ export async function pushMessage(to: string, messages: object[]) {
   if (!res.ok) {
     console.error("LINE push error:", await res.text());
   }
+  return res.ok;
 }
 
 /** Post-submit thank-you note carrying the case ticket id. */
