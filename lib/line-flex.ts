@@ -1,6 +1,83 @@
 import { APP_URL, LIFF_URL } from "./constants";
 
 /**
+ * Post-submit "thank you" Flex card — first of two messages pushed right after a customer
+ * completes the assessment (see app/api/submit/route.ts). Distinct from shareCardFlex below,
+ * which is the standalone share-loop card re-sent from /share and the follow-webhook.
+ */
+
+const RESULT_URL = `${APP_URL}/result`;
+const START_URL = APP_URL;
+
+// Button action labels are capped at 20 characters by LINE's Messaging API —
+// keep these short even when the source copy is longer.
+const RECEIVED_TEXTS = {
+  th: {
+    alt: "ขอบคุณที่ทำแบบประเมินกับ itinerry",
+    thanks: "🙏 ขอขอบคุณที่ทำแบบประเมินกับ itinerry เราได้รับข้อมูลเบื้องต้นแล้ว ✅",
+    ticketLabel: "🔖 Ticket ID:",
+    shareIntro: "คุณสามารถแชร์แอปการประเมินให้เพื่อนที่เดินทางกับคุณได้ที่",
+    viewAnswers: "ดูคำตอบที่ส่งไป",
+    share: "แชร์ให้เพื่อน",
+  },
+  en: {
+    alt: "Thank you for completing the itinerry assessment",
+    thanks: "🙏 Thank you for completing the itinerry assessment — we have received your information ✅",
+    ticketLabel: "🔖 Ticket ID:",
+    shareIntro: "You can share the assessment app with friends traveling with you at",
+    viewAnswers: "View my answers",
+    share: "Share with friends",
+  },
+} as const;
+
+export function assessmentReceivedFlex(ticketId: string, lang: "th" | "en" = "th") {
+  const t = RECEIVED_TEXTS[lang];
+  return {
+    type: "flex",
+    altText: t.alt,
+    contents: {
+      type: "bubble",
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          {
+            type: "image",
+            url: `${APP_URL}/approve.png`,
+            size: "sm",
+            aspectRatio: "1:1",
+            aspectMode: "fit",
+            align: "center",
+          },
+          { type: "text", text: t.thanks, size: "sm", wrap: true, color: "#1b3d5c" },
+          { type: "text", text: `${t.ticketLabel} ${ticketId}`, size: "sm", weight: "bold", color: "#1b3d5c" },
+          { type: "text", text: t.shareIntro, size: "xs", color: "#8A94A6", wrap: true, margin: "md" },
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            color: "#44a8db",
+            action: { type: "uri", label: t.viewAnswers, uri: RESULT_URL },
+          },
+          {
+            type: "button",
+            style: "secondary",
+            action: { type: "uri", label: t.share, uri: START_URL },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
  * Shared Flex share card — sent by the OA (follow-webhook reply) AND re-sent by users via the
  * /share LIFF page's shareTargetPicker, so recipients can keep the loop going.
  *

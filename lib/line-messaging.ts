@@ -55,6 +55,43 @@ export function assessmentReceivedMessage(ticketId: string, lang: "th" | "en" = 
   return { type: "text", text };
 }
 
+/** Agent-triggered assessment-result push, sent once a case is marked
+ * ประเมินแล้ว (evaluated). English for non-Thai nationals, Thai otherwise. */
+export function assessmentResultMessage(pass: boolean, notes: string, lang: "th" | "en" = "th") {
+  const text =
+    lang === "en"
+      ? pass
+        ? `✅ Good news! Based on our assessment, your visa has a good chance of approval\n\n` +
+          `📝 ${notes}\n\n` +
+          `💬 Feel free to chat with us if you have any questions or want to proceed`
+        : `📋 We've finished assessing your information — there are a few things worth preparing before you apply\n\n` +
+          `📝 ${notes}\n\n` +
+          `💬 Feel free to chat with us, our team is happy to help improve your chances`
+      : pass
+        ? `✅ ข่าวดี! จากการประเมินของเรา วีซ่าของคุณมีโอกาสผ่านค่อนข้างสูง\n\n` +
+          `📝 ${notes}\n\n` +
+          `💬 ทักแชทมาได้เลยหากมีคำถามหรือต้องการดำเนินการต่อ`
+        : `📋 เราประเมินข้อมูลของคุณเสร็จแล้ว มีบางจุดที่ควรเตรียมเพิ่มก่อนยื่นวีซ่า\n\n` +
+          `📝 ${notes}\n\n` +
+          `💬 ทักแชทมาได้เลย ทีมงานยินดีช่วยเพิ่มโอกาสผ่านให้คุณ`;
+  return { type: "text", text };
+}
+
+/** Second message of the post-submit pair — sent alongside assessmentReceivedFlex (lib/line-flex.ts).
+ * The thank-you + ticket id already live in that Flex card, so this is just the 24h promise,
+ * contact info, and a share nudge. */
+export function assessmentFollowUpMessage(lang: "th" | "en" = "th") {
+  const text =
+    lang === "en"
+      ? `⏱️ We will send you your assessment result within 24 hours\n\n` +
+        `If you have any questions or further requests, feel free to chat with us anytime\n\n` +
+        `You can share the assessment app with your friends`
+      : `⏱️ เราจะส่งผลประเมินให้คุณภายใน 24 ชั่วโมง\n\n` +
+        `หากคุณลูกค้ามีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยครับ\n\n` +
+        `คุณสามารถแชร์แอปการประเมินให้เพื่อนได้`;
+  return { type: "text", text };
+}
+
 export function confirmDeleteMessage() {
   return {
     type: "template",

@@ -5,7 +5,8 @@ import { supabase } from "@/lib/supabase";
 import { sendNewLeadEmail } from "@/lib/email";
 import { generateAssessmentPdf } from "@/lib/pdf";
 import { generateTicketId } from "@/lib/ticket";
-import { pushMessage, assessmentReceivedMessage } from "@/lib/line-messaging";
+import { pushMessage, assessmentFollowUpMessage } from "@/lib/line-messaging";
+import { assessmentReceivedFlex } from "@/lib/line-flex";
 
 function toNull(v: string | undefined): string | null {
   return v && v !== "" ? v : null;
@@ -199,7 +200,10 @@ export async function POST(request: NextRequest) {
   try {
     if (profile?.userId) {
       const msgLang = answers.q4 === "other" ? "en" : "th";
-      const delivered = await pushMessage(profile.userId, [assessmentReceivedMessage(ticketId, msgLang)]);
+      const delivered = await pushMessage(profile.userId, [
+        assessmentReceivedFlex(ticketId, msgLang),
+        assessmentFollowUpMessage(msgLang),
+      ]);
       if (delivered) {
         await supabase
           .from("user_assessment")
