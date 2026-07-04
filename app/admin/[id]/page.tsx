@@ -3,6 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import StatusUpdater from "./StatusUpdater";
 import AnonymizeButton from "./AnonymizeButton";
+import AssessmentResultForm from "./AssessmentResultForm";
+import SendResultButton from "./SendResultButton";
+import CopyLineIdButton from "./CopyLineIdButton";
 
 export const dynamic = "force-dynamic";
 
@@ -92,7 +95,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const { data: row, error } = await supabase
     .from("user_assessment")
-    .select("*, account:account_id(*), trip:trip_id(*)")
+    .select("*, account:account_id(*), trip:trip_id(*), visa_evaluation(*)")
     .eq("id", id)
     .single();
 
@@ -101,6 +104,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const s = row as Dict;
   const account = one(s.account);
   const trip = one(s.trip);
+  const evaluation = one(s.visa_evaluation);
   const b = (s.branch_answers ?? {}) as Record<string, string | string[]>;
   const visaType = trip.visa_type as string;
   const occ = s.occupation as string;
@@ -127,6 +131,22 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         {/* Status updater */}
         <StatusUpdater id={s.id as string} currentStatus={s.status as string} />
 
+        {/* Assessment result (agent-filled) */}
+        <AssessmentResultForm
+          assessmentId={s.id as string}
+          status={s.status as string}
+          initialPass={(evaluation.pass as boolean | null) ?? null}
+          initialNotes={(evaluation.notes as string | null) ?? null}
+        />
+
+        {/* Send result to LINE */}
+        <SendResultButton
+          assessmentId={s.id as string}
+          status={s.status as string}
+          hasEvaluation={evaluation.pass != null}
+          resultSentAt={(s.result_sent_at as string | null) ?? null}
+        />
+
         {/* PDPA anonymize */}
         <AnonymizeButton
           accountId={account.id as string}
@@ -136,7 +156,11 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         {/* LINE */}
         <Section title="LINE">
           <Row title="Display Name" value={account.line_display_name} />
-          <Row title="User ID" value={account.line_user_id} />
+          <div className="flex gap-3 py-2 border-b border-gray-50 items-center">
+            <span className="text-gray-400 text-sm w-48 shrink-0">User ID</span>
+            <span className="text-gray-800 text-sm font-medium flex-1">{(account.line_user_id as string) ?? "—"}</span>
+            <CopyLineIdButton userId={(account.line_user_id as string) ?? null} />
+          </div>
           <Row title="เป็นเพื่อน OA" value={account.is_friend} />
           <Row title="รูปโปรไฟล์" value={account.line_picture_url ? "มี" : null} />
         </Section>

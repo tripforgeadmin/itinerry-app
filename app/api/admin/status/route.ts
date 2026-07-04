@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { verifyAdminSession } from "@/app/api/admin/login/route";
-
-const VALID_STATUSES = ["new", "contacted", "in_progress", "completed", "rejected"];
+import { VALID_STATUSES } from "@/lib/status";
 
 export async function POST(request: NextRequest) {
   const token = request.cookies.get("admin_session")?.value;

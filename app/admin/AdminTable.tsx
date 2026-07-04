@@ -1,14 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { STATUS_OPTIONS, STATUS_LABEL, STATUS_COLOR, isOverdue, type StatusValue } from "@/lib/status";
 
-const STATUS_LABEL: Record<string, string> = {
-  new: "ใหม่", contacted: "ติดต่อแล้ว", qualified: "คัดกรองแล้ว", won: "ปิดได้", lost: "ไม่ผ่าน",
-};
-const STATUS_COLOR: Record<string, string> = {
-  new: "bg-blue-100 text-blue-700", contacted: "bg-yellow-100 text-yellow-700",
-  qualified: "bg-purple-100 text-purple-700", won: "bg-green-100 text-green-700", lost: "bg-red-100 text-red-700",
-};
 const VISA_LABEL: Record<string, string> = {
   tourist: "ท่องเที่ยว", visitor: "เยี่ยมเยียน", business: "ธุรกิจ", student: "นักเรียน",
 };
@@ -28,9 +23,34 @@ type Row = {
 
 export default function AdminTable({ rows }: { rows: Row[] }) {
   const router = useRouter();
+  const [filter, setFilter] = useState<StatusValue | "all">("all");
+
+  const filteredRows = filter === "all" ? rows : rows.filter((s) => s.status === filter);
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <button
+          onClick={() => setFilter("all")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity ${
+            filter === "all" ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-600"
+          }`}
+        >
+          ทั้งหมด ({rows.length})
+        </button>
+        {STATUS_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setFilter(opt.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity ${opt.color} ${
+              filter === opt.value ? "" : "opacity-50"
+            }`}
+          >
+            {opt.label} ({rows.filter((s) => s.status === opt.value).length})
+          </button>
+        ))}
+      </div>
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-100 text-left text-xs text-gray-500 uppercase tracking-wider">
@@ -46,14 +66,17 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((s) => {
+          {filteredRows.map((s) => {
             const acc = s.account;
             const trip = s.trip;
+            const overdue = isOverdue(s.created_at, s.status);
             return (
               <tr
                 key={s.id}
                 onClick={() => router.push(`/admin/${s.id}`)}
-                className="border-b border-gray-50 hover:bg-blue-50 transition-colors cursor-pointer"
+                className={`border-b border-gray-50 transition-colors cursor-pointer ${
+                  overdue ? "bg-red-50 hover:bg-red-100" : "hover:bg-blue-50"
+                }`}
               >
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                   {new Date(s.created_at).toLocaleDateString("th-TH", {
@@ -76,8 +99,8 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
                   {acc?.is_friend === true ? "✅" : acc?.is_friend === false ? "❌" : "—"}
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded-lg text-xs font-medium ${STATUS_COLOR[s.status] ?? ""}`}>
-                    {STATUS_LABEL[s.status] ?? s.status}
+                  <span className={`px-2 py-1 rounded-lg text-xs font-medium ${STATUS_COLOR[s.status as StatusValue] ?? ""}`}>
+                    {STATUS_LABEL[s.status as StatusValue] ?? s.status}
                   </span>
                 </td>
               </tr>
@@ -85,9 +108,10 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
           })}
         </tbody>
       </table>
-      {rows.length === 0 && (
+      {filteredRows.length === 0 && (
         <div className="text-center py-12 text-gray-400">ยังไม่มี submission</div>
       )}
+      </div>
     </div>
   );
 }

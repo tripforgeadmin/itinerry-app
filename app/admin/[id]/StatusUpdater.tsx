@@ -1,20 +1,14 @@
 "use client";
 
 import { useState } from "react";
-
-const STATUS_OPTIONS = [
-  { value: "new", label: "ใหม่", color: "bg-blue-100 text-blue-700" },
-  { value: "contacted", label: "ติดต่อแล้ว", color: "bg-yellow-100 text-yellow-700" },
-  { value: "qualified", label: "คัดกรองแล้ว", color: "bg-purple-100 text-purple-700" },
-  { value: "won", label: "ปิดได้", color: "bg-green-100 text-green-700" },
-  { value: "lost", label: "ไม่ผ่าน", color: "bg-red-100 text-red-700" },
-];
+import { STATUS_LABEL, STATUS_COLOR, MANUAL_STATUS_OPTIONS, type StatusValue } from "@/lib/status";
 
 export default function StatusUpdater({ id, currentStatus }: { id: string; currentStatus: string }) {
   const [status, setStatus] = useState(currentStatus);
   const [saving, setSaving] = useState(false);
 
-  const current = STATUS_OPTIONS.find((s) => s.value === status);
+  const currentLabel = STATUS_LABEL[status as StatusValue] ?? status;
+  const currentColor = STATUS_COLOR[status as StatusValue] ?? "";
 
   async function handleChange(newStatus: string) {
     setSaving(true);
@@ -30,11 +24,11 @@ export default function StatusUpdater({ id, currentStatus }: { id: string; curre
   return (
     <div className="bg-white rounded-2xl shadow-sm p-4 mb-4 flex items-center gap-3">
       <span className="text-sm text-gray-500">สถานะ:</span>
-      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${current?.color}`}>
-        {current?.label}
+      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${currentColor}`}>
+        {currentLabel}
       </span>
       <div className="flex gap-2 ml-auto flex-wrap">
-        {STATUS_OPTIONS.filter((s) => s.value !== status).map((s) => (
+        {MANUAL_STATUS_OPTIONS.filter((s) => s.value !== status).map((s) => (
           <button
             key={s.value}
             onClick={() => handleChange(s.value)}
