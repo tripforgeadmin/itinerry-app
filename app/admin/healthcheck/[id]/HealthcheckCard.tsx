@@ -156,10 +156,10 @@ export default function HealthcheckCard({ data: d, flagSrc }: { data: Healthchec
       <div style={{ display: "flex", alignItems: "center", backgroundColor: ACCENT, padding: "30px 52px", marginTop: 26 }}>
         <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
           <div style={{ fontSize: 40, fontWeight: 700, color: "#ffffff" }}>
-            {t(lang, "คุยต่อกับพี่ itinerry", "Talk to the itinerry team")}
+            {t(lang, "คุยต่อกับผู้เชี่ยวชาญใน itinerry", "Talk to an itinerry expert")}
           </div>
           <div style={{ display: "flex", alignItems: "center", fontSize: 21, color: "#eaf6fd", marginTop: 8 }}>
-            {t(lang, "แอดไลน์แล้วส่งเคสนี้เข้ามา ทีมช่วยดูให้ทีละขั้น", "Add us on LINE and send this case in — we'll walk you through it")}
+            {t(lang, "ทักไลน์แล้วคุยต่อได้เลย ทีมช่วยดูให้ทีละขั้น", "Message us on LINE to keep going — we'll walk you through it")}
             <span style={{ display: "flex", backgroundColor: "#fed984", color: "#5d4200", borderRadius: 999, padding: "5px 16px", fontSize: 18, fontWeight: 700, marginLeft: 14 }}>
               {t(lang, "ประเมินเชิงลึก ฟรี", "Free in-depth review")}
             </span>
