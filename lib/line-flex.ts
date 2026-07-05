@@ -148,7 +148,7 @@ export function shareCardFlex(lang: "th" | "en" = "th") {
       type: "bubble",
       hero: {
         type: "image",
-        url: `${APP_URL}/line/share-card.png`,
+        url: `${APP_URL}/line/share-card-v2.png`,
         size: "full",
         aspectRatio: "16:9",
         aspectMode: "cover",
