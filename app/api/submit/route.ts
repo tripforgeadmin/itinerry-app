@@ -6,7 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { sendNewLeadEmail } from "@/lib/email";
 import { renderWorksheetPdf, worksheetFromSubmission } from "@/lib/worksheet-pdf";
 import { generateTicketId } from "@/lib/ticket";
-import { pushMessage, assessmentFollowUpMessage } from "@/lib/line-messaging";
+import { assessmentFollowUpMessage } from "@/lib/line-messaging";
+import { pushMessageLogged } from "@/lib/message-log";
 import { assessmentReceivedFlex } from "@/lib/line-flex";
 import { bangkokDateTimeToUtc } from "@/lib/holidays";
 
@@ -243,10 +244,14 @@ export async function POST(request: NextRequest) {
   try {
     if (profile?.userId) {
       const msgLang = answers.q4 === "other" ? "en" : "th";
-      const delivered = await pushMessage(profile.userId, [
-        assessmentReceivedFlex(ticketId, msgLang),
-        assessmentFollowUpMessage(msgLang),
-      ]);
+      const delivered = await pushMessageLogged({
+        to: profile.userId,
+        messages: [assessmentReceivedFlex(ticketId, msgLang), assessmentFollowUpMessage(msgLang)],
+        accountId: account.id,
+        assessmentId,
+        kind: "ticket_received",
+        content: `[Flex] แจ้งรับเรื่อง · ${ticketId} + ข้อความติดตามผลใน 24 ชม.`,
+      });
       if (delivered) {
         await supabase
           .from("user_assessment")

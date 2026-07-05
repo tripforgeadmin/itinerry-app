@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { verifyAdminSession } from "@/app/api/admin/login/route";
-import { pushMessage, assessmentResultMessage } from "@/lib/line-messaging";
+import { assessmentResultMessage } from "@/lib/line-messaging";
+import { pushMessageLogged } from "@/lib/message-log";
 
-type Account = { line_user_id: string | null; nationality: string | null };
+type Account = { id: string; line_user_id: string | null; nationality: string | null };
 type Evaluation = { pass: boolean | null; notes: string | null };
 
 function one<T>(v: T | T[] | null): T | null {
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
 
   const { data: row, error: fetchError } = await supabase
     .from("user_assessment")
-    .select("status, result_sent_at, account:account_id(line_user_id, nationality), visa_evaluation(pass, notes)")
+    .select("status, result_sent_at, account:account_id(id, line_user_id, nationality), visa_evaluation(pass, notes)")
     .eq("id", assessmentId)
     .single();
 
@@ -48,7 +49,16 @@ export async function POST(request: NextRequest) {
 
   const lang = account.nationality === "other" ? "en" : "th";
   const message = assessmentResultMessage(evaluation.pass, evaluation.notes ?? "", lang);
-  const delivered = await pushMessage(account.line_user_id, [message]);
+  const delivered = await pushMessageLogged({
+    to: account.line_user_id,
+    messages: [message],
+    accountId: account.id,
+    assessmentId,
+    kind: "result",
+    content: `ส่งผลการประเมิน (${evaluation.pass ? "ผ่านเกณฑ์" : "ไม่ผ่านเกณฑ์"})`,
+    sentBy: "admin",
+    logFailed: true,
+  });
 
   if (!delivered) {
     return NextResponse.json({ ok: false, error: "line push failed" }, { status: 500 });

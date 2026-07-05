@@ -7,6 +7,7 @@ export async function GET() {
 import { supabase } from "@/lib/supabase";
 import { replyMessage, confirmDeleteMessage, assessmentReceivedMessage } from "@/lib/line-messaging";
 import { shareCardFlex } from "@/lib/line-flex";
+import { logLineMessage } from "@/lib/message-log";
 import { anonymizeAccount } from "@/lib/anonymize";
 
 /** Follow (add friend / unblock): freshen is_friend, then deliver the ticket thank-you message the
@@ -44,10 +45,19 @@ async function handleFollow(userId: string, replyToken?: string) {
 
   const msgLang = account.nationality === "other" ? "en" : "th";
   // thank-you + the viral share card ride the same (free) reply — one send, two messages
-  await replyMessage(replyToken, [
+  const messages = [
     assessmentReceivedMessage(pending.ticket_id as string, msgLang),
     shareCardFlex(msgLang),
-  ]);
+  ];
+  await replyMessage(replyToken, messages);
+  await logLineMessage({
+    accountId: account.id as string,
+    assessmentId: pending.id as string,
+    kind: "ticket_received",
+    content: `แจ้งรับเรื่องหลังเพิ่มเพื่อน · ${pending.ticket_id} + การ์ดแชร์`,
+    payload: messages,
+    delivered: true, // reply API: reaching this line means LINE accepted the token
+  });
 }
 
 const TRIGGER_KEYWORDS = ["ยกเลิกข้อมูล", "ลบข้อมูล", "pdpa", "ถอนความยินยอม"];

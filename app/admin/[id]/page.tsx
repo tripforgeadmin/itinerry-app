@@ -6,6 +6,7 @@ import AnonymizeButton from "./AnonymizeButton";
 import AssessmentResultForm from "./AssessmentResultForm";
 import SendResultButton from "./SendResultButton";
 import CopyLineIdButton from "./CopyLineIdButton";
+import MessageLogPanel from "./MessageLogPanel";
 import { STATUS_LABEL, type StatusValue } from "@/lib/status";
 import { LABELS, TIES_LABELS, PAST_VISA_LABELS, label, refusedText, overstayText } from "@/lib/answer-labels";
 
@@ -190,7 +191,9 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-2xl mx-auto">
+      {/* two columns on desktop: case detail + sticky outbound-message panel */}
+      <div className="mx-auto max-w-6xl lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-6">
+      <div className="max-w-2xl mx-auto lg:mx-0 w-full">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <Link href="/admin" className="text-gray-400 hover:text-gray-600 text-sm">← กลับ</Link>
@@ -345,6 +348,12 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
           <Row title="Due date" value={fmtDateTime(s.due_date)} />
           <Row title="ความต้องการ" value={label("intent", s.intent)} />
         </Section>
+      </div>
+
+      {/* message log — sticky, panel-internal scroll so it never overflows the screen */}
+      <aside className="mt-6 h-[70vh] lg:sticky lg:top-6 lg:mt-0 lg:h-[calc(100vh-3rem)]">
+        <MessageLogPanel assessmentId={s.id as string} />
+      </aside>
       </div>
     </main>
   );
