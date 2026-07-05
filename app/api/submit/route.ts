@@ -35,13 +35,6 @@ function toJson(v: string | undefined): unknown | null {
   }
 }
 
-/** Split a combined "First Last" name into parts (fallback when q3_first/q3_last are absent). */
-function splitName(full: string | undefined): { first: string | null; last: string | null } {
-  const f = (full ?? "").trim();
-  if (!f) return { first: null, last: null };
-  const i = f.indexOf(" ");
-  return i === -1 ? { first: f, last: null } : { first: f.slice(0, i), last: f.slice(i + 1).trim() || null };
-}
 
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies();
@@ -93,11 +86,9 @@ export async function POST(request: NextRequest) {
     branchAnswers["visa_type_other"] = answers.q9_other;
   }
 
-  // ---- name + phone (accept split keys, else derive) ----
-  const split = splitName(answers.q3);
-  const firstName = toNull(answers.q3_first) ?? split.first;
-  const lastName = toNull(answers.q3_last) ?? split.last;
-  const fullName = toNull(answers.q3) ?? ([firstName, lastName].filter(Boolean).join(" ") || "");
+  // q3 is now the customer's nickname (ชื่อเล่น); full_name/first_name/last_name are legacy
+  // columns kept for historical rows but no longer written.
+  const nickname = toNull(answers.q3) ?? "";
 
   // ===== 1) account (upsert by line_user_id; anonymous → fresh insert) =====
   const accountData = {
@@ -105,9 +96,7 @@ export async function POST(request: NextRequest) {
     line_display_name:  toNull(profile?.displayName),
     line_picture_url:   toNull(profile?.pictureUrl),
     is_friend:          isFriendCookie === "1" ? true : isFriendCookie === "0" ? false : null,
-    full_name:          fullName,
-    first_name:         firstName,
-    last_name:          lastName,
+    nickname:           nickname,
     phone:              answers.q5 ?? "",
     phone_country_code: toNull(answers.q5_cc) ?? "+66",
     email:              toNull(answers.q6),
@@ -224,7 +213,7 @@ export async function POST(request: NextRequest) {
     await sendNewLeadEmail({
       assessmentId: trip.id,
       ticketId,
-      fullName: fullName ?? "",
+      fullName: nickname,
       phone: answers.q5 ?? "",
       visaType: answers.q9 ?? "",
       destination: answers.q8 ?? "",

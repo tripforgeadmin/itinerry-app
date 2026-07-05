@@ -164,7 +164,7 @@ export default function AssessmentResultForm({
           disabled={!canSave || saving}
           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-700 transition-opacity disabled:opacity-40"
         >
-          {saving ? "กำลังบันทึก…" : status === "pending_review" ? "บันทึกและทำเครื่องหมายว่าประเมินแล้ว" : "บันทึกการประเมิน"}
+          {saving ? "กำลังบันทึก…" : status === "pending_review" ? "บันทึกและทำเครื่องหมายว่าประเมินแล้ว" : "แก้ไขการประเมิน"}
         </button>
       </div>
     </>

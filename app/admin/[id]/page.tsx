@@ -13,6 +13,7 @@ import { healthcheckFromDbRow, defaultLangFor } from "@/lib/healthcheck-data";
 import { assessmentResultMessage } from "@/lib/line-messaging";
 import { STATUS_LABEL, type StatusValue } from "@/lib/status";
 import { LABELS, TIES_LABELS, PAST_VISA_LABELS, label, refusedText, overstayText } from "@/lib/answer-labels";
+import { displayName } from "@/lib/account-name";
 
 export const dynamic = "force-dynamic";
 
@@ -183,10 +184,8 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const visaType = trip.visa_type as string;
   const occ = s.occupation as string;
   const phone = account.phone_country_code ? `${account.phone_country_code} ${account.phone}` : (account.phone as string);
-  const name = account.first_name || account.last_name
-    ? `${account.first_name ?? ""} ${account.last_name ?? ""}`.trim()
-    : (account.full_name as string);
-  const isAnonymized = account.full_name === "[ลบแล้ว]";
+  const name = displayName(account);
+  const isAnonymized = account.full_name === "[ลบแล้ว]" || account.nickname === "[ลบแล้ว]";
 
   type StatusHistoryEntry = { id: string; from_status: string | null; to_status: string; changed_at: string };
   const statusHistory = ((s.status_history ?? []) as StatusHistoryEntry[])
@@ -314,7 +313,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
           {isAnonymized && (
             <p className="text-xs text-gray-400 -mt-1 mb-2">ลบข้อมูลส่วนตัวแล้ว (PDPA)</p>
           )}
-          <Row title="ชื่อ-นามสกุล" value={name} />
+          <Row title="ชื่อเล่น" value={name} />
           <Row title="สัญชาติ" value={account.nationality === "other" ? `อื่นๆ: ${account.nationality_other}` : label("nationality", account.nationality)} />
           <Row title="เบอร์โทร" value={phone} />
           <Row title="อีเมล" value={account.email} />

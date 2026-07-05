@@ -5,6 +5,9 @@ export async function anonymizeAccount(accountId: string): Promise<boolean> {
     .from("account")
     .update({
       full_name:         "[ลบแล้ว]",
+      nickname:          "[ลบแล้ว]",
+      first_name:        null,
+      last_name:         null,
       phone:             null,
       email:             null,
       line_user_id:      null,

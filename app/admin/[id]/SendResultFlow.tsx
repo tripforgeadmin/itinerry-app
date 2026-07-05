@@ -52,7 +52,9 @@ export default function SendResultFlow({
   const [error, setError] = useState<string | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
-  if (status === "pending_review" || (!ready && !resultSentAt)) return null;
+  // show the card as soon as the case is evaluated (or a result was already sent); the
+  // send action itself is gated on `ready` (strengths/improvements filled) + canSend below.
+  if (status === "pending_review" && !resultSentAt) return null;
 
   const data = lang === "th" ? dataTh : dataEn;
 
@@ -102,6 +104,10 @@ export default function SendResultFlow({
           {new Date(resultSentAt).toLocaleDateString("th-TH", {
             day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
           })}
+        </span>
+      ) : !ready ? (
+        <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-600" title="กรอกจุดแข็ง/จุดที่ช่วยเสริมอย่างน้อยอย่างละ 1 ข้อก่อน">
+          กรอกจุดแข็ง/จุดเสริมก่อนจึงจะส่งได้
         </span>
       ) : !canSend ? (
         <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-600" title={blockReason ?? ""}>

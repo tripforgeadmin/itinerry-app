@@ -6,11 +6,13 @@ import { ItinerryLogo } from "@/components/ItinerryLogo";
 import { customerStatus } from "@/lib/status";
 import { label, refusedText, overstayText, TIES_LABELS, PAST_VISA_LABELS, LABELS } from "@/lib/answer-labels";
 import { COUNTRIES } from "@/lib/countries";
+import { displayName } from "@/lib/account-name";
 
 type Dict = Record<string, unknown>;
 
 interface Account {
   id: string;
+  nickname: string | null;
   full_name: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -36,9 +38,7 @@ export default function ResultView({
   const occ = active.occupation as string;
   const b = (active.branch_answers ?? {}) as Record<string, string | string[]>;
 
-  const name = account.first_name || account.last_name
-    ? `${account.first_name ?? ""} ${account.last_name ?? ""}`.trim()
-    : account.full_name ?? "";
+  const name = displayName(account);
   const phone = account.phone_country_code ? `${account.phone_country_code} ${account.phone ?? ""}` : account.phone;
   const destinationName =
     COUNTRIES.find((c) => c.code === (trip.destination as string)?.toUpperCase())?.th ??

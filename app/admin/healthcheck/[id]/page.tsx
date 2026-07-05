@@ -17,7 +17,7 @@ export default async function HealthcheckPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const { data: row, error } = await supabase
     .from("user_assessment")
-    .select("*, account:account_id(full_name, nationality), trip:trip_id(*), visa_evaluation(*)")
+    .select("*, account:account_id(nickname, full_name, first_name, last_name, nationality), trip:trip_id(*), visa_evaluation(*)")
     .eq("id", id)
     .single();
   if (error || !row) notFound();

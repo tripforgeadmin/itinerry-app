@@ -18,7 +18,7 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ i
 
   const { data: account } = await supabase
     .from("account")
-    .select("id, full_name, first_name, last_name, nationality, nationality_other, phone, phone_country_code, email")
+    .select("id, nickname, full_name, first_name, last_name, nationality, nationality_other, phone, phone_country_code, email")
     .eq("line_user_id", profile.userId)
     .maybeSingle();
 

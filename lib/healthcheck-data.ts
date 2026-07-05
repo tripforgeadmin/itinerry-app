@@ -1,5 +1,6 @@
 import { COUNTRIES } from "./countries";
 import { bangkokNow } from "./holidays";
+import { displayName, type NameFields } from "./account-name";
 
 /**
  * Data + copy for the customer-facing "ผลตรวจสุขภาพวีซ่า" (Visa Health Check) card.
@@ -125,7 +126,7 @@ export function defaultLangFor(row: Dict): "th" | "en" {
 }
 
 /**
- * Build from: select("*, account:account_id(full_name, nationality), trip:trip_id(*), visa_evaluation(*)").
+ * Build from: select("*, account:account_id(nickname, full_name, first_name, last_name, nationality), trip:trip_id(*), visa_evaluation(*)").
  * `langOverride` forces the report language; without it, it follows nationality. Note the
  * admin-entered strengths/improvements/notes render as-typed — only the template copy translates.
  */
@@ -143,9 +144,9 @@ export function healthcheckFromDbRow(row: Dict, langOverride?: "th" | "en"): Hea
   const visaType = (trip.visa_type as string) ?? "";
   const visa = VISA_LABEL[visaType] ?? { th: visaType, en: visaType };
 
-  // customer display name — nickname-style: first token of what they typed, คุณ/Khun prefix
-  const rawName = ((account.full_name as string) ?? "").trim();
-  const firstName = rawName.split(/\s+/)[0] || "-";
+  // customer display name — nickname (or legacy full-name's first token), คุณ/Khun prefix
+  const shown = displayName(account as NameFields);
+  const firstName = shown === "—" ? "-" : shown.split(/\s+/)[0];
   const customerName = lang === "th" ? `คุณ ${firstName}` : `Khun ${firstName}`;
 
   // per-visa-type third info cell

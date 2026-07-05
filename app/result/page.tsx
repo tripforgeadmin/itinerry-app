@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { displayName } from "@/lib/account-name";
 import { verifySessionToken } from "@/lib/line";
 import ResultList from "./ResultList";
 import EmptyState from "./EmptyState";
@@ -24,7 +25,7 @@ export default async function ResultPage() {
 
   const { data: account } = await supabase
     .from("account")
-    .select("id, full_name, first_name, last_name")
+    .select("id, nickname, full_name, first_name, last_name")
     .eq("line_user_id", profile.userId)
     .maybeSingle();
 
@@ -41,9 +42,5 @@ export default async function ResultPage() {
   // Only one submission ever — nothing to choose, skip straight to its detail view.
   if (assessments.length === 1) redirect(`/result/${assessments[0].id}`);
 
-  const name = account.first_name || account.last_name
-    ? `${account.first_name ?? ""} ${account.last_name ?? ""}`.trim()
-    : account.full_name ?? "";
-
-  return <ResultList name={name} assessments={assessments} />;
+  return <ResultList name={displayName(account)} assessments={assessments} />;
 }

@@ -142,6 +142,8 @@ const s = StyleSheet.create({
   inputML: { height: 58, borderWidth: 0.75, borderColor: "#cbd5e1", borderRadius: 3, fontSize: 9, padding: 2 },
   filledLine: { backgroundColor: "#f8fafc", borderRadius: 3, marginBottom: 4, paddingVertical: 2.5, paddingHorizontal: 4, fontSize: 9 },
   notesFilled: { backgroundColor: "#f8fafc", borderRadius: 3, padding: 6, fontSize: 9 },
+  fillArea: { height: 88, borderWidth: 0.75, borderColor: "#cbd5e1", borderRadius: 3, fontSize: 9, padding: 4 },
+  filledArea: { minHeight: 88, backgroundColor: "#f8fafc", borderRadius: 3, padding: 6, fontSize: 9, lineHeight: 1.5 },
   checkbox: { width: 11, height: 11, borderWidth: 0.75, borderColor: "#64748b", marginRight: 4 },
   checkRow: { flexDirection: "row", alignItems: "center", marginRight: 18 },
   footerLeft: { position: "absolute", bottom: 24, left: 36, fontSize: 7.5, color: MUTED },
@@ -332,28 +334,24 @@ function Worksheet({ d }: { d: WorksheetData }) {
               <Text>ไม่ผ่านเกณฑ์</Text>
             </View>
           </View>
-          {/* Recorded values print as regular Text (embedded Sarabun); only EMPTY slots become
-              AcroForm fields — pdfkit's field appearance can't encode Thai, so prefilled
-              values in a TextInput render as garbage glyphs. */}
+          {/* One long fillable box per side. Recorded values print as regular Text (embedded
+              Sarabun) — pdfkit's AcroForm appearance can't encode Thai, so prefilled values
+              in a TextInput would render as garbage glyphs; only EMPTY boxes are fields. */}
           <View style={{ flexDirection: "row" }}>
             <View style={{ flex: 1, marginRight: 10 }}>
-              <Text style={s.fillLabel}>จุดแข็งของลูกค้า (ทีละข้อ ลง PDF ลูกค้า)</Text>
-              {[0, 1, 2, 3, 4].map((i) =>
-                strengths[i] ? (
-                  <Text key={i} style={s.filledLine}>{i + 1}. {strengths[i]}</Text>
-                ) : (
-                  <TextInput key={i} name={`strength_${i + 1}`} maxLength={90} style={s.input} />
-                )
+              <Text style={s.fillLabel}>จุดแข็งของลูกค้า (ลง PDF ลูกค้า)</Text>
+              {strengths.length ? (
+                <Text style={s.filledArea}>{strengths.map((x) => `• ${x}`).join("\n")}</Text>
+              ) : (
+                <TextInput name="strengths" multiline style={s.fillArea} />
               )}
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.fillLabel}>ที่เราจะช่วยเสริม (ทีละข้อ ลง PDF ลูกค้า)</Text>
-              {[0, 1, 2, 3, 4].map((i) =>
-                improvements[i] ? (
-                  <Text key={i} style={s.filledLine}>{i + 1}. {improvements[i]}</Text>
-                ) : (
-                  <TextInput key={i} name={`improvement_${i + 1}`} maxLength={90} style={s.input} />
-                )
+              <Text style={s.fillLabel}>ที่เราจะช่วยเสริม (ลง PDF ลูกค้า)</Text>
+              {improvements.length ? (
+                <Text style={s.filledArea}>{improvements.map((x) => `• ${x}`).join("\n")}</Text>
+              ) : (
+                <TextInput name="improvements" multiline style={s.fillArea} />
               )}
             </View>
           </View>
