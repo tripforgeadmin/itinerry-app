@@ -20,6 +20,7 @@ type Row = {
   contact_preference: string;
   account: Account | null;
   trip: Trip | null;
+  printable: boolean;
 };
 
 export default function AdminTable({ rows }: { rows: Row[] }) {
@@ -64,6 +65,7 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
             <th className="px-4 py-3">ติดต่อ</th>
             <th className="px-4 py-3">เพื่อน</th>
             <th className="px-4 py-3">สถานะ</th>
+            <th className="px-4 py-3">รายงาน</th>
           </tr>
         </thead>
         <tbody>
@@ -103,6 +105,24 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
                   <span className={`px-2 py-1 rounded-lg text-xs font-medium ${STATUS_COLOR[s.status as StatusValue] ?? ""}`}>
                     {STATUS_LABEL[s.status as StatusValue] ?? s.status}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  {s.printable ? (
+                    <a
+                      href={`/admin/healthcheck/${s.id}`}
+                      target="_blank"
+                      rel="noopener"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-block rounded-lg border border-gray-200 px-2 py-1 text-sm hover:border-blue-400"
+                      title="พิมพ์รายงานสุขภาพวีซ่า (ฉบับลูกค้า)"
+                    >
+                      🖨️
+                    </a>
+                  ) : (
+                    <span className="cursor-default text-sm opacity-25" title="ยังไม่พร้อม — ต้องประเมิน + กรอกจุดแข็ง/จุดเสริมก่อน">
+                      🖨️
+                    </span>
+                  )}
                 </td>
               </tr>
             );
