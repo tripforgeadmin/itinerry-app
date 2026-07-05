@@ -60,38 +60,42 @@ function one(v: unknown): Dict {
   return ((Array.isArray(v) ? v[0] : v) ?? {}) as Dict;
 }
 
-const COLOR_CHIP: Record<string, string> = {
-  g: "bg-green-100 text-green-700",
-  y: "bg-amber-100 text-amber-700",
-  r: "bg-red-100 text-red-700",
-};
-const BAND_STYLE: Record<string, string> = {
-  High: "bg-green-100 text-green-700",
-  Med: "bg-amber-100 text-amber-700",
-  Low: "bg-gray-100 text-gray-600",
-  OVERRIDE: "bg-red-100 text-red-700",
-};
-const BAND_LABEL: Record<string, string> = {
-  High: "โอกาสสูง", Med: "โอกาสปานกลาง", Low: "โอกาสต่ำ", OVERRIDE: "ต้องรีวิว",
-};
+// Card palettes per benchmark color (g/y/r) — same vocabulary as the worksheet PDF.
+const CARD_BG: Record<string, string> = { g: "bg-green-50", y: "bg-amber-50", r: "bg-red-50" };
+const CARD_TEXT: Record<string, string> = { g: "text-green-700", y: "text-amber-700", r: "text-red-700" };
+const DOT_BG: Record<string, string> = { g: "bg-green-500", y: "bg-amber-500", r: "bg-red-500" };
+const STATE_WORD: Record<string, string> = { g: "แข็งแรง", y: "ปานกลาง", r: "ไม่แข็งแรง" };
+const HISTORY_WORD: Record<string, string> = { g: "สะอาด", y: "มีจุดต้องตรวจ", r: "มีประวัติ" };
+const BAND_WORD: Record<string, string> = { High: "สูง", Med: "ปานกลาง", Low: "น้อย", OVERRIDE: "ต้องรีวิว" };
+const BAND_COLOR: Record<string, string> = { High: "g", Med: "y", Low: "r", OVERRIDE: "r" };
+const URGENCY_WORD: Record<string, string> = { Low: "ไม่ด่วน", Med: "ปานกลาง", High: "ด่วน" };
+const URGENCY_COLOR: Record<string, string> = { Low: "g", Med: "y", High: "r" };
 
-function Pillar({ label, color }: { label: string; color: string }) {
+function StateCard({ title, color, word, sub }: { title: string; color: string; word: string; sub?: string }) {
   return (
-    <div className="flex flex-col items-center gap-1">
-      <span className={`h-6 w-6 rounded-full ${COLOR_CHIP[color] ?? "bg-gray-100 text-gray-400"}`} />
-      <span className="text-[10px] text-gray-400">{label}</span>
+    <div className={`rounded-xl p-3 ${CARD_BG[color] ?? "bg-gray-50"}`}>
+      <div className="text-[11px] text-gray-500">{title}</div>
+      <div className={`flex items-center gap-1.5 text-sm font-bold ${CARD_TEXT[color] ?? "text-gray-700"}`}>
+        <span className={`h-2 w-2 rounded-full ${DOT_BG[color] ?? "bg-gray-400"}`} />
+        {word}
+      </div>
+      {sub && <div className="text-[11px] text-gray-400 mt-0.5">{sub}</div>}
     </div>
   );
 }
 
-/** Read-only system evaluation (auto rule-engine). Separate from the human's manual pass/notes. */
+/** Read-only system evaluation (auto rule-engine). Separate from the human's manual pass/notes.
+ * Layout mirrors the internal worksheet PDF: 3 state cards + โอกาสผ่าน/ความด่วน + decision box. */
 function AutoAssessment({ evaluation }: { evaluation: Dict }) {
   const result = (evaluation.result ?? {}) as Dict;
   const band = result.approvability_band as string | undefined;
+  const colors = (result._colors ?? {}) as Dict;
   const cell = (result.decision_cell ?? {}) as Dict;
   const meta = (result.meta ?? {}) as Dict;
   const flags = (result.consistency_flags ?? []) as string[];
   const dataFlags = (result.data_flags ?? []) as string[];
+  const override = result.override_flag === true;
+  const urgency = result.urgency as string;
 
   return (
     <Section title="ผลประเมินอัตโนมัติ (ระบบ)">
@@ -99,28 +103,38 @@ function AutoAssessment({ evaluation }: { evaluation: Dict }) {
         <p className="text-sm text-gray-400">ยังไม่มีผลประเมินอัตโนมัติ</p>
       ) : (
         <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <span className={`rounded-full px-3 py-1 text-sm font-bold ${BAND_STYLE[band] ?? "bg-gray-100 text-gray-600"}`}>
-              {BAND_LABEL[band] ?? band}
-            </span>
-            <span className="text-2xl font-bold text-gray-800">{String(evaluation.score ?? result.approvability_score ?? "—")}</span>
-            <span className="text-xs text-gray-400">/ 98 คะแนน</span>
+          {override && (
+            <div className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700">
+              🛑 เคยถูกปฏิเสธวีซ่า / Overstay — ส่ง Senior ตรวจสอบก่อนเสนอราคา
+            </div>
+          )}
+
+          <div className="grid grid-cols-3 gap-2">
+            <StateCard title="ความผูกพันในไทย" color={(colors.ties as string) ?? ""} word={STATE_WORD[colors.ties as string] ?? "—"} />
+            <StateCard title="การเงิน" color={(result.pillar_funding as string) ?? ""} word={STATE_WORD[result.pillar_funding as string] ?? "—"} />
+            <StateCard title="ประวัติการเดินทาง" color={(result.pillar_risk as string) ?? ""} word={HISTORY_WORD[result.pillar_risk as string] ?? "—"} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <StateCard
+              title="โอกาสผ่าน (ระบบ)"
+              color={BAND_COLOR[band] ?? "y"}
+              word={BAND_WORD[band] ?? band}
+              sub={`คะแนน ${String(evaluation.score ?? result.approvability_score ?? "—")}/98`}
+            />
+            <StateCard
+              title="ความด่วน"
+              color={URGENCY_COLOR[urgency] ?? "y"}
+              word={URGENCY_WORD[urgency] ?? urgency}
+              sub={result.days_left != null ? `เหลือ ${String(result.days_left)} วันก่อนเดินทาง` : "ไม่ทราบวันเดินทาง"}
+            />
           </div>
 
           <div className="rounded-xl bg-gray-50 p-3">
             <div className="text-sm font-bold text-gray-800">{cell.name as string}</div>
             <div className="text-sm text-gray-600">{cell.action as string}</div>
-            <div className="mt-1 text-xs text-gray-400">ราคา: {cell.pricing as string}</div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <Pillar label="กลับประเทศ" color={result.pillar_return as string} />
-            <Pillar label="การเงิน" color={result.pillar_funding as string} />
-            <Pillar label="ความเสี่ยง" color={result.pillar_risk as string} />
-            <div className="ml-auto text-right text-xs text-gray-500">
-              <div>ความเร่งด่วน: <span className="font-medium text-gray-700">{result.urgency as string}</span>{result.days_left != null && ` (${String(result.days_left)} วัน)`}</div>
-              <div>งานเอกสาร: <span className="font-medium text-gray-700">{result.billable_scope as string}</span> · {result.complexity as string}</div>
-              <div>ทันเวลา: <span className="font-medium text-gray-700">{result.time_feasibility as string}</span></div>
+            <div className="mt-1 text-xs text-gray-400">
+              ราคา: {cell.pricing as string} · งานเอกสาร {result.billable_scope as string} · ความซับซ้อน {result.complexity as string} · เวลา {result.time_feasibility as string}
             </div>
           </div>
 
@@ -187,6 +201,15 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
           <span className="text-xs text-gray-400">
             {new Date(s.created_at as string).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
           </span>
+          <a
+            href={`/api/admin/assessment-pdf/${s.id}`}
+            target="_blank"
+            rel="noopener"
+            className="ml-auto rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-blue-400 hover:text-blue-600"
+            title="ใบงานประเมิน (PDF ภายใน กรอกได้)"
+          >
+            🖨️ ใบงาน PDF
+          </a>
         </div>
 
         {/* Status updater */}
@@ -225,6 +248,8 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
           status={s.status as string}
           initialPass={(evaluation.pass as boolean | null) ?? null}
           initialNotes={(evaluation.notes as string | null) ?? null}
+          initialStrengths={Array.isArray(evaluation.strengths) ? (evaluation.strengths as string[]) : []}
+          initialImprovements={Array.isArray(evaluation.improvements) ? (evaluation.improvements as string[]) : []}
         />
 
         {/* Send result to LINE */}

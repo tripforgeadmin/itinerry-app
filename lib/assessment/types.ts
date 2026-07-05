@@ -26,6 +26,9 @@ export interface EngineCase {
   inviter_status?: string;
 }
 
+// "OVERRIDE" is legacy — kept only so stored rows evaluated before 2026-07-06 still
+// type-check; the engine now always emits a score-based band and signals refused/overstay
+// via override_flag + the Senior-Review decision cell instead.
 export type Band = "High" | "Med" | "Low" | "OVERRIDE";
 export type Urgency = "High" | "Med" | "Low";
 

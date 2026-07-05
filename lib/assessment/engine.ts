@@ -156,12 +156,15 @@ export function evaluate(
   const rsk: Color = override ? "r" : flags.length > 0 ? "y" : "g";
 
   // ---- STEP 5  Approvability score + band ---- #
+  // Deliberate divergence from prototype §6: the band is ALWAYS score-based (3 values,
+  // per owner decision 2026-07-06) — override no longer replaces it. Override still wins
+  // the DECISION (Senior Review / hold quote via STEP 7) and already tanks the score
+  // through the red risk pillar; it surfaces in UI as a red banner, not as a band value.
   const score = W.return[ret] + W.funding[fun] + W.risk[rsk] + (W.dest[destC ?? "y"] ?? W.dest.y);
   let band: Band;
   if (score >= cfg.bands.high) band = "High";
   else if (score >= cfg.bands.med) band = "Med";
   else band = "Low";
-  if (override) band = "OVERRIDE"; // OVERRIDE wins over everything
 
   // ---- STEP 6  Urgency ---- #
   let urg: Urgency;
@@ -170,9 +173,9 @@ export function evaluate(
   else if (daysLeft >= cfg.urgency_days.med) urg = "Med";
   else urg = "High";
 
-  // ---- STEP 7  Decision cell = MATRIX[band][urgency] ---- #
+  // ---- STEP 7  Decision cell = MATRIX[band][urgency]; override wins the decision ---- #
   const M = cfg.decision_matrix;
-  const cell = band === "OVERRIDE" ? M.OVERRIDE["*"] : M[band][urg];
+  const cell = override ? M.OVERRIDE["*"] : M[band][urg];
 
   // ---- STEP 8  Secondary factors ---- #
   const docs = docColors(c, cfg);

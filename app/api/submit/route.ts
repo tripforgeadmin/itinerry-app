@@ -4,7 +4,7 @@ import { runAssessment } from "@/lib/assessment";
 import { verifySessionToken } from "@/lib/line";
 import { supabase } from "@/lib/supabase";
 import { sendNewLeadEmail } from "@/lib/email";
-import { generateAssessmentPdf } from "@/lib/pdf";
+import { renderWorksheetPdf, worksheetFromSubmission } from "@/lib/worksheet-pdf";
 import { generateTicketId } from "@/lib/ticket";
 import { pushMessage, assessmentFollowUpMessage } from "@/lib/line-messaging";
 import { assessmentReceivedFlex } from "@/lib/line-flex";
@@ -205,11 +205,17 @@ export async function POST(request: NextRequest) {
     }
   });
 
-  // Send email notification (PDF is optional — email sends even if PDF fails)
+  // Send email notification (PDF is optional — email sends even if PDF fails).
+  // The attachment is the internal case worksheet: the engine runs inline here (pure
+  // function, microseconds) so the emailed sheet carries the auto assessment even though
+  // the visa_evaluation DB write happens later in after(). Evaluator fields arrive blank.
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
   let pdfBuffer: Buffer | undefined;
   try {
-    pdfBuffer = await generateAssessmentPdf(answers, new Date().toISOString());
+    const auto = runAssessment(answers);
+    pdfBuffer = await renderWorksheetPdf(
+      worksheetFromSubmission({ answers, branchAnswers, ticketId, dueDate, callbackDatetime, auto: auto.result })
+    );
   } catch (err) {
     console.error("pdf error:", err);
   }

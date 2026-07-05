@@ -34,15 +34,31 @@ check("T1 strong tourist", {
   time_feasibility: "On-track", override_flag: false,
 });
 
-// T2 — overstay → OVERRIDE regardless of score; heavy docs; premium; at-risk
+// T2 — overstay → override flag + Senior-Review cell; band stays score-based (54 → Med).
+// (Deliberate divergence from prototype §6 — see engine.ts STEP 5 comment.)
 check("T2 override (overstay)", {
   dest: "korea", arrival: "2026-07-19", occ: "freelance",
   flinc: "partial", fltax: "none", ties: ["investment"], hist: "other",
   sav: "50-150K", pay: "self", refused: "no", overstay: "yes", visa: "tourist",
 }, {
-  approvability_band: "OVERRIDE", override_flag: true, pillar_risk: "r",
+  approvability_band: "Med", override_flag: true, pillar_risk: "r",
   approvability_score: 54, urgency: "High", billable_scope: "Heavy",
   complexity: "Premium", time_feasibility: "At-risk",
+});
+
+// T2b — override always wins the DECISION even when the score-band is High
+// (strong profile + overstay = max possible 83): cell must be Senior Review / hold quote.
+test("T2b override wins decision at High band", () => {
+  const r = evaluate({
+    dest: "japan", arrival: "2026-09-01", occ: "employee", emp: "complete",
+    ties: ["job", "home"], hist: "western", sav: ">300K", pay: "self",
+    refused: "yes", overstay: "no", visa: "tourist",
+  }, TODAY);
+  assert.equal(r.approvability_score, 83);
+  assert.equal(r.approvability_band, "High");
+  assert.equal(r.override_flag, true);
+  assert.equal(r.decision_cell.name, "Senior Review");
+  assert.equal(r.decision_cell.pricing, "hold quote");
 });
 
 // T3 — homemaker self-pay <50K → consistency flag, Low band, Reality-check

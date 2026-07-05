@@ -57,7 +57,7 @@ export async function sendNewLeadEmail(params: NewLeadParams) {
       </div>
     `,
     attachments: pdfBuffer
-      ? [{ filename: "assessment.pdf", content: pdfBuffer }]
+      ? [{ filename: `${ticketId || "assessment"}-worksheet.pdf`, content: pdfBuffer }]
       : undefined,
   });
   if (error) console.error("resend error:", JSON.stringify(error));
