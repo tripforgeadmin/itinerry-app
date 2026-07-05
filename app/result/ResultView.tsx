@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
-import { CUSTOMER_STATUS_LABEL, CUSTOMER_STATUS_COLOR, type StatusValue } from "@/lib/status";
+import { CUSTOMER_STATUS_LABEL, CUSTOMER_STATUS_COLOR, STATUS_LABEL, STATUS_COLOR, type StatusValue } from "@/lib/status";
 import { label, refusedText, overstayText, TIES_LABELS, PAST_VISA_LABELS, LABELS } from "@/lib/answer-labels";
 import { COUNTRIES } from "@/lib/countries";
 import SubmissionPicker, { type SubmissionOption } from "./SubmissionPicker";
@@ -52,14 +52,23 @@ export default function ResultView({
       }) + " น."
     : null;
 
-  const options: SubmissionOption[] = assessments.map((a, i) => ({
-    id: a.id as string,
-    label:
-      (i === 0 ? "ล่าสุด · " : `ครั้งที่ ${assessments.length - i} · `) +
-      new Date(a.created_at as string).toLocaleDateString("th-TH", {
+  const options: SubmissionOption[] = assessments.map((a, i) => {
+    const aTrip = (a.trip ?? {}) as Dict;
+    const aStatus = (a.status as string) ?? "pending_review";
+    return {
+      id: a.id as string,
+      isLatest: i === 0,
+      dateLabel: new Date(a.created_at as string).toLocaleDateString("th-TH", {
         day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
       }),
-  }));
+      destination:
+        COUNTRIES.find((c) => c.code === (aTrip.destination as string)?.toUpperCase())?.th ??
+        (aTrip.destination as string)?.toUpperCase() ?? "—",
+      visaType: label("visa_type", aTrip.visa_type),
+      statusLabel: STATUS_LABEL[aStatus as StatusValue] ?? aStatus,
+      statusColor: STATUS_COLOR[aStatus as StatusValue] ?? "bg-surface text-muted",
+    };
+  });
 
   return (
     <main className="min-h-screen bg-surface relative overflow-hidden">

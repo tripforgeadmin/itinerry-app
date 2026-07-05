@@ -4,7 +4,12 @@ import { useRouter } from "next/navigation";
 
 export interface SubmissionOption {
   id: string;
-  label: string;
+  isLatest: boolean;
+  dateLabel: string;
+  destination: string;
+  visaType: string;
+  statusLabel: string;
+  statusColor: string;
 }
 
 export default function SubmissionPicker({
@@ -16,27 +21,31 @@ export default function SubmissionPicker({
 }) {
   const router = useRouter();
 
-  function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    router.push(`/result?id=${e.target.value}`);
-  }
-
   return (
-    <div className="flex items-center gap-2 mb-4">
-      <label htmlFor="submission-picker" className="text-xs font-bold text-muted shrink-0">
-        เลือกครั้งที่ส่ง
-      </label>
-      <select
-        id="submission-picker"
-        value={activeId}
-        onChange={handleChange}
-        className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm text-primary shadow-card"
-      >
-        {options.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+    <div className="flex flex-col gap-2 mb-4">
+      {options.map((o) => {
+        const isActive = o.id === activeId;
+        return (
+          <button
+            key={o.id}
+            onClick={() => router.push(`/result?id=${o.id}`)}
+            className={`text-left bg-card rounded-2xl shadow-card p-4 transition-opacity ${
+              isActive ? "ring-2 ring-accent" : "opacity-80 hover:opacity-100"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs text-muted-soft">
+                {o.dateLabel}
+                {o.isLatest && <span className="ml-1.5 text-accent font-bold">· ล่าสุด</span>}
+              </span>
+              <span className={`px-2 py-0.5 rounded-lg text-xs font-bold ${o.statusColor}`}>{o.statusLabel}</span>
+            </div>
+            <p className="text-sm font-medium text-primary">
+              {o.destination} · {o.visaType}
+            </p>
+          </button>
+        );
+      })}
     </div>
   );
 }

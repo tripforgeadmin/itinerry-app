@@ -39,7 +39,7 @@ export function assessmentReceivedFlex(ticketId: string, lang: "th" | "en" = "th
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "md",
+        spacing: "lg",
         contents: [
           {
             type: "image",
@@ -49,7 +49,7 @@ export function assessmentReceivedFlex(ticketId: string, lang: "th" | "en" = "th
             aspectMode: "fit",
             align: "center",
           },
-          { type: "text", text: t.thanks, size: "sm", wrap: true, color: "#1b3d5c", align: "center" },
+          { type: "text", text: t.thanks, size: "sm", wrap: true, color: "#1b3d5c", align: "center", margin: "xl" },
           {
             type: "text",
             text: `${t.ticketLabel} ${ticketId}`,
@@ -57,6 +57,7 @@ export function assessmentReceivedFlex(ticketId: string, lang: "th" | "en" = "th
             weight: "bold",
             color: "#1b3d5c",
             align: "center",
+            margin: "xl",
           },
           {
             type: "text",
@@ -64,7 +65,7 @@ export function assessmentReceivedFlex(ticketId: string, lang: "th" | "en" = "th
             size: "xs",
             color: "#8A94A6",
             wrap: true,
-            margin: "md",
+            margin: "xxl",
             align: "center",
           },
         ],
