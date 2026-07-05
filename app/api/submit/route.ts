@@ -7,6 +7,7 @@ import { generateAssessmentPdf } from "@/lib/pdf";
 import { generateTicketId } from "@/lib/ticket";
 import { pushMessage, assessmentFollowUpMessage } from "@/lib/line-messaging";
 import { assessmentReceivedFlex } from "@/lib/line-flex";
+import { bangkokDateTimeToUtc } from "@/lib/holidays";
 
 function toNull(v: string | undefined): string | null {
   return v && v !== "" ? v : null;
@@ -143,6 +144,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: tripError?.message ?? "trip failed" }, { status: 500 });
   }
 
+  // ---- callback slot + SLA due date ----
+  // call: q37 = "HH:00", q37_date = the chosen (next-business-day) date → exact slot.
+  // line: no callback; SLA is submit time + 24h.
+  const isCall = answers.q36 === "call";
+  const validSlot = /^\d{1,2}:\d{2}$/.test(answers.q37 ?? "") && /^\d{4}-\d{2}-\d{2}$/.test(answers.q37_date ?? "");
+  const rawCb = isCall && validSlot ? bangkokDateTimeToUtc(answers.q37_date, answers.q37) : null;
+  const callbackDatetime = rawCb && !isNaN(rawCb.getTime()) ? rawCb : null;
+  // LINE (or a call with no usable slot) → 24h SLA; a valid call slot → that exact time.
+  const dueDate = isCall && callbackDatetime ? callbackDatetime : new Date(Date.now() + 24 * 60 * 60 * 1000);
+
   // ===== 3) user_assessment (qualification + screening) =====
   const ticketId = await generateTicketId(answers.q8 ?? "");
   const { error: assessError } = await supabase.from("user_assessment").insert({
@@ -160,7 +171,9 @@ export async function POST(request: NextRequest) {
     savings_balance:      answers.q34 ?? "",
     ties_thailand:        toArray(answers.q35),
     contact_preference:   answers.q36 ?? "",
-    callback_time:        answers.q37 === "other" ? toNull(answers.q37_other) : toNull(answers.q37),
+    callback_time:        callbackDatetime ? `${answers.q37_date} ${answers.q37}` : null,
+    callback_datetime:    callbackDatetime ? callbackDatetime.toISOString() : null,
+    due_date:             dueDate.toISOString(),
     branch_answers:       branchAnswers,
   });
   if (assessError) {

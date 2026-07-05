@@ -14,6 +14,7 @@ type Trip = { visa_type: string; destination: string };
 type Row = {
   id: string;
   created_at: string;
+  due_date: string | null;
   occupation: string;
   status: string;
   contact_preference: string;
@@ -69,7 +70,7 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
           {filteredRows.map((s) => {
             const acc = s.account;
             const trip = s.trip;
-            const overdue = isOverdue(s.created_at, s.status);
+            const overdue = isOverdue(s.created_at, s.status, s.due_date);
             return (
               <tr
                 key={s.id}

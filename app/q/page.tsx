@@ -192,6 +192,7 @@ export default function QuestionnairePage() {
 
   async function handleSubmit() {
     setSubmitting(true);
+    setLoaderState({ cap: "กำลังส่งแบบประเมิน", sub: "รอสักครู่นะครับ…" });
     try {
       const { answers: freshAnswers, history: path } = useFormStore.getState();
       // Drop stale answers from branches the user navigated away from, so only the current path's
@@ -212,8 +213,9 @@ export default function QuestionnairePage() {
       // hand the case ticket to /done (survives the store reset there)
       const data = await res.json().catch(() => null);
       if (data?.ticketId) sessionStorage.setItem("itinerry-ticket-id", data.ticketId);
-      router.push("/done");
+      router.push("/done"); // loader stays up through navigation, unmounts on the new page
     } catch {
+      setLoaderState(null);
       alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
       setSubmitting(false);
     }

@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { GlassCard } from "@/components/ui/GlassCard";
-import { DateCalendar } from "@/components/ui/DateCalendar";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { RevealBlock } from "@/components/ui/RevealBlock";
 import { Button } from "@/components/ui/Button";
 import { QuestionShell } from "@/components/screens/QuestionShell";
 import { QUESTIONS_MAP } from "@/lib/questions";
 import { DIAL_CODES, DEFAULT_DIAL_CODE, dialCodeOf, isValidPhone } from "@/lib/dialCodes";
 import { flagEmoji } from "@/lib/countries";
+import { callbackSlots, hourLabel } from "@/lib/holidays";
 import type { ScreenProps } from "@/components/screens/types";
 
 // Standard email, ASCII/English only — rejects Thai and other non-Latin characters.
@@ -18,16 +17,15 @@ const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const NON_ASCII = /[^\x00-\x7F]/;
 const CHANNEL_IMG: Record<string, string> = { line: "/icons/line.png", call: "/icons/phone.png" };
 
-// Hourly callback slots 00:00–24:00 for the "ระบุเวลาเอง" picker.
-const HOURS = Array.from({ length: 25 }, (_, h) => `${String(h).padStart(2, "0")}:00`);
-
+const TH_DOW = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
 const TH_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+const EN_DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const EN_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 function fmtDate(iso: string, lang: "th" | "en"): string {
   const d = new Date(`${iso}T00:00:00`);
   return lang === "th"
-    ? `${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear()}`
-    : `${d.getDate()} ${EN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    ? `${TH_DOW[d.getDay()]} ${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear()}`
+    : `${EN_DOW[d.getDay()]} ${d.getDate()} ${EN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 /**
@@ -52,19 +50,17 @@ export function ContactScreen({
   const cc = answers["q5_cc"] ?? DEFAULT_DIAL_CODE;
   const email = answers["q6"] ?? "";
   const channel = answers["q36"] ?? "";
-  const time = answers["q37"] ?? "";
-  const timeOther = answers["q37_other"] ?? "";
+  const callTime = answers["q37"] ?? ""; // chosen slot "HH:00"
   const isCall = channel === "call";
-  // "ระบุเวลาเอง": a calendar date + an hourly time select, composed into q37_other
-  // ("YYYY-MM-DD HH:MM") so the summary/submit/DB path stays unchanged.
-  const cbDate = answers["q37_date"] ?? "";
-  const cbTime = answers["q37_time"] ?? "";
-  const [cbDateOpen, setCbDateOpen] = useState(false);
 
-  function setCallbackSlot(date: string, tm: string) {
-    onAnswer("q37_date", date);
-    onAnswer("q37_time", tm);
-    onAnswer("q37_other", date && tm ? `${date} ${tm}` : "");
+  // Callback slots: next business day (skips Sundays/holidays); full 09:00–20:00 if submitted in
+  // business hours, else afternoon-only (12:00–20:00). Pinned once on mount so it doesn't jump.
+  const slots = useMemo(() => callbackSlots(), []);
+  const callbackDate = slots.date;
+
+  function setCallTime(hhmm: string) {
+    onAnswer("q37", hhmm);
+    onAnswer("q37_date", callbackDate); // server pairs these into callback_datetime + due_date
   }
 
   // Errors only surface once a field has been blurred — no red flash while the user is still typing.
@@ -90,11 +86,10 @@ export function ContactScreen({
           ? "รูปแบบอีเมลไม่ถูกต้อง"
           : "Invalid email"
         : null;
-  const timeOk = !isCall || (!!time && (time !== "other" || timeOther.trim().length > 0));
+  const timeOk = !isCall || !!callTime;
   const gateOk = nameOk && phoneOk && EMAIL_RE.test(email) && !!channel && timeOk;
 
   const q36 = QUESTIONS_MAP["q36"];
-  const q37 = QUESTIONS_MAP["q37"];
 
   return (
     <QuestionShell
@@ -135,76 +130,40 @@ export function ContactScreen({
       </div>
 
       <RevealBlock open={isCall}>
-        <div className="pt-3">
-          <SegmentedControl
-            columns={2}
-            segments={(q37.options ?? []).map((o) => ({ value: o.value, label: lang === "th" ? o.label : o.labelEn ?? o.label }))}
-            value={time || null}
-            onChange={(v) => onAnswer("q37", v)}
-          />
-          <RevealBlock open={time === "other"}>
-            <div className="space-y-3 pt-3">
-              {/* date — calendar dropdown */}
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setCbDateOpen((o) => !o)}
-                  className={
-                    "flex w-full items-center gap-3 rounded-2xl border bg-card px-4 py-3.5 text-left transition-colors " +
-                    (cbDateOpen ? "border-accent" : "border-border")
-                  }
-                >
-                  <span aria-hidden>📅</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-xs font-semibold text-muted">{lang === "th" ? "วันที่สะดวกให้โทร" : "Preferred date"}</span>
-                    <span className={"block truncate text-sm font-bold " + (cbDate ? "text-primary" : "text-muted-soft")}>
-                      {cbDate ? fmtDate(cbDate, lang) : lang === "th" ? "เลือกวันที่" : "Pick a date"}
-                    </span>
-                  </span>
-                  <svg
-                    width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                    className={`shrink-0 text-muted-soft transition-transform ${cbDateOpen ? "rotate-180" : ""}`}
-                  >
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
-                </button>
-                <RevealBlock open={cbDateOpen}>
-                  <div className="pt-3">
-                    <DateCalendar
-                      value={cbDate || undefined}
-                      onChange={(iso) => {
-                        setCallbackSlot(iso, cbTime);
-                        setCbDateOpen(false);
-                      }}
-                      hideMascot
-                    />
-                  </div>
-                </RevealBlock>
-              </div>
+        <div className="space-y-3 pt-3">
+          {/* callback day — auto-computed next business day (read-only) */}
+          <div className="flex items-center gap-3 rounded-2xl bg-accent-bg px-4 py-3">
+            <span aria-hidden>📅</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs font-semibold text-muted">{lang === "th" ? "ทีมงานจะโทรกลับวันที่" : "We'll call you back on"}</span>
+              <span className="block truncate text-sm font-bold text-primary">{fmtDate(callbackDate, lang)}</span>
+            </span>
+          </div>
 
-              {/* time — hourly select 00:00–24:00 */}
-              <div>
-                <span className="mb-1.5 block text-sm font-semibold text-primary">{lang === "th" ? "เวลาที่สะดวก" : "Preferred time"}</span>
-                <select
-                  value={cbTime}
-                  onChange={(e) => setCallbackSlot(cbDate, e.target.value)}
-                  className={
-                    "w-full rounded-2xl border bg-card px-4 py-3.5 outline-none transition-colors focus:border-accent " +
-                    (cbTime ? "border-border text-primary" : "border-border text-muted-soft")
-                  }
-                >
-                  <option value="" disabled>
-                    {lang === "th" ? "เลือกเวลา" : "Pick a time"}
-                  </option>
-                  {HOURS.map((h) => (
-                    <option key={h} value={h}>
-                      {h} {lang === "th" ? "น." : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </RevealBlock>
+          {/* time — hourly slots per the business-hours rule */}
+          <div>
+            <span className="mb-1.5 block text-sm font-semibold text-primary">
+              {lang === "th" ? "เวลาที่สะดวกให้โทร" : "Preferred time"}
+              <span className="text-red-alert"> *</span>
+            </span>
+            <select
+              value={callTime}
+              onChange={(e) => setCallTime(e.target.value)}
+              className={
+                "w-full rounded-2xl border bg-card px-4 py-3.5 outline-none transition-colors focus:border-accent " +
+                (callTime ? "border-border text-primary" : "border-border text-muted-soft")
+              }
+            >
+              <option value="" disabled>
+                {lang === "th" ? "เลือกเวลา" : "Pick a time"}
+              </option>
+              {slots.hours.map((h) => (
+                <option key={h} value={hourLabel(h)}>
+                  {hourLabel(h)} {lang === "th" ? "น." : ""}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </RevealBlock>
 
