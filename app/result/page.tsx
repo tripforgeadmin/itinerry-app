@@ -24,7 +24,7 @@ export default async function ResultPage() {
 
   const { data: account } = await supabase
     .from("account")
-    .select("id")
+    .select("id, full_name, first_name, last_name")
     .eq("line_user_id", profile.userId)
     .maybeSingle();
 
@@ -41,5 +41,9 @@ export default async function ResultPage() {
   // Only one submission ever — nothing to choose, skip straight to its detail view.
   if (assessments.length === 1) redirect(`/result/${assessments[0].id}`);
 
-  return <ResultList assessments={assessments} />;
+  const name = account.first_name || account.last_name
+    ? `${account.first_name ?? ""} ${account.last_name ?? ""}`.trim()
+    : account.full_name ?? "";
+
+  return <ResultList name={name} assessments={assessments} />;
 }

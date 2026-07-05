@@ -9,7 +9,7 @@ import { COUNTRIES } from "@/lib/countries";
 
 type Dict = Record<string, unknown>;
 
-export default function ResultList({ assessments }: { assessments: Dict[] }) {
+export default function ResultList({ name, assessments }: { name: string; assessments: Dict[] }) {
   const router = useRouter();
 
   return (
@@ -32,13 +32,10 @@ export default function ResultList({ assessments }: { assessments: Dict[] }) {
           <ItinerryLogo size="md" />
         </motion.div>
 
-        <motion.h1
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-sm font-bold text-primary mb-4 text-center"
-        >
-          ประวัติการทำแบบประเมิน
-        </motion.h1>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center mb-4">
+          {name && <p className="text-sm font-bold text-primary">{name}</p>}
+          <h1 className="text-xs text-muted-soft mt-0.5">ประวัติการทำแบบประเมิน</h1>
+        </motion.div>
 
         <div className="flex flex-col gap-2">
           {assessments.map((a, i) => {
