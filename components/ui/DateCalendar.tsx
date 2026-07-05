@@ -16,21 +16,31 @@ interface DateCalendarProps {
   onChange: (iso: string) => void;
   /** Earliest selectable day (ISO); days before max(today, minDate) are disabled. */
   minDate?: string;
+  /** Latest selectable day (ISO) — caps the forward window (e.g. callback within 2 weeks). */
+  maxDate?: string;
+  /** Extra per-day disable predicate (e.g. Sundays + holidays) on top of the min/max bounds. */
+  isDayDisabled?: (iso: string) => boolean;
   /** Drop the mascot below the calendar (dropdown/compact contexts). */
   hideMascot?: boolean;
 }
 
 /** Inline date picker (design spec §5): Thai month + Gregorian (ค.ศ.) year, both selectable via
  * dropdowns, past days disabled, itin_main mascot below. Wraps react-day-picker, tokenized. */
-export function DateCalendar({ value, onChange, minDate, hideMascot = false }: DateCalendarProps) {
+export function DateCalendar({ value, onChange, minDate, maxDate, isDayDisabled, hideMascot = false }: DateCalendarProps) {
   const selected = value ? new Date(`${value}T00:00:00`) : undefined;
   const today = new Date();
   // Floor at today; if a minDate (e.g. the arrival date) is later, floor there instead.
   const minD = minDate ? new Date(`${minDate}T00:00:00`) : today;
   const now = minD > today ? minD : today;
+  const maxD = maxDate ? new Date(`${maxDate}T00:00:00`) : undefined;
   // Rolling forward window so the year dropdown always starts at the floor month.
   const startMonth = new Date(now.getFullYear(), now.getMonth());
-  const endMonth = new Date(now.getFullYear() + 4, 11);
+  const endMonth = maxD ? new Date(maxD.getFullYear(), maxD.getMonth()) : new Date(now.getFullYear() + 4, 11);
+  const disabled = [
+    { before: now },
+    ...(maxD ? [{ after: maxD }] : []),
+    ...(isDayDisabled ? [(d: Date) => isDayDisabled(toISO(d))] : []),
+  ];
 
   return (
     <>
@@ -65,7 +75,7 @@ export function DateCalendar({ value, onChange, minDate, hideMascot = false }: D
           }}
           startMonth={startMonth}
           endMonth={endMonth}
-          disabled={{ before: now }}
+          disabled={disabled}
           formatters={{ formatMonthDropdown: (month) => TH_MONTHS[month.getMonth()] }}
         />
       </div>

@@ -1,15 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TextField } from "@/components/ui/TextField";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { DateCalendar } from "@/components/ui/DateCalendar";
 import { RevealBlock } from "@/components/ui/RevealBlock";
 import { Button } from "@/components/ui/Button";
 import { QuestionShell } from "@/components/screens/QuestionShell";
 import { QUESTIONS_MAP } from "@/lib/questions";
 import { DIAL_CODES, DEFAULT_DIAL_CODE, dialCodeOf, isValidPhone } from "@/lib/dialCodes";
 import { flagEmoji } from "@/lib/countries";
-import { callbackSlots, hourLabel } from "@/lib/holidays";
+import {
+  type CallbackConfig, DEFAULT_CONFIG, makeConfig, earliestCallbackDate, maxCallbackDate,
+  slotsForDate, isSelectableCallbackDate, hourLabel,
+} from "@/lib/holidays";
 import type { ScreenProps } from "@/components/screens/types";
 
 // Standard email, ASCII/English only — rejects Thai and other non-Latin characters.
@@ -51,16 +55,37 @@ export function ContactScreen({
   const email = answers["q6"] ?? "";
   const channel = answers["q36"] ?? "";
   const callTime = answers["q37"] ?? ""; // chosen slot "HH:00"
+  const callDate = answers["q37_date"] ?? ""; // chosen callback date (ISO)
   const isCall = channel === "call";
 
-  // Callback slots: next business day (skips Sundays/holidays); full 09:00–20:00 if submitted in
-  // business hours, else afternoon-only (12:00–20:00). Pinned once on mount so it doesn't jump.
-  const slots = useMemo(() => callbackSlots(), []);
-  const callbackDate = slots.date;
+  // Callback calendar config (holidays + weekly days off) — admin-editable, fetched from the DB;
+  // falls back to the hardcoded 2569 default until it arrives so the picker always works.
+  const [cfg, setCfg] = useState<CallbackConfig>(DEFAULT_CONFIG);
+  const [cbDateOpen, setCbDateOpen] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/holidays")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && Array.isArray(d?.holidays)) setCfg(makeConfig(d.holidays, d.weeklyOff ?? [0]));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
-  function setCallTime(hhmm: string) {
-    onAnswer("q37", hhmm);
-    onAnswer("q37_date", callbackDate); // server pairs these into callback_datetime + due_date
+  // Pin "now" once so the date window / slot rule don't drift while the user fills the form.
+  const now = useMemo(() => new Date(), []);
+  const minDate = earliestCallbackDate(now, cfg);
+  const maxDate = maxCallbackDate(now);
+  const hours = callDate ? slotsForDate(callDate, now, cfg) : [];
+
+  function setCallbackDate(iso: string) {
+    onAnswer("q37_date", iso);
+    setCbDateOpen(false);
+    // drop a previously-chosen time that isn't offered on the new date (e.g. morning on a
+    // restricted earliest day)
+    const allowed = slotsForDate(iso, now, cfg).map(hourLabel);
+    if (callTime && !allowed.includes(callTime)) onAnswer("q37", "");
   }
 
   // Errors only surface once a field has been blurred — no red flash while the user is still typing.
@@ -86,7 +111,7 @@ export function ContactScreen({
           ? "รูปแบบอีเมลไม่ถูกต้อง"
           : "Invalid email"
         : null;
-  const timeOk = !isCall || !!callTime;
+  const timeOk = !isCall || (!!callDate && !!callTime);
   const gateOk = nameOk && phoneOk && EMAIL_RE.test(email) && !!channel && timeOk;
 
   const q36 = QUESTIONS_MAP["q36"];
@@ -131,16 +156,46 @@ export function ContactScreen({
 
       <RevealBlock open={isCall}>
         <div className="space-y-3 pt-3">
-          {/* callback day — auto-computed next business day (read-only) */}
-          <div className="flex items-center gap-3 rounded-2xl bg-accent-bg px-4 py-3">
-            <span aria-hidden>📅</span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-xs font-semibold text-muted">{lang === "th" ? "ทีมงานจะโทรกลับวันที่" : "We'll call you back on"}</span>
-              <span className="block truncate text-sm font-bold text-primary">{fmtDate(callbackDate, lang)}</span>
+          {/* callback date — calendar dropdown, within 2 weeks, business days only */}
+          <div>
+            <span className="mb-1.5 block text-sm font-semibold text-primary">
+              {lang === "th" ? "วันที่สะดวกให้โทร" : "Preferred date"}
+              <span className="text-red-alert"> *</span>
             </span>
+            <button
+              type="button"
+              onClick={() => setCbDateOpen((o) => !o)}
+              className={
+                "flex w-full items-center gap-3 rounded-2xl border bg-card px-4 py-3.5 text-left transition-colors " +
+                (cbDateOpen ? "border-accent" : "border-border")
+              }
+            >
+              <span aria-hidden>📅</span>
+              <span className={"min-w-0 flex-1 truncate text-sm font-bold " + (callDate ? "text-primary" : "text-muted-soft")}>
+                {callDate ? fmtDate(callDate, lang) : lang === "th" ? "เลือกวันที่ (ภายใน 2 สัปดาห์)" : "Pick a date (within 2 weeks)"}
+              </span>
+              <svg
+                width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                className={`shrink-0 text-muted-soft transition-transform ${cbDateOpen ? "rotate-180" : ""}`}
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <RevealBlock open={cbDateOpen}>
+              <div className="pt-3">
+                <DateCalendar
+                  value={callDate || undefined}
+                  onChange={setCallbackDate}
+                  minDate={minDate}
+                  maxDate={maxDate}
+                  isDayDisabled={(iso) => !isSelectableCallbackDate(iso, now, cfg)}
+                  hideMascot
+                />
+              </div>
+            </RevealBlock>
           </div>
 
-          {/* time — hourly slots per the business-hours rule */}
+          {/* time — hourly slots for the chosen date */}
           <div>
             <span className="mb-1.5 block text-sm font-semibold text-primary">
               {lang === "th" ? "เวลาที่สะดวกให้โทร" : "Preferred time"}
@@ -148,16 +203,17 @@ export function ContactScreen({
             </span>
             <select
               value={callTime}
-              onChange={(e) => setCallTime(e.target.value)}
+              disabled={!callDate}
+              onChange={(e) => onAnswer("q37", e.target.value)}
               className={
-                "w-full rounded-2xl border bg-card px-4 py-3.5 outline-none transition-colors focus:border-accent " +
+                "w-full rounded-2xl border bg-card px-4 py-3.5 outline-none transition-colors focus:border-accent disabled:opacity-50 " +
                 (callTime ? "border-border text-primary" : "border-border text-muted-soft")
               }
             >
               <option value="" disabled>
-                {lang === "th" ? "เลือกเวลา" : "Pick a time"}
+                {callDate ? (lang === "th" ? "เลือกเวลา" : "Pick a time") : lang === "th" ? "เลือกวันก่อน" : "Pick a date first"}
               </option>
-              {slots.hours.map((h) => (
+              {hours.map((h) => (
                 <option key={h} value={hourLabel(h)}>
                   {hourLabel(h)} {lang === "th" ? "น." : ""}
                 </option>
