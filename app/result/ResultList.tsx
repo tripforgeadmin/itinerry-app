@@ -66,6 +66,7 @@ export default function ResultList({ name, assessments }: { name: string; assess
                   </span>
                 </div>
                 <p className="text-sm font-medium text-primary">
+                  {name && `${name} · `}
                   {destination} · {label("visa_type", trip.visa_type)}
                 </p>
               </motion.button>
