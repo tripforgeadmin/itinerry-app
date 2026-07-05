@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 import AdminTable from "./AdminTable";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,10 @@ export default async function AdminPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Submissions</h1>
-          <span className="text-sm text-gray-500">{submissions?.length ?? 0} รายการ</span>
+          <div className="flex items-center gap-4">
+            <Link href="/admin/holidays" className="text-sm font-medium text-blue-600 hover:text-blue-800">📅 วันหยุด</Link>
+            <span className="text-sm text-gray-500">{submissions?.length ?? 0} รายการ</span>
+          </div>
         </div>
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
