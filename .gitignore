@@ -44,3 +44,6 @@ next-env.d.ts
 # dev artifacts (playwright + preview screenshots)
 .playwright-mcp/
 /*.png
+
+# local DB backups (contain customer PII — never commit)
+/backups/
