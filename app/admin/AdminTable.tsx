@@ -42,7 +42,7 @@ function daysToTravel(trip: Trip | null, todayIso: string): number | null {
 }
 
 type SortKey =
-  | "ticket" | "date" | "name" | "line" | "visa" | "dest" | "intent" | "days" | "phone" | "contact" | "friend" | "status";
+  | "ticket" | "date" | "due" | "name" | "line" | "visa" | "dest" | "intent" | "days" | "phone" | "contact" | "friend" | "status";
 type SortEntry = { key: SortKey; dir: "asc" | "desc" };
 
 export default function AdminTable({ rows }: { rows: Row[] }) {
@@ -66,6 +66,7 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
     const v: Record<SortKey, (r: Row) => string | number> = {
       ticket: (r) => r.ticket_id ?? "",
       date: (r) => Date.parse(r.created_at) || 0,
+      due: (r) => (r.due_date ? Date.parse(r.due_date) : Number.POSITIVE_INFINITY),
       name: (r) => displayName(r.account).toLowerCase(),
       line: (r) => (r.account?.line_display_name ?? "").toLowerCase(),
       visa: (r) => r.trip?.visa_type ?? "",
@@ -129,7 +130,8 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
 
   const columns: { key: SortKey | null; label: string; align?: "center" }[] = [
     { key: "ticket", label: "Ticket ID" },
-    { key: "date", label: "วันที่" },
+    { key: "date", label: "Submitted Date" },
+    { key: "due", label: "Due Date" },
     { key: "name", label: "ชื่อเล่น" },
     { key: "line", label: "LINE" },
     { key: "visa", label: "วีซ่า" },
@@ -207,6 +209,14 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
                       timeZone: "Asia/Bangkok",
                       day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
                     })}
+                  </td>
+                  <td className={`px-4 py-3 whitespace-nowrap ${overdue ? "text-red-700 font-semibold" : "text-gray-500"}`}>
+                    {s.due_date
+                      ? new Date(s.due_date).toLocaleDateString("th-TH", {
+                          timeZone: "Asia/Bangkok",
+                          day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
+                        })
+                      : "—"}
                   </td>
                   <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{displayName(acc)}</td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{acc?.line_display_name ?? "—"}</td>

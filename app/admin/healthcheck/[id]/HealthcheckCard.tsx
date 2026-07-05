@@ -166,7 +166,7 @@ export default function HealthcheckCard({ data: d, flagSrc }: { data: Healthchec
           </div>
           <div style={{ display: "flex", marginTop: 16 }}>
             <span style={{ display: "flex", alignItems: "center", backgroundColor: "#ffffff", borderRadius: 999, padding: "10px 24px", fontSize: 23, fontWeight: 700, color: "#06C755" }}>
-              LINE OA @448yxrvh
+              LINE OA @itinerry
             </span>
           </div>
         </div>
