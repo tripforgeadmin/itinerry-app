@@ -169,15 +169,28 @@ export function shareCardFlex(lang: "th" | "en" = "th") {
         spacing: "sm",
         contents: [
           {
-            type: "button",
-            style: "primary",
-            color: "#44a8db",
+            // Custom "button" (box+action+bold text) — matches assessmentReceivedFlex's
+            // buttons; LINE's native button component can't render bold labels.
+            type: "box",
+            layout: "vertical",
+            backgroundColor: "#44a8db",
+            cornerRadius: "md",
+            paddingAll: "md",
             action: { type: "uri", label: t.open, uri: OPEN_APP_URL },
+            contents: [
+              { type: "text", text: t.open, weight: "bold", color: "#ffffff", align: "center", size: "md" },
+            ],
           },
           {
-            type: "button",
-            style: "secondary",
+            type: "box",
+            layout: "vertical",
+            backgroundColor: "#06c755",
+            cornerRadius: "md",
+            paddingAll: "md",
             action: { type: "uri", label: t.share, uri: SHARE_LIFF_URL },
+            contents: [
+              { type: "text", text: t.share, weight: "bold", color: "#ffffff", align: "center", size: "md" },
+            ],
           },
         ],
       },
