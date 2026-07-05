@@ -28,15 +28,16 @@ export default function SharePage() {
           return;
         }
 
-        // TODO: dynamic nationality-based lang detection has been tried twice and
-        // broken shareTargetPicker in production both times — once with
-        // liff.getProfile() (needs "profile" scope), once with
-        // liff.getDecodedIDToken() (needs only "openid", already granted). Root
-        // cause still unclear; reverted again to restore working shares. Follow-webhook
-        // path (app/api/line/webhook/route.ts) still correctly sends the English card.
+        // Language is read straight from the URL (lib/line-flex.ts's shareLiffUrl()
+        // embeds it as ?lang=en at message-build time, since the server already knows
+        // the customer's language) — no LIFF identity call here at all. Two earlier
+        // attempts to detect it client-side (liff.getProfile(), then
+        // liff.getDecodedIDToken()) both broke shareTargetPicker in production.
+        const lang = new URLSearchParams(window.location.search).get("lang") === "en" ? "en" : "th";
+
         await liff.shareTargetPicker(
           // cast: the SDK wants its literal message types; our builder returns plain JSON
-          [shareCardFlex()] as Parameters<typeof liff.shareTargetPicker>[0],
+          [shareCardFlex(lang)] as Parameters<typeof liff.shareTargetPicker>[0],
           { isMultiple: true }
         );
         setStatus("done");

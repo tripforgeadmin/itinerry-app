@@ -92,7 +92,7 @@ export function assessmentReceivedFlex(ticketId: string, lang: "th" | "en" = "th
             backgroundColor: "#06c755",
             cornerRadius: "md",
             paddingAll: "md",
-            action: { type: "uri", label: t.share, uri: SHARE_LIFF_URL },
+            action: { type: "uri", label: t.share, uri: shareLiffUrl(lang) },
             contents: [
               { type: "text", text: t.share, weight: "bold", color: "#ffffff", align: "center", size: "md" },
             ],
@@ -117,8 +117,18 @@ const DEFAULT_LIFF_ID = "2010501982-WP4YVZn2"; // original LIFF app whose endpoi
 // path is appended. If the owner creates a DEDICATED LIFF app whose endpoint already IS /share,
 // set NEXT_PUBLIC_LIFF_ID to its id — no path is appended then (per LIFF endpoint semantics).
 const LIFF_ID = process.env.NEXT_PUBLIC_LIFF_ID ?? DEFAULT_LIFF_ID;
-export const SHARE_LIFF_URL =
+const SHARE_LIFF_BASE =
   LIFF_ID === DEFAULT_LIFF_ID ? `${LIFF_URL}/share` : `https://liff.line.me/${LIFF_ID}`;
+
+// Encodes the sharer's already-known language directly into the LIFF URL — LIFF forwards
+// query params through to its endpoint (app/share/page.tsx), so /share can read it
+// synchronously from window.location with ZERO extra client-side LIFF/API calls before
+// shareTargetPicker(). Two earlier attempts to detect language inside /share itself
+// (liff.getProfile(), then liff.getDecodedIDToken()) both broke shareTargetPicker in
+// production — this avoids that code path entirely instead of retrying it.
+export function shareLiffUrl(lang: "th" | "en" = "th"): string {
+  return lang === "en" ? `${SHARE_LIFF_BASE}?lang=en` : SHARE_LIFF_BASE;
+}
 
 // ?ref=line-share → GA (already installed) can segment traffic arriving from shared cards.
 const OPEN_APP_URL = `${APP_URL}/?ref=line-share`;
@@ -193,7 +203,7 @@ export function shareCardFlex(lang: "th" | "en" = "th") {
             backgroundColor: "#06c755",
             cornerRadius: "md",
             paddingAll: "md",
-            action: { type: "uri", label: t.share, uri: SHARE_LIFF_URL },
+            action: { type: "uri", label: t.share, uri: shareLiffUrl(lang) },
             contents: [
               { type: "text", text: t.share, weight: "bold", color: "#ffffff", align: "center", size: "md" },
             ],
