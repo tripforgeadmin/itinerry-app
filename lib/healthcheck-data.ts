@@ -118,14 +118,24 @@ const PAST_VISA_SHORT: Record<string, string> = {
   nz: "NZ", japan: "Japan", korea: "Korea", china: "China", dubai: "UAE",
 };
 
-/** Build from: select("*, account:account_id(full_name, nationality), trip:trip_id(*), visa_evaluation(*)") */
-export function healthcheckFromDbRow(row: Dict): HealthcheckData {
+/** Default report language: Thai nationals → Thai, everyone else → English. */
+export function defaultLangFor(row: Dict): "th" | "en" {
+  const account = one(row.account) ?? {};
+  return account.nationality === "other" ? "en" : "th";
+}
+
+/**
+ * Build from: select("*, account:account_id(full_name, nationality), trip:trip_id(*), visa_evaluation(*)").
+ * `langOverride` forces the report language; without it, it follows nationality. Note the
+ * admin-entered strengths/improvements/notes render as-typed — only the template copy translates.
+ */
+export function healthcheckFromDbRow(row: Dict, langOverride?: "th" | "en"): HealthcheckData {
   const account = one(row.account) ?? {};
   const trip = one(row.trip) ?? {};
   const ev = one(row.visa_evaluation) ?? {};
   const b = (row.branch_answers ?? {}) as Record<string, string | string[]>;
 
-  const lang: "th" | "en" = account.nationality === "other" ? "en" : "th";
+  const lang: "th" | "en" = langOverride ?? (account.nationality === "other" ? "en" : "th");
   const destCode = ((trip.destination as string) ?? "").toLowerCase();
   const country = COUNTRIES.find((c) => c.code.toLowerCase() === destCode);
   const destName = country ? (lang === "th" ? country.th : country.en) : destCode.toUpperCase();

@@ -9,12 +9,11 @@ import HealthcheckCard from "@/app/admin/healthcheck/[id]/HealthcheckCard";
 const MAX_MESSAGE = 500;
 
 /**
- * "ส่งผลประเมินให้ลูกค้า" — appears once the evaluation is saved. Opens a modal with a
- * live preview of the Visa Health Check card + an editable message (prefilled with the
- * standard result text), then a second-step confirmation. On confirm the card DOM is
- * exported to JPEG right here in the browser (the only place Thai shapes correctly)
- * and shipped to /api/admin/send-result, which pushes [image, message] over LINE and
- * advances the case to ติดต่อแล้ว.
+ * "ส่งผลประเมินให้ลูกค้า" — appears once the case is marked evaluated. Opens a modal with
+ * a live card preview (language-switchable, defaulting from nationality) + an editable
+ * message prefilled with the standard result text, then a second-step confirmation. On
+ * confirm the SELECTED-language card DOM is exported to JPEG here in the browser (the
+ * only place Thai shapes correctly) and shipped to /api/admin/send-result.
  */
 export default function SendResultFlow({
   assessmentId,
@@ -23,9 +22,12 @@ export default function SendResultFlow({
   resultSentAt,
   canSend,
   blockReason,
-  data,
+  dataTh,
+  dataEn,
+  defaultLang,
   flagSrc,
-  prefillMessage,
+  prefillTh,
+  prefillEn,
 }: {
   assessmentId: string;
   status: string;
@@ -33,20 +35,32 @@ export default function SendResultFlow({
   resultSentAt: string | null;
   canSend: boolean;
   blockReason: string | null;
-  data: HealthcheckData;
+  dataTh: HealthcheckData;
+  dataEn: HealthcheckData;
+  defaultLang: "th" | "en";
   flagSrc: string | null;
-  prefillMessage: string;
+  prefillTh: string;
+  prefillEn: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [message, setMessage] = useState(prefillMessage);
+  const [lang, setLang] = useState<"th" | "en">(defaultLang);
+  const [message, setMessage] = useState(defaultLang === "th" ? prefillTh : prefillEn);
+  const [messageEdited, setMessageEdited] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
-  // appears only after "บันทึกและทำเครื่องหมายว่าประเมินแล้ว" — mirrors the server guard
   if (status === "pending_review" || (!ready && !resultSentAt)) return null;
+
+  const data = lang === "th" ? dataTh : dataEn;
+
+  function switchLang(next: "th" | "en") {
+    setLang(next);
+    // keep the message in sync with the language unless the admin has typed their own
+    if (!messageEdited) setMessage(next === "th" ? prefillTh : prefillEn);
+  }
 
   async function handleConfirmedSend() {
     const node = exportRef.current;
@@ -115,24 +129,42 @@ export default function SendResultFlow({
             <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
               <span className="text-sm font-bold text-gray-800">ส่งผลประเมินให้ลูกค้า</span>
               <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700">{data.ticketId}</span>
-              <button onClick={() => setOpen(false)} className="ml-auto px-2 text-gray-400 hover:text-gray-600">✕</button>
+              <div className="ml-auto flex items-center gap-1 rounded-lg bg-gray-100 p-0.5">
+                {(["th", "en"] as const).map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => switchLang(l)}
+                    className={`rounded-md px-2.5 py-1 text-xs font-bold ${lang === l ? "bg-blue-600 text-white" : "text-gray-500"}`}
+                  >
+                    {l === "th" ? "ไทย" : "EN"}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setOpen(false)} className="px-2 text-gray-400 hover:text-gray-600">✕</button>
             </div>
 
+            {/* only the card preview scrolls */}
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              <p className="mb-2 text-xs text-gray-400">รูปที่ลูกค้าจะได้รับ</p>
+              <p className="mb-2 text-xs text-gray-400">รูปที่ลูกค้าจะได้รับ ({lang === "th" ? "ภาษาไทย" : "English"})</p>
               <div className="overflow-hidden rounded-xl border border-gray-200" style={{ zoom: 0.52 }}>
                 <HealthcheckCard data={data} flagSrc={flagSrc} />
               </div>
+            </div>
 
-              <p className="mt-4 mb-1 text-xs text-gray-400">ข้อความที่ส่งตามหลังรูป</p>
+            {/* sticky message section — always visible while the card scrolls above it */}
+            <div className="border-t border-gray-100 px-5 py-3">
+              <p className="mb-1 text-xs text-gray-400">ข้อความที่ส่งตามหลังรูป</p>
               <textarea
                 value={message}
-                onChange={(e) => setMessage(e.target.value.slice(0, MAX_MESSAGE))}
-                rows={5}
+                onChange={(e) => { setMessage(e.target.value.slice(0, MAX_MESSAGE)); setMessageEdited(true); }}
+                rows={4}
                 className="w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-200"
               />
-              <div className="text-right text-[11px] text-gray-300">{message.length}/{MAX_MESSAGE}</div>
-              {error && <p className="mt-1 text-xs font-bold text-red-500">{error}</p>}
+              <div className="flex items-center">
+                <span className="text-[11px] text-gray-300">{message.length}/{MAX_MESSAGE}</span>
+                {error && <span className="ml-auto text-xs font-bold text-red-500">{error}</span>}
+              </div>
             </div>
 
             <div className="flex items-center gap-2 border-t border-gray-100 px-5 py-3">
@@ -167,7 +199,7 @@ export default function SendResultFlow({
             </div>
           </div>
 
-          {/* full-size instance for export — off-screen, never scaled */}
+          {/* full-size instance for export — off-screen, never scaled, follows the language */}
           <div style={{ position: "fixed", left: -12000, top: 0 }} aria-hidden>
             <div ref={exportRef}>
               <HealthcheckCard data={data} flagSrc={flagSrc} />

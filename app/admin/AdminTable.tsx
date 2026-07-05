@@ -13,6 +13,7 @@ type Trip = { visa_type: string; destination: string };
 
 type Row = {
   id: string;
+  ticket_id: string | null;
   created_at: string;
   due_date: string | null;
   occupation: string;
@@ -56,6 +57,7 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-100 text-left text-xs text-gray-500 uppercase tracking-wider">
+            <th className="px-4 py-3">Ticket ID</th>
             <th className="px-4 py-3">วันที่</th>
             <th className="px-4 py-3">ชื่อ</th>
             <th className="px-4 py-3">LINE</th>
@@ -81,6 +83,9 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
                   overdue ? "bg-red-100 hover:bg-red-200" : "hover:bg-blue-50"
                 }`}
               >
+                <td className="px-4 py-3 whitespace-nowrap font-mono text-xs font-medium text-gray-700">
+                  {s.ticket_id ?? "—"}
+                </td>
                 <td className={`px-4 py-3 whitespace-nowrap ${overdue ? "text-red-700 font-semibold" : "text-gray-500"}`}>
                   {new Date(s.created_at).toLocaleDateString("th-TH", {
                     day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",

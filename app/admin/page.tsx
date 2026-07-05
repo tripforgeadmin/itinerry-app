@@ -8,7 +8,7 @@ export default async function AdminPage() {
   const { data, error } = await supabase
     .from("user_assessment")
     .select(
-      "id, created_at, due_date, status, contact_preference, savings_balance, account:account_id(full_name, line_display_name, phone, is_friend), trip:trip_id(visa_type, destination), visa_evaluation(pass, strengths, improvements)"
+      "id, ticket_id, created_at, due_date, status, contact_preference, savings_balance, account:account_id(full_name, line_display_name, phone, is_friend), trip:trip_id(visa_type, destination), visa_evaluation(pass, strengths, improvements)"
     )
     .order("created_at", { ascending: false });
 
@@ -22,6 +22,7 @@ export default async function AdminPage() {
     const ev = (Array.isArray(r.visa_evaluation) ? r.visa_evaluation[0] : r.visa_evaluation) ?? null;
     return {
       id: r.id,
+      ticket_id: r.ticket_id,
       created_at: r.created_at,
       due_date: r.due_date,
       status: r.status,

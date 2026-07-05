@@ -9,7 +9,7 @@ import CopyLineIdButton from "./CopyLineIdButton";
 import MessageLogPanel from "./MessageLogPanel";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { healthcheckFromDbRow } from "@/lib/healthcheck-data";
+import { healthcheckFromDbRow, defaultLangFor } from "@/lib/healthcheck-data";
 import { assessmentResultMessage } from "@/lib/line-messaging";
 import { STATUS_LABEL, type StatusValue } from "@/lib/status";
 import { LABELS, TIES_LABELS, PAST_VISA_LABELS, label, refusedText, overstayText } from "@/lib/answer-labels";
@@ -261,24 +261,20 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
 
         {/* Send result to LINE — healthcheck image + message, 2-step confirm */}
         {(() => {
-          const hcData = healthcheckFromDbRow(s);
-          const ready =
-            evaluation.pass != null && hcData.strengths.length > 0 && hcData.improvements.length > 0;
-          const flagSrc = existsSync(path.join(process.cwd(), "public", "flags", `${hcData.destCode}.png`))
-            ? `/flags/${hcData.destCode}.png`
+          const hcTh = healthcheckFromDbRow(s, "th");
+          const hcEn = healthcheckFromDbRow(s, "en");
+          const ready = evaluation.pass != null && hcTh.strengths.length > 0 && hcTh.improvements.length > 0;
+          const flagSrc = existsSync(path.join(process.cwd(), "public", "flags", `${hcTh.destCode}.png`))
+            ? `/flags/${hcTh.destCode}.png`
             : null;
           const blockReason = !account.line_user_id
             ? "ลูกค้าไม่มีบัญชี LINE ในระบบ — ส่งไม่ได้"
             : account.is_friend === false
               ? "ลูกค้ายังไม่ได้เพิ่มเพื่อน LINE OA — ส่งไม่ได้"
               : null;
-          const prefillMessage =
+          const prefill = (lang: "th" | "en") =>
             evaluation.pass != null
-              ? (assessmentResultMessage(
-                  evaluation.pass as boolean,
-                  (evaluation.notes as string) ?? "",
-                  account.nationality === "other" ? "en" : "th",
-                ) as { text: string }).text
+              ? (assessmentResultMessage(evaluation.pass as boolean, (evaluation.notes as string) ?? "", lang) as { text: string }).text
               : "";
           return (
             <SendResultFlow
@@ -288,9 +284,12 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
               resultSentAt={(s.result_sent_at as string | null) ?? null}
               canSend={blockReason === null}
               blockReason={blockReason}
-              data={hcData}
+              dataTh={hcTh}
+              dataEn={hcEn}
+              defaultLang={defaultLangFor(s)}
               flagSrc={flagSrc}
-              prefillMessage={prefillMessage}
+              prefillTh={prefill("th")}
+              prefillEn={prefill("en")}
             />
           );
         })()}

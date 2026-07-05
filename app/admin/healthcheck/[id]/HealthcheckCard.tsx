@@ -31,9 +31,8 @@ export default function HealthcheckCard({ data: d, flagSrc }: { data: Healthchec
       {/* hero band */}
       <div style={{ display: "flex", flexDirection: "column", backgroundColor: HERO_BG, padding: "36px 52px 30px" }}>
         <div style={{ display: "flex", alignItems: "center" }}>
-          {/* logo scaled to full header height per owner note */}
-          <img src="/logo-iti.svg" width={62} height={58} alt="" />
-          <img src="/logo-nerry.svg" width={160} height={49} alt="itinerry" style={{ marginLeft: 6, marginTop: 10 }} />
+          {/* single brand logo (cropped to content), sized to the header height */}
+          <img src="/itin-logo.png" width={210} height={65} alt="itinerry" style={{ objectFit: "contain" }} />
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginLeft: "auto" }}>
             <div style={{ display: "flex", backgroundColor: "#ffffff", borderRadius: 999, padding: "10px 22px", fontSize: 20, fontWeight: 600, color: NAVY }}>
               {t(lang, "ประเมินเบื้องต้น", "Preliminary assessment")} · {evalBadge}

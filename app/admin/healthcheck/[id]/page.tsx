@@ -2,16 +2,16 @@ import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { healthcheckFromDbRow } from "@/lib/healthcheck-data";
-import HealthcheckCard from "./HealthcheckCard";
-import PrintToolbar from "./PrintToolbar";
+import { healthcheckFromDbRow, defaultLangFor } from "@/lib/healthcheck-data";
+import HealthcheckView from "./HealthcheckView";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Customer healthcheck card page — admin-gated by proxy.ts (/admin matcher). The card
  * renders as normal HTML so the browser does the Thai text shaping (server-side satori
- * drops tone marks over upper vowels) and the print dialog produces the PDF.
+ * drops tone marks over upper vowels) and the print dialog produces the PDF. Both
+ * languages are built up front so the toolbar can toggle instantly.
  */
 export default async function HealthcheckPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,10 +22,12 @@ export default async function HealthcheckPage({ params }: { params: Promise<{ id
     .single();
   if (error || !row) notFound();
 
-  const data = healthcheckFromDbRow(row as Record<string, unknown>);
-  const ready = data.strengths.length > 0 && data.improvements.length > 0;
-  const flagSrc = existsSync(path.join(process.cwd(), "public", "flags", `${data.destCode}.png`))
-    ? `/flags/${data.destCode}.png`
+  const r = row as Record<string, unknown>;
+  const dataTh = healthcheckFromDbRow(r, "th");
+  const dataEn = healthcheckFromDbRow(r, "en");
+  const ready = dataTh.strengths.length > 0 && dataTh.improvements.length > 0;
+  const flagSrc = existsSync(path.join(process.cwd(), "public", "flags", `${dataTh.destCode}.png`))
+    ? `/flags/${dataTh.destCode}.png`
     : null;
 
   return (
@@ -43,16 +45,12 @@ export default async function HealthcheckPage({ params }: { params: Promise<{ id
         }
       `}</style>
 
-      <PrintToolbar backHref={`/admin/${id}`} ready={ready} />
-
       {!ready ? (
         <div className="mx-auto max-w-[1080px] rounded-2xl bg-white p-10 text-center text-sm text-gray-500 shadow-sm">
           ยังสร้างรายงานไม่ได้ — ต้องบันทึกผลการประเมิน พร้อมกรอก “จุดแข็งของคุณ” และ “ที่เราจะช่วยเสริม” อย่างน้อยอย่างละ 1 ข้อก่อน
         </div>
       ) : (
-        <div className="mx-auto w-fit shadow-lg">
-          <HealthcheckCard data={data} flagSrc={flagSrc} />
-        </div>
+        <HealthcheckView backHref={`/admin/${id}`} dataTh={dataTh} dataEn={dataEn} defaultLang={defaultLangFor(r)} flagSrc={flagSrc} />
       )}
     </main>
   );
