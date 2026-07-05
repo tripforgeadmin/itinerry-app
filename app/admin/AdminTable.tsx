@@ -140,7 +140,7 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
     { key: "contact", label: "ติดต่อ" },
     { key: "friend", label: "เพื่อน", align: "center" },
     { key: "status", label: "สถานะ" },
-    { key: null, label: "รายงาน", align: "center" },
+    { key: null, label: "ผลประเมิน", align: "center" },
   ];
 
   return (
@@ -204,6 +204,7 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
                   <td className="px-4 py-3 whitespace-nowrap font-mono text-xs font-medium text-gray-700">{s.ticket_id ?? "—"}</td>
                   <td className={`px-4 py-3 whitespace-nowrap ${overdue ? "text-red-700 font-semibold" : "text-gray-500"}`}>
                     {new Date(s.created_at).toLocaleDateString("th-TH", {
+                      timeZone: "Asia/Bangkok",
                       day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
                     })}
                   </td>

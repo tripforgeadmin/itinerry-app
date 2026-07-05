@@ -7,6 +7,7 @@ import AssessmentResultForm from "./AssessmentResultForm";
 import SendResultFlow from "./SendResultFlow";
 import CopyLineIdButton from "./CopyLineIdButton";
 import MessageLogPanel from "./MessageLogPanel";
+import TicketWorkspace from "./TicketWorkspace";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { healthcheckFromDbRow, defaultLangFor } from "@/lib/healthcheck-data";
@@ -158,7 +159,7 @@ function AutoAssessment({ evaluation }: { evaluation: Dict }) {
 
           <p className="text-[11px] text-gray-300">
             {(evaluation.evaluated_by as string) ?? "rule-engine"}
-            {meta.evaluated_at ? ` · ${new Date(meta.evaluated_at as string).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}
+            {meta.evaluated_at ? ` · ${new Date(meta.evaluated_at as string).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}
           </p>
         </div>
       )}
@@ -192,199 +193,194 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
     .slice()
     .sort((h1, h2) => new Date(h2.changed_at).getTime() - new Date(h1.changed_at).getTime());
 
-  return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      {/* two columns on desktop: case detail + sticky outbound-message panel */}
-      <div className="mx-auto max-w-6xl lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-6">
-      <div className="max-w-2xl mx-auto lg:mx-0 w-full">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Link href="/admin" className="text-gray-400 hover:text-gray-600 text-sm">← กลับ</Link>
-          <h1 className="text-xl font-bold text-gray-800">{name}</h1>
-          {typeof s.ticket_id === "string" && s.ticket_id && (
-            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700">{s.ticket_id}</span>
-          )}
-          <span className="text-xs text-gray-400">
-            {new Date(s.created_at as string).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
-          </span>
-          <a
-            href={`/api/admin/assessment-pdf/${s.id}`}
-            target="_blank"
-            rel="noopener"
-            className="ml-auto rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-blue-400 hover:text-blue-600"
-            title="ใบงานประเมิน (PDF ภายใน กรอกได้)"
-          >
-            🖨️ ใบงาน PDF
-          </a>
-        </div>
+  // Send-result card (healthcheck image + message, 2-step confirm) — lives in the LEFT column.
+  const hcTh = healthcheckFromDbRow(s, "th");
+  const hcEn = healthcheckFromDbRow(s, "en");
+  const sendReady = evaluation.pass != null && hcTh.strengths.length > 0 && hcTh.improvements.length > 0;
+  const flagSrc = existsSync(path.join(process.cwd(), "public", "flags", `${hcTh.destCode}.png`))
+    ? `/flags/${hcTh.destCode}.png`
+    : null;
+  const blockReason = !account.line_user_id
+    ? "ลูกค้าไม่มีบัญชี LINE ในระบบ — ส่งไม่ได้"
+    : account.is_friend === false
+      ? "ลูกค้ายังไม่ได้เพิ่มเพื่อน LINE OA — ส่งไม่ได้"
+      : null;
+  const prefill = (lang: "th" | "en") =>
+    evaluation.pass != null
+      ? (assessmentResultMessage(evaluation.pass as boolean, (evaluation.notes as string) ?? "", lang) as { text: string }).text
+      : "";
+  const sendResult = (
+    <SendResultFlow
+      assessmentId={s.id as string}
+      status={s.status as string}
+      ready={sendReady}
+      resultSentAt={(s.result_sent_at as string | null) ?? null}
+      canSend={blockReason === null}
+      blockReason={blockReason}
+      dataTh={hcTh}
+      dataEn={hcEn}
+      defaultLang={defaultLangFor(s)}
+      flagSrc={flagSrc}
+      prefillTh={prefill("th")}
+      prefillEn={prefill("en")}
+    />
+  );
 
-        {/* Status updater */}
-        <StatusUpdater id={s.id as string} currentStatus={s.status as string} />
+  const header = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <Link href="/admin" className="text-sm text-gray-400 hover:text-gray-600">← กลับ</Link>
+      <h1 className="text-lg font-bold text-gray-800">{name}</h1>
+      {typeof s.ticket_id === "string" && s.ticket_id && (
+        <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700">{s.ticket_id}</span>
+      )}
+      <StatusUpdater id={s.id as string} currentStatus={s.status as string} inline />
+      <span className="ml-auto whitespace-nowrap text-xs text-gray-400">
+        {new Date(s.created_at as string).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" })} น.
+      </span>
+      <a
+        href={`/api/admin/assessment-pdf/${s.id}`}
+        target="_blank"
+        rel="noopener"
+        className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-blue-400 hover:text-blue-600"
+        title="ใบงานประเมิน (PDF ภายใน กรอกได้)"
+      >
+        🖨️ ใบงาน PDF
+      </a>
+    </div>
+  );
 
-        {/* Status change timeline */}
-        <Section title="ประวัติสถานะ">
-          {statusHistory.length === 0 ? (
-            <p className="text-sm text-gray-400">ยังไม่มีการเปลี่ยนสถานะ</p>
-          ) : (
-            <div>
-              {statusHistory.map((h) => (
-                <div key={h.id} className="flex gap-3 py-2 border-b border-gray-50 last:border-0 text-sm">
-                  <span className="text-gray-800 font-medium">
-                    {h.from_status ? (STATUS_LABEL[h.from_status as StatusValue] ?? h.from_status) : "—"}
-                    {" → "}
-                    {STATUS_LABEL[h.to_status as StatusValue] ?? h.to_status}
-                  </span>
-                  <span className="text-gray-400 ml-auto whitespace-nowrap">
-                    {new Date(h.changed_at).toLocaleDateString("th-TH", {
-                      day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </Section>
-
-        {/* Auto rule-engine evaluation (system, read-only) */}
-        <AutoAssessment evaluation={evaluation} />
-
-        {/* Assessment result (agent-filled) */}
-        <AssessmentResultForm
-          assessmentId={s.id as string}
-          status={s.status as string}
-          initialPass={(evaluation.pass as boolean | null) ?? null}
-          initialNotes={(evaluation.notes as string | null) ?? null}
-          initialStrengths={Array.isArray(evaluation.strengths) ? (evaluation.strengths as string[]) : []}
-          initialImprovements={Array.isArray(evaluation.improvements) ? (evaluation.improvements as string[]) : []}
-        />
-
-        {/* Send result to LINE — healthcheck image + message, 2-step confirm */}
-        {(() => {
-          const hcTh = healthcheckFromDbRow(s, "th");
-          const hcEn = healthcheckFromDbRow(s, "en");
-          const ready = evaluation.pass != null && hcTh.strengths.length > 0 && hcTh.improvements.length > 0;
-          const flagSrc = existsSync(path.join(process.cwd(), "public", "flags", `${hcTh.destCode}.png`))
-            ? `/flags/${hcTh.destCode}.png`
-            : null;
-          const blockReason = !account.line_user_id
-            ? "ลูกค้าไม่มีบัญชี LINE ในระบบ — ส่งไม่ได้"
-            : account.is_friend === false
-              ? "ลูกค้ายังไม่ได้เพิ่มเพื่อน LINE OA — ส่งไม่ได้"
-              : null;
-          const prefill = (lang: "th" | "en") =>
-            evaluation.pass != null
-              ? (assessmentResultMessage(evaluation.pass as boolean, (evaluation.notes as string) ?? "", lang) as { text: string }).text
-              : "";
-          return (
-            <SendResultFlow
-              assessmentId={s.id as string}
-              status={s.status as string}
-              ready={ready}
-              resultSentAt={(s.result_sent_at as string | null) ?? null}
-              canSend={blockReason === null}
-              blockReason={blockReason}
-              dataTh={hcTh}
-              dataEn={hcEn}
-              defaultLang={defaultLangFor(s)}
-              flagSrc={flagSrc}
-              prefillTh={prefill("th")}
-              prefillEn={prefill("en")}
-            />
-          );
-        })()}
-
-        {/* LINE */}
-        <Section title="LINE">
-          <Row title="Display Name" value={account.line_display_name} />
-          <div className="flex gap-3 py-2 border-b border-gray-50 items-center">
-            <span className="text-gray-400 text-sm w-48 shrink-0">User ID</span>
-            <span className="text-gray-800 text-sm font-medium flex-1">{(account.line_user_id as string) ?? "—"}</span>
-            <CopyLineIdButton userId={(account.line_user_id as string) ?? null} />
+  // LEFT column — the evaluation workflow (status history + agent forms + send result)
+  const left = (
+    <>
+      <Section title="ประวัติสถานะ">
+        {statusHistory.length === 0 ? (
+          <p className="text-sm text-gray-400">ยังไม่มีการเปลี่ยนสถานะ</p>
+        ) : (
+          <div>
+            {statusHistory.map((h) => (
+              <div key={h.id} className="flex gap-3 py-2 border-b border-gray-50 last:border-0 text-sm">
+                <span className="text-gray-800 font-medium">
+                  {h.from_status ? (STATUS_LABEL[h.from_status as StatusValue] ?? h.from_status) : "—"}
+                  {" → "}
+                  {STATUS_LABEL[h.to_status as StatusValue] ?? h.to_status}
+                </span>
+                <span className="text-gray-400 ml-auto whitespace-nowrap">
+                  {new Date(h.changed_at).toLocaleDateString("th-TH", {
+                    timeZone: "Asia/Bangkok",
+                    day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
+                  })}
+                </span>
+              </div>
+            ))}
           </div>
-          <Row title="เป็นเพื่อน OA" value={account.is_friend} />
-          <Row title="รูปโปรไฟล์" value={account.line_picture_url ? "มี" : null} />
-        </Section>
+        )}
+      </Section>
 
-        {/* Personal */}
-        <Section
-          title="S1 · ข้อมูลส่วนตัว"
-          menu={!isAnonymized ? <AnonymizeButton accountId={account.id as string} /> : undefined}
-        >
-          {isAnonymized && (
-            <p className="text-xs text-gray-400 -mt-1 mb-2">ลบข้อมูลส่วนตัวแล้ว (PDPA)</p>
-          )}
-          <Row title="ชื่อเล่น" value={name} />
-          <Row title="สัญชาติ" value={account.nationality === "other" ? `อื่นๆ: ${account.nationality_other}` : label("nationality", account.nationality)} />
-          <Row title="เบอร์โทร" value={phone} />
-          <Row title="อีเมล" value={account.email} />
-          <Row title="รู้จักจาก" value={account.source === "other" ? `อื่นๆ: ${account.source_other}` : label("source", account.source)} />
-          <Row title="ยินยอม PDPA เมื่อ" value={account.consented_at ? new Date(account.consented_at as string).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : null} />
-        </Section>
+      <AssessmentResultForm
+        assessmentId={s.id as string}
+        status={s.status as string}
+        initialPass={(evaluation.pass as boolean | null) ?? null}
+        initialNotes={(evaluation.notes as string | null) ?? null}
+        initialStrengths={Array.isArray(evaluation.strengths) ? (evaluation.strengths as string[]) : []}
+        initialImprovements={Array.isArray(evaluation.improvements) ? (evaluation.improvements as string[]) : []}
+      />
 
-        {/* Destination */}
-        <Section title="S2 · ปลายทาง + วีซ่า">
-          <Row title="ประเทศปลายทาง" value={(trip.destination as string)?.toUpperCase()} />
-          <Row title="ประเภทวีซ่า" value={label("visa_type", trip.visa_type)} />
-          {(visaType === "tourist" || visaType === "visitor" || visaType === "business") && (
-            <Row title="วันเดินทาง" value={trip.travel_arrival} />
-          )}
-          {(visaType === "tourist" || visaType === "business") && (
-            <Row title="วันกลับ" value={trip.travel_return} />
-          )}
-          {visaType === "student" && (
-            <Row title="วันเริ่มเรียน" value={trip.study_start} />
-          )}
-          {/* prior-visa history — now universal across all visa types (fallback to legacy per-type keys) */}
-          {(() => {
-            const pv = b.previous_visas ?? b.tourist_previous_visas ?? b.business_previous_visas;
-            return Array.isArray(pv) ? (
-              <Row title="วีซ่าที่เคยได้รับ (5 ปี)" value={(pv as string[]).map(v => PAST_VISA_LABELS[v] ?? v).join(", ")} />
-            ) : null;
-          })()}
-          {visaType === "visitor" && <Row title="สถานะผู้เชิญ" value={label("visitor_host_status", b.visitor_host_status as string)} />}
-          {visaType === "visitor" && <Row title="ความสัมพันธ์" value={label("visitor_relationship", b.visitor_relationship as string)} />}
-          {visaType === "visitor" && Array.isArray(b.visitor_host_documents) && (
-            <Row title="เอกสารที่ผู้เชิญมี" value={(b.visitor_host_documents as string[]).map(v => LABELS.visitor_host_documents[v] ?? v).join(", ")} />
-          )}
-          {visaType === "business" && <Row title="Invitation Letter" value={label("business_invitation_letter", b.business_invitation_letter as string)} />}
-          {visaType === "student" && <Row title="Acceptance Letter" value={label("student_acceptance_letter", b.student_acceptance_letter as string)} />}
-          {visaType === "student" && <Row title="ผู้รับผิดชอบค่าเรียน" value={label("student_expense_sponsor", b.student_expense_sponsor as string)} />}
-        </Section>
+      {sendResult}
+    </>
+  );
 
-        {/* Occupation */}
-        <Section title="S3–S4 · อาชีพ">
-          <Row title="อาชีพ" value={label("occupation", occ)} />
-          {(occ === "employee" || occ === "government") && <Row title="หนังสือรับรองงาน" value={label("employee_work_letter", b.employee_work_letter as string)} />}
-          {occ === "freelance" && <Row title="เอกสารพิสูจน์รายได้" value={label("freelance_income_proof", b.freelance_income_proof as string)} />}
-          {occ === "freelance" && <Row title="เอกสารภาษี 3 ปี" value={label("freelance_tax_history", b.freelance_tax_history as string)} />}
-          {occ === "business_owner" && <Row title="หนังสือรับรองบริษัท" value={label("business_registration", b.business_registration as string)} />}
-          {(occ === "retired" || occ === "homemaker" || occ === "student_occ") && (
-            <Row title="ผู้รับผิดชอบค่าเดินทาง" value={label("dependent_expense_sponsor", b.dependent_expense_sponsor as string)} />
-          )}
-        </Section>
+  // CENTER column — case data (S6-S8 first, then the auto assessment, then the rest)
+  const center = (
+    <>
+      <Section title="S6–S8 · ช่องทางติดต่อ + ความต้องการ">
+        <Row title="ติดต่อผ่าน" value={label("contact_preference", s.contact_preference)} />
+        <Row title="นัดโทรกลับ" value={fmtDateTime(s.callback_datetime)} />
+        <Row title="Due date" value={fmtDateTime(s.due_date)} />
+        <Row title="ความต้องการ" value={label("intent", s.intent)} />
+      </Section>
 
-        {/* Core Qualification */}
-        <Section title="S5 · คัดกรองหลัก">
-          <Row title="ถูกปฏิเสธวีซ่า" value={refusedText(s)} />
-          <Row title="Overstay" value={overstayText(s)} />
-          <Row title="เงินในบัญชี" value={label("savings_balance", s.savings_balance)} />
-          <Row title="ความผูกพันกับไทย" value={(s.ties_thailand as string[])?.map((v) => TIES_LABELS[v] ?? v).join(", ")} />
-        </Section>
+      <AutoAssessment evaluation={evaluation} />
 
-        {/* Contact */}
-        <Section title="S6–S8 · ช่องทางติดต่อ + ความต้องการ">
-          <Row title="ติดต่อผ่าน" value={label("contact_preference", s.contact_preference)} />
-          <Row title="นัดโทรกลับ" value={fmtDateTime(s.callback_datetime)} />
-          <Row title="Due date" value={fmtDateTime(s.due_date)} />
-          <Row title="ความต้องการ" value={label("intent", s.intent)} />
-        </Section>
-      </div>
+      <Section title="LINE">
+        <Row title="Display Name" value={account.line_display_name} />
+        <div className="flex gap-3 py-2 border-b border-gray-50 items-center">
+          <span className="text-gray-400 text-sm w-48 shrink-0">User ID</span>
+          <span className="text-gray-800 text-sm font-medium flex-1 break-all">{(account.line_user_id as string) ?? "—"}</span>
+          <CopyLineIdButton userId={(account.line_user_id as string) ?? null} />
+        </div>
+        <Row title="เป็นเพื่อน OA" value={account.is_friend} />
+        <Row title="รูปโปรไฟล์" value={account.line_picture_url ? "มี" : null} />
+      </Section>
 
-      {/* message log — sticky, panel-internal scroll so it never overflows the screen */}
-      <aside className="mt-6 h-[70vh] lg:sticky lg:top-6 lg:mt-0 lg:h-[calc(100vh-3rem)]">
-        <MessageLogPanel assessmentId={s.id as string} />
-      </aside>
-      </div>
-    </main>
+      <Section
+        title="S1 · ข้อมูลส่วนตัว"
+        menu={!isAnonymized ? <AnonymizeButton accountId={account.id as string} /> : undefined}
+      >
+        {isAnonymized && (
+          <p className="text-xs text-gray-400 -mt-1 mb-2">ลบข้อมูลส่วนตัวแล้ว (PDPA)</p>
+        )}
+        <Row title="ชื่อเล่น" value={name} />
+        <Row title="สัญชาติ" value={account.nationality === "other" ? `อื่นๆ: ${account.nationality_other}` : label("nationality", account.nationality)} />
+        <Row title="เบอร์โทร" value={phone} />
+        <Row title="อีเมล" value={account.email} />
+        <Row title="รู้จักจาก" value={account.source === "other" ? `อื่นๆ: ${account.source_other}` : label("source", account.source)} />
+        <Row title="ยินยอม PDPA เมื่อ" value={account.consented_at ? new Date(account.consented_at as string).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : null} />
+      </Section>
+
+      <Section title="S2 · ปลายทาง + วีซ่า">
+        <Row title="ประเทศปลายทาง" value={(trip.destination as string)?.toUpperCase()} />
+        <Row title="ประเภทวีซ่า" value={label("visa_type", trip.visa_type)} />
+        {(visaType === "tourist" || visaType === "visitor" || visaType === "business") && (
+          <Row title="วันเดินทาง" value={trip.travel_arrival} />
+        )}
+        {(visaType === "tourist" || visaType === "business") && (
+          <Row title="วันกลับ" value={trip.travel_return} />
+        )}
+        {visaType === "student" && (
+          <Row title="วันเริ่มเรียน" value={trip.study_start} />
+        )}
+        {(() => {
+          const pv = b.previous_visas ?? b.tourist_previous_visas ?? b.business_previous_visas;
+          return Array.isArray(pv) ? (
+            <Row title="วีซ่าที่เคยได้รับ (5 ปี)" value={(pv as string[]).map(v => PAST_VISA_LABELS[v] ?? v).join(", ")} />
+          ) : null;
+        })()}
+        {visaType === "visitor" && <Row title="สถานะผู้เชิญ" value={label("visitor_host_status", b.visitor_host_status as string)} />}
+        {visaType === "visitor" && <Row title="ความสัมพันธ์" value={label("visitor_relationship", b.visitor_relationship as string)} />}
+        {visaType === "visitor" && Array.isArray(b.visitor_host_documents) && (
+          <Row title="เอกสารที่ผู้เชิญมี" value={(b.visitor_host_documents as string[]).map(v => LABELS.visitor_host_documents[v] ?? v).join(", ")} />
+        )}
+        {visaType === "business" && <Row title="Invitation Letter" value={label("business_invitation_letter", b.business_invitation_letter as string)} />}
+        {visaType === "student" && <Row title="Acceptance Letter" value={label("student_acceptance_letter", b.student_acceptance_letter as string)} />}
+        {visaType === "student" && <Row title="ผู้รับผิดชอบค่าเรียน" value={label("student_expense_sponsor", b.student_expense_sponsor as string)} />}
+      </Section>
+
+      <Section title="S3–S4 · อาชีพ">
+        <Row title="อาชีพ" value={label("occupation", occ)} />
+        {(occ === "employee" || occ === "government") && <Row title="หนังสือรับรองงาน" value={label("employee_work_letter", b.employee_work_letter as string)} />}
+        {occ === "freelance" && <Row title="เอกสารพิสูจน์รายได้" value={label("freelance_income_proof", b.freelance_income_proof as string)} />}
+        {occ === "freelance" && <Row title="เอกสารภาษี 3 ปี" value={label("freelance_tax_history", b.freelance_tax_history as string)} />}
+        {occ === "business_owner" && <Row title="หนังสือรับรองบริษัท" value={label("business_registration", b.business_registration as string)} />}
+        {(occ === "retired" || occ === "homemaker" || occ === "student_occ") && (
+          <Row title="ผู้รับผิดชอบค่าเดินทาง" value={label("dependent_expense_sponsor", b.dependent_expense_sponsor as string)} />
+        )}
+      </Section>
+
+      <Section title="S5 · คัดกรองหลัก">
+        <Row title="ถูกปฏิเสธวีซ่า" value={refusedText(s)} />
+        <Row title="Overstay" value={overstayText(s)} />
+        <Row title="เงินในบัญชี" value={label("savings_balance", s.savings_balance)} />
+        <Row title="ความผูกพันกับไทย" value={(s.ties_thailand as string[])?.map((v) => TIES_LABELS[v] ?? v).join(", ")} />
+      </Section>
+    </>
+  );
+
+  return (
+    <TicketWorkspace
+      header={header}
+      left={left}
+      center={center}
+      right={<MessageLogPanel assessmentId={s.id as string} />}
+    />
   );
 }

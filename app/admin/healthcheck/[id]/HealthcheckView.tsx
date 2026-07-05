@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { toPng } from "html-to-image";
 import type { HealthcheckData } from "@/lib/healthcheck-data";
 import HealthcheckCard from "./HealthcheckCard";
 
@@ -21,7 +22,26 @@ export default function HealthcheckView({
   flagSrc: string | null;
 }) {
   const [lang, setLang] = useState<"th" | "en">(defaultLang);
+  const [exporting, setExporting] = useState(false);
   const data = lang === "th" ? dataTh : dataEn;
+
+  async function downloadPng() {
+    const node = document.getElementById("healthcheck-card");
+    if (!node || exporting) return;
+    setExporting(true);
+    try {
+      const dataUrl = await toPng(node, { pixelRatio: 2, backgroundColor: "#ffffff" });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${data.ticketId}-healthcheck-${lang}.png`;
+      a.click();
+    } catch (err) {
+      console.error(err);
+      alert("สร้างรูปไม่สำเร็จ ลองใหม่อีกครั้ง");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <>
@@ -43,6 +63,14 @@ export default function HealthcheckView({
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={downloadPng}
+          disabled={exporting}
+          className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-bold text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+        >
+          {exporting ? "กำลังสร้าง…" : "🖼️ ดาวน์โหลด PNG"}
+        </button>
         <button
           type="button"
           onClick={() => window.print()}

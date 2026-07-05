@@ -102,6 +102,7 @@ export default function SendResultFlow({
         <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-500">
           ส่งแล้ว ·{" "}
           {new Date(resultSentAt).toLocaleDateString("th-TH", {
+            timeZone: "Asia/Bangkok",
             day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
           })}
         </span>
