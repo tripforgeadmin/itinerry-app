@@ -48,6 +48,16 @@ function label(group: string, val: unknown) {
   return LABELS[group]?.[v] ?? v;
 }
 
+function fmtDateTime(val: unknown): string | null {
+  if (!val || typeof val !== "string") return null;
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleString("th-TH", {
+    timeZone: "Asia/Bangkok",
+    weekday: "short", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
+  }) + " น.";
+}
+
 function Row({ title, value }: { title: string; value?: unknown }) {
   if (value === null || value === undefined || value === "") return null;
   let display: string;
@@ -270,7 +280,8 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         {/* Contact */}
         <Section title="S6–S8 · ช่องทางติดต่อ + ความต้องการ">
           <Row title="ติดต่อผ่าน" value={label("contact_preference", s.contact_preference)} />
-          <Row title="ช่วงเวลาโทร" value={label("callback_time", s.callback_time)} />
+          <Row title="นัดโทรกลับ" value={fmtDateTime(s.callback_datetime)} />
+          <Row title="Due date" value={fmtDateTime(s.due_date)} />
           <Row title="ความต้องการ" value={label("intent", s.intent)} />
         </Section>
       </div>

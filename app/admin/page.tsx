@@ -7,7 +7,7 @@ export default async function AdminPage() {
   const { data, error } = await supabase
     .from("user_assessment")
     .select(
-      "id, created_at, status, contact_preference, savings_balance, account:account_id(full_name, line_display_name, phone, is_friend), trip:trip_id(visa_type, destination)"
+      "id, created_at, due_date, status, contact_preference, savings_balance, account:account_id(full_name, line_display_name, phone, is_friend), trip:trip_id(visa_type, destination)"
     )
     .order("created_at", { ascending: false });
 
@@ -21,6 +21,7 @@ export default async function AdminPage() {
     return {
       id: r.id,
       created_at: r.created_at,
+      due_date: r.due_date,
       status: r.status,
       contact_preference: r.contact_preference,
       account,

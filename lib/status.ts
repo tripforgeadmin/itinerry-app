@@ -43,7 +43,12 @@ export const MANUAL_STATUS_OPTIONS = STATUS_OPTIONS.filter(
 const SLA_PENDING_STATUS: StatusValue = "pending_review";
 const SLA_HOURS = 24;
 
-export function isOverdue(createdAt: string, status: string): boolean {
+export function isOverdue(createdAt: string, status: string, dueDate?: string | null): boolean {
   if (status !== SLA_PENDING_STATUS) return false;
-  return Date.now() > new Date(createdAt).getTime() + SLA_HOURS * 60 * 60 * 1000;
+  // Prefer the stored SLA due date (LINE = +24h, call = chosen slot). Fall back to created+24h
+  // for rows written before due_date existed.
+  const deadline = dueDate
+    ? new Date(dueDate).getTime()
+    : new Date(createdAt).getTime() + SLA_HOURS * 60 * 60 * 1000;
+  return Date.now() > deadline;
 }

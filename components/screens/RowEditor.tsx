@@ -9,6 +9,7 @@ import { CountryHistoryEditor, type HistoryEntry } from "@/components/screens/Co
 import { QUESTIONS_MAP } from "@/lib/questions";
 import { DIAL_CODES, DEFAULT_DIAL_CODE } from "@/lib/dialCodes";
 import { flagEmoji } from "@/lib/countries";
+import { BUSINESS_OPEN_HOUR, BUSINESS_CLOSE_HOUR, hourLabel } from "@/lib/holidays";
 import type { Lang } from "@/components/ui/LangToggle";
 
 interface Props {
@@ -42,6 +43,26 @@ export function RowEditor({ qid, answers, onAnswer, lang }: Props) {
   const L = (o: { label: string; labelEn?: string }) => (lang === "th" ? o.label : o.labelEn ?? o.label);
 
   // ── composite overrides ───────────────────────────────
+  if (qid === "q37") {
+    // callback slot editor — hourly select, keeps the stored q37_date. (Editing here offers the
+    // full 09:00–20:00 range; the business-hours narrowing only applies at first entry.)
+    return (
+      <select
+        value={v}
+        onChange={(e) => onAnswer("q37", e.target.value)}
+        className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-primary outline-none focus:border-accent"
+      >
+        <option value="" disabled>
+          {lang === "th" ? "เลือกเวลา" : "Pick a time"}
+        </option>
+        {Array.from({ length: BUSINESS_CLOSE_HOUR - BUSINESS_OPEN_HOUR + 1 }, (_, i) => hourLabel(BUSINESS_OPEN_HOUR + i)).map((h) => (
+          <option key={h} value={h}>
+            {h} {lang === "th" ? "น." : ""}
+          </option>
+        ))}
+      </select>
+    );
+  }
   if (qid === "q3") {
     const nickname = answers["q3"] ?? "";
     const setNickname = (val: string) => {
