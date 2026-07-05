@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
       const msgLang = answers.q4 === "other" ? "en" : "th";
       const delivered = await pushMessageLogged({
         to: profile.userId,
-        messages: [assessmentReceivedFlex(ticketId, msgLang), assessmentFollowUpMessage(msgLang)],
+        messages: [assessmentReceivedFlex(ticketId, msgLang), assessmentFollowUpMessage(msgLang, dueDate.toISOString())],
         accountId: account.id,
         assessmentId,
         kind: "ticket_received",

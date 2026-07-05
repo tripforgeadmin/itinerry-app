@@ -78,17 +78,23 @@ export function assessmentResultMessage(pass: boolean, notes: string, lang: "th"
 }
 
 /** Second message of the post-submit pair — sent alongside assessmentReceivedFlex (lib/line-flex.ts).
- * The thank-you + ticket id already live in that Flex card, so this is just the 24h promise,
- * contact info, and a share nudge. */
-export function assessmentFollowUpMessage(lang: "th" | "en" = "th") {
+ * The thank-you + ticket id already live in that Flex card, so this is just the delivery
+ * promise (by the SLA due date, date only), contact info, and a share nudge. Falls back to
+ * "within 24 hours" when no due date is given. */
+export function assessmentFollowUpMessage(lang: "th" | "en" = "th", dueDateISO?: string) {
+  const due = dueDateISO ? new Date(dueDateISO) : null;
+  const validDue = due && !isNaN(due.getTime()) ? due : null;
+  const opts = { timeZone: "Asia/Bangkok", day: "numeric", month: "long", year: "numeric" } as const;
+  const dueTh = validDue ? `ภายในวันที่ ${validDue.toLocaleDateString("th-TH", opts)}` : "ภายใน 24 ชั่วโมง";
+  const dueEn = validDue ? `by ${validDue.toLocaleDateString("en-GB", opts)}` : "within 24 hours";
   const text =
     lang === "en"
-      ? `⏱️ We will send you your assessment result within 24 hours\n\n` +
+      ? `⏱️ We will send you your assessment result ${dueEn}\n\n` +
         `💬 If you have any questions or further requests, feel free to chat with us anytime\n\n` +
-        `📲 You can share the assessment app with your friends`
-      : `⏱️ เราจะส่งผลประเมินให้คุณภายใน 24 ชั่วโมง\n\n` +
-        `💬 หากคุณลูกค้ามีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยครับ\n\n` +
-        `📲 คุณสามารถแชร์แอปการประเมินให้เพื่อนได้`;
+        `📲 You can share the assessment app with fellow travellers or anyone who's interested`
+      : `⏱️ เราจะส่งผลประเมินให้คุณ${dueTh}\n\n` +
+        `💬 หากคุณลูกค้ามีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยนะครับ\n\n` +
+        `📲 คุณลูกค้าสามารถแชร์แอปการประเมินให้เพื่อนร่วมเดินทางหรือผู้ที่สนใจได้ครับ`;
   return { type: "text", text };
 }
 
