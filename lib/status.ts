@@ -38,29 +38,18 @@ export const MANUAL_STATUS_OPTIONS = STATUS_OPTIONS.filter(
   (s) => s.value !== "pending_review" && s.value !== "evaluated"
 );
 
-// Customer-facing status copy. Never expose admin CRM jargon (e.g. raw "win"/"lost")
-// to a customer — this is the sanctioned translation, used by app/result/ResultView.tsx.
-// Same StatusValue-keyed shape as STATUS_LABEL/STATUS_COLOR above; colocated as its
-// natural counterpart. Admin UI keeps using STATUS_LABEL/STATUS_COLOR — do not swap them.
-export const CUSTOMER_STATUS_LABEL: Record<StatusValue, string> = {
-  pending_review: "กำลังตรวจสอบข้อมูลของคุณ",
-  evaluated: "ประเมินผลเสร็จแล้ว",
-  contacted: "ทีมงานติดต่อคุณแล้ว",
-  pending_decision: "รอการตัดสินใจของคุณ",
-  win: "ดำเนินการสำเร็จ 🎉",
-  lost: "ไม่สามารถดำเนินการต่อได้ในตอนนี้",
-};
-
-// Design-token classes matching app/auth/page.tsx's light palette — deliberately
-// NOT admin's raw Tailwind red/green/purple.
-export const CUSTOMER_STATUS_COLOR: Record<StatusValue, string> = {
-  pending_review: "bg-accent-tint text-accent",
-  evaluated: "bg-accent-tint text-accent",
-  contacted: "bg-warning/10 text-warning",
-  pending_decision: "bg-warning/10 text-warning",
-  win: "bg-success-bg text-success-deep",
-  lost: "bg-surface text-muted",
-};
+// Customer-facing status — deliberately collapsed to just two states. Everything
+// past pending_review (evaluated/contacted/pending_decision/win/lost) is internal
+// sales-pipeline detail the customer doesn't need to see; from their perspective
+// the evaluation is either still in progress or it's done. Used by
+// app/result/ResultView.tsx and app/result/ResultList.tsx. Admin UI keeps using
+// STATUS_LABEL/STATUS_COLOR (the full vocabulary) — do not swap them.
+export function customerStatus(status: string): { label: string; color: string } {
+  if (status === "pending_review") {
+    return { label: "รอประเมิน", color: "bg-accent-tint text-accent" };
+  }
+  return { label: "ประเมินแล้ว", color: "bg-success-bg text-success-deep" };
+}
 
 // The customer-facing "result within 24h" promise (lib/line-messaging.ts's
 // assessmentReceivedMessage) is only outstanding while a case is pending_review.

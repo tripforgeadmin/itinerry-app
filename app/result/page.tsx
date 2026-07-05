@@ -2,7 +2,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { verifySessionToken } from "@/lib/line";
-import ResultView from "./ResultView";
+import ResultList from "./ResultList";
+import EmptyState from "./EmptyState";
 
 export const dynamic = "force-dynamic";
 
@@ -11,13 +12,7 @@ export const dynamic = "force-dynamic";
 // lookup again — it naturally falls through to the "no submissions yet" empty state
 // below rather than needing special-case handling.
 
-export default async function ResultPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ id?: string }>;
-}) {
-  const { id: requestedId } = await searchParams;
-
+export default async function ResultPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get("session")?.value;
   const profile = token ? await verifySessionToken(token) : null;
@@ -29,7 +24,7 @@ export default async function ResultPage({
 
   const { data: account } = await supabase
     .from("account")
-    .select("id, full_name, first_name, last_name, nationality, nationality_other, phone, phone_country_code, email")
+    .select("id, full_name, first_name, last_name")
     .eq("line_user_id", profile.userId)
     .maybeSingle();
 
@@ -37,37 +32,18 @@ export default async function ResultPage({
 
   const { data: assessments } = await supabase
     .from("user_assessment")
-    .select("*, trip:trip_id(*)")
+    .select("id, status, created_at, trip:trip_id(destination, visa_type)")
     .eq("account_id", account.id)
     .order("created_at", { ascending: false });
 
   if (!assessments || assessments.length === 0) return <EmptyState />;
 
-  // Security: never trust `?id=` to fetch someone else's row — only ever resolve it
-  // against `assessments`, which is already scoped to this account_id above. Anything
-  // that doesn't match (missing, malformed, or someone else's id) silently falls back
-  // to the most recent submission instead of erroring.
-  const active = assessments.find((a) => a.id === requestedId) ?? assessments[0];
+  // Only one submission ever — nothing to choose, skip straight to its detail view.
+  if (assessments.length === 1) redirect(`/result/${assessments[0].id}`);
 
-  return <ResultView account={account} assessments={assessments} activeId={active.id} />;
-}
+  const name = account.first_name || account.last_name
+    ? `${account.first_name ?? ""} ${account.last_name ?? ""}`.trim()
+    : account.full_name ?? "";
 
-function EmptyState() {
-  return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 bg-surface text-center">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/mascot/itin_main.png" alt="" className="w-40 h-40 object-contain opacity-80 mb-4" />
-      <h1 className="text-lg font-bold text-primary mb-2">ยังไม่พบข้อมูลการประเมิน</h1>
-      <p className="text-sm text-muted leading-relaxed mb-6 max-w-xs">
-        ดูเหมือนว่าคุณยังไม่ได้ทำแบบประเมินวีซ่ากับเรา เริ่มทำได้เลยฟรี ใช้เวลาไม่ถึง 2 นาที
-      </p>
-      <a
-        href="/auth"
-        className="rounded-2xl px-6 py-3.5 text-white font-bold text-sm shadow-lg"
-        style={{ backgroundColor: "#06c755", boxShadow: "0 4px 24px rgba(6,199,85,0.3)" }}
-      >
-        เริ่มทำแบบประเมิน
-      </a>
-    </main>
-  );
+  return <ResultList name={name} assessments={assessments} />;
 }
