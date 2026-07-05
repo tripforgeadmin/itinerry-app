@@ -7,24 +7,23 @@ import { APP_URL, LIFF_URL } from "./constants";
  */
 
 const RESULT_URL = `${APP_URL}/result`;
-const START_URL = APP_URL;
 
-// Button action labels are capped at 20 characters by LINE's Messaging API —
-// keep these short even when the source copy is longer.
+// These buttons are custom box+text "buttons" (see footer below) rather than native LINE Flex
+// `button` components, since the native component has no way to render bold label text.
 const RECEIVED_TEXTS = {
   th: {
     alt: "ขอบคุณที่ทำแบบประเมินกับ itinerry",
     thanks: "🙏 ขอขอบคุณที่ทำแบบประเมินกับ itinerry เราได้รับข้อมูลเบื้องต้นแล้ว ✅",
-    ticketLabel: "🔖 Ticket ID:",
-    shareIntro: "คุณสามารถแชร์แอปการประเมินให้เพื่อนที่เดินทางกับคุณได้ที่",
+    ticketLabel: "Ticket ID:",
+    shareIntro: "คุณสามารถดูข้อมูลที่ส่งไป หรือแชร์แอปการประเมินให้เพื่อนที่เดินทางกับคุณได้ที่",
     viewAnswers: "ดูคำตอบที่ส่งไป",
     share: "แชร์ให้เพื่อน",
   },
   en: {
     alt: "Thank you for completing the itinerry assessment",
     thanks: "🙏 Thank you for completing the itinerry assessment — we have received your information ✅",
-    ticketLabel: "🔖 Ticket ID:",
-    shareIntro: "You can share the assessment app with friends traveling with you at",
+    ticketLabel: "Ticket ID:",
+    shareIntro: "You can view the submitted information or share the assessment app with friends traveling with you at",
     viewAnswers: "View my answers",
     share: "Share with friends",
   },
@@ -50,9 +49,24 @@ export function assessmentReceivedFlex(ticketId: string, lang: "th" | "en" = "th
             aspectMode: "fit",
             align: "center",
           },
-          { type: "text", text: t.thanks, size: "sm", wrap: true, color: "#1b3d5c" },
-          { type: "text", text: `${t.ticketLabel} ${ticketId}`, size: "sm", weight: "bold", color: "#1b3d5c" },
-          { type: "text", text: t.shareIntro, size: "xs", color: "#8A94A6", wrap: true, margin: "md" },
+          { type: "text", text: t.thanks, size: "sm", wrap: true, color: "#1b3d5c", align: "center" },
+          {
+            type: "text",
+            text: `${t.ticketLabel} ${ticketId}`,
+            size: "sm",
+            weight: "bold",
+            color: "#1b3d5c",
+            align: "center",
+          },
+          {
+            type: "text",
+            text: t.shareIntro,
+            size: "xs",
+            color: "#8A94A6",
+            wrap: true,
+            margin: "md",
+            align: "center",
+          },
         ],
       },
       footer: {
@@ -61,15 +75,26 @@ export function assessmentReceivedFlex(ticketId: string, lang: "th" | "en" = "th
         spacing: "sm",
         contents: [
           {
-            type: "button",
-            style: "primary",
-            color: "#44a8db",
+            type: "box",
+            layout: "vertical",
+            backgroundColor: "#44a8db",
+            cornerRadius: "md",
+            paddingAll: "md",
             action: { type: "uri", label: t.viewAnswers, uri: RESULT_URL },
+            contents: [
+              { type: "text", text: t.viewAnswers, weight: "bold", color: "#ffffff", align: "center", size: "md" },
+            ],
           },
           {
-            type: "button",
-            style: "secondary",
-            action: { type: "uri", label: t.share, uri: START_URL },
+            type: "box",
+            layout: "vertical",
+            backgroundColor: "#06c755",
+            cornerRadius: "md",
+            paddingAll: "md",
+            action: { type: "uri", label: t.share, uri: SHARE_LIFF_URL },
+            contents: [
+              { type: "text", text: t.share, weight: "bold", color: "#ffffff", align: "center", size: "md" },
+            ],
           },
         ],
       },

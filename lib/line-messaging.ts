@@ -84,11 +84,11 @@ export function assessmentFollowUpMessage(lang: "th" | "en" = "th") {
   const text =
     lang === "en"
       ? `⏱️ We will send you your assessment result within 24 hours\n\n` +
-        `If you have any questions or further requests, feel free to chat with us anytime\n\n` +
-        `You can share the assessment app with your friends`
+        `💬 If you have any questions or further requests, feel free to chat with us anytime\n\n` +
+        `📲 You can share the assessment app with your friends`
       : `⏱️ เราจะส่งผลประเมินให้คุณภายใน 24 ชั่วโมง\n\n` +
-        `หากคุณลูกค้ามีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยครับ\n\n` +
-        `คุณสามารถแชร์แอปการประเมินให้เพื่อนได้`;
+        `💬 หากคุณลูกค้ามีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยครับ\n\n` +
+        `📲 คุณสามารถแชร์แอปการประเมินให้เพื่อนได้`;
   return { type: "text", text };
 }
 
