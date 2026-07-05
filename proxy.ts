@@ -16,7 +16,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // User routes — check LINE session
-  const protectedPaths = ["/q", "/done"];
+  const protectedPaths = ["/q", "/done", "/result"];
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
   if (!isProtected) return NextResponse.next();
 
@@ -30,5 +30,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/q/:path*", "/done", "/admin/:path*"],
+  matcher: ["/q/:path*", "/done", "/result", "/admin/:path*"],
 };
