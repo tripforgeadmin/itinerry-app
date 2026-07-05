@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
-import { CUSTOMER_STATUS_LABEL, CUSTOMER_STATUS_COLOR, type StatusValue } from "@/lib/status";
+import { customerStatus } from "@/lib/status";
 import { label, refusedText, overstayText, TIES_LABELS, PAST_VISA_LABELS, LABELS } from "@/lib/answer-labels";
 import { COUNTRIES } from "@/lib/countries";
 
@@ -44,6 +44,7 @@ export default function ResultView({
     COUNTRIES.find((c) => c.code === (trip.destination as string)?.toUpperCase())?.th ??
     (trip.destination as string)?.toUpperCase();
   const status = (active.status as string) ?? "pending_review";
+  const statusDisplay = customerStatus(status);
   const createdAt = new Date(active.created_at as string);
   const callbackDatetime = active.callback_datetime
     ? new Date(active.callback_datetime as string).toLocaleString("th-TH", {
@@ -87,12 +88,8 @@ export default function ResultView({
           className="bg-card rounded-3xl shadow-card p-5 mb-4"
         >
           <p className="text-xs font-bold text-muted-soft uppercase tracking-wider mb-2">สถานะการดำเนินการ</p>
-          <span
-            className={`inline-block px-3 py-1.5 rounded-xl text-sm font-bold ${
-              CUSTOMER_STATUS_COLOR[status as StatusValue] ?? "bg-surface text-muted"
-            }`}
-          >
-            {CUSTOMER_STATUS_LABEL[status as StatusValue] ?? status}
+          <span className={`inline-block px-3 py-1.5 rounded-xl text-sm font-bold ${statusDisplay.color}`}>
+            {statusDisplay.label}
           </span>
           {typeof active.ticket_id === "string" && active.ticket_id && (
             <p className="text-xs text-muted mt-3">

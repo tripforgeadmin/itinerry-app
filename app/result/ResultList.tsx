@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
-import { STATUS_LABEL, STATUS_COLOR, type StatusValue } from "@/lib/status";
+import { customerStatus } from "@/lib/status";
 import { label } from "@/lib/answer-labels";
 import { COUNTRIES } from "@/lib/countries";
 
@@ -43,7 +43,7 @@ export default function ResultList({ assessments }: { assessments: Dict[] }) {
         <div className="flex flex-col gap-2">
           {assessments.map((a, i) => {
             const trip = (a.trip ?? {}) as Dict;
-            const status = (a.status as string) ?? "pending_review";
+            const statusDisplay = customerStatus((a.status as string) ?? "pending_review");
             const destination =
               COUNTRIES.find((c) => c.code === (trip.destination as string)?.toUpperCase())?.th ??
               (trip.destination as string)?.toUpperCase() ??
@@ -64,12 +64,8 @@ export default function ResultList({ assessments }: { assessments: Dict[] }) {
                     })}
                     {i === 0 && <span className="ml-1.5 text-accent font-bold">· ล่าสุด</span>}
                   </span>
-                  <span
-                    className={`px-2 py-0.5 rounded-lg text-xs font-bold ${
-                      STATUS_COLOR[status as StatusValue] ?? "bg-surface text-muted"
-                    }`}
-                  >
-                    {STATUS_LABEL[status as StatusValue] ?? status}
+                  <span className={`px-2 py-0.5 rounded-lg text-xs font-bold ${statusDisplay.color}`}>
+                    {statusDisplay.label}
                   </span>
                 </div>
                 <p className="text-sm font-medium text-primary">
