@@ -1,59 +1,75 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import ConfirmModal from "./ConfirmModal";
 
-export default function AnonymizeButton({
-  accountId,
-  isAnonymized,
-}: {
-  accountId: string;
-  isAnonymized: boolean;
-}) {
+export default function AnonymizeButton({ accountId }: { accountId: string }) {
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  if (isAnonymized) {
-    return (
-      <div className="bg-white rounded-2xl shadow-sm p-4 mb-4 flex items-center gap-3">
-        <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-100 text-gray-500">
-          ลบข้อมูลส่วนตัวแล้ว (PDPA)
-        </span>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [menuOpen]);
 
-  async function handleAnonymize() {
-    const confirmed = window.confirm(
-      "ยืนยันการลบข้อมูลส่วนตัวของลูกค้ารายนี้?\n\nชื่อ, เบอร์, อีเมล และข้อมูล LINE จะถูกลบถาวร ไม่สามารถย้อนกลับได้"
-    );
-    if (!confirmed) return;
-
+  async function handleConfirm() {
     setLoading(true);
     const res = await fetch("/api/admin/anonymize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ accountId }),
     });
-
+    setLoading(false);
     if (res.ok) {
+      setModalOpen(false);
       router.refresh();
     } else {
       alert("เกิดข้อผิดพลาด กรุณาลองใหม่");
     }
-    setLoading(false);
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-4 mb-4 flex items-center gap-3">
-      <span className="text-sm text-gray-500 flex-1">PDPA — ลูกค้าขอถอนความยินยอม</span>
+    <div className="relative" ref={menuRef}>
       <button
-        onClick={handleAnonymize}
-        disabled={loading}
-        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-100 text-red-700 transition-opacity disabled:opacity-50"
+        onClick={() => setMenuOpen((v) => !v)}
+        aria-label="เมนูเพิ่มเติม"
+        className="w-8 h-8 grid place-items-center rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 leading-none text-xl font-bold"
       >
-        {loading ? "กำลังลบ…" : "ลบข้อมูลส่วนตัว"}
+        ⋮
       </button>
+      {menuOpen && (
+        <div className="absolute right-0 top-full mt-1 z-10 bg-white rounded-xl shadow-lg border border-gray-100 py-1 min-w-[180px]">
+          <button
+            onClick={() => {
+              setMenuOpen(false);
+              setModalOpen(true);
+            }}
+            className="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+          >
+            ลบข้อมูลส่วนตัว (PDPA)
+          </button>
+        </div>
+      )}
+      <ConfirmModal
+        open={modalOpen}
+        title="ยืนยันการลบข้อมูลส่วนตัว"
+        message={
+          "ยืนยันการลบข้อมูลส่วนตัวของลูกค้ารายนี้?\n\nชื่อ, เบอร์, อีเมล และข้อมูล LINE จะถูกลบถาวร ไม่สามารถย้อนกลับได้"
+        }
+        confirmLabel="ยืนยัน"
+        danger
+        loading={loading}
+        onConfirm={handleConfirm}
+        onCancel={() => setModalOpen(false)}
+      />
     </div>
   );
 }

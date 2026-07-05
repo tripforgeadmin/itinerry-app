@@ -6,6 +6,7 @@ import AnonymizeButton from "./AnonymizeButton";
 import AssessmentResultForm from "./AssessmentResultForm";
 import SendResultButton from "./SendResultButton";
 import CopyLineIdButton from "./CopyLineIdButton";
+import { STATUS_LABEL, type StatusValue } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -61,10 +62,21 @@ function Row({ title, value }: { title: string; value?: unknown }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  menu,
+  children,
+}: {
+  title: string;
+  menu?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
-      <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">{title}</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{title}</h2>
+        {menu}
+      </div>
       {children}
     </div>
   );
@@ -95,7 +107,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const { data: row, error } = await supabase
     .from("user_assessment")
-    .select("*, account:account_id(*), trip:trip_id(*), visa_evaluation(*)")
+    .select("*, account:account_id(*), trip:trip_id(*), visa_evaluation(*), status_history(*)")
     .eq("id", id)
     .single();
 
@@ -112,6 +124,12 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const name = account.first_name || account.last_name
     ? `${account.first_name ?? ""} ${account.last_name ?? ""}`.trim()
     : (account.full_name as string);
+  const isAnonymized = account.full_name === "[ลบแล้ว]";
+
+  type StatusHistoryEntry = { id: string; from_status: string | null; to_status: string; changed_at: string };
+  const statusHistory = ((s.status_history ?? []) as StatusHistoryEntry[])
+    .slice()
+    .sort((h1, h2) => new Date(h2.changed_at).getTime() - new Date(h1.changed_at).getTime());
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
@@ -131,6 +149,30 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         {/* Status updater */}
         <StatusUpdater id={s.id as string} currentStatus={s.status as string} />
 
+        {/* Status change timeline */}
+        <Section title="ประวัติสถานะ">
+          {statusHistory.length === 0 ? (
+            <p className="text-sm text-gray-400">ยังไม่มีการเปลี่ยนสถานะ</p>
+          ) : (
+            <div>
+              {statusHistory.map((h) => (
+                <div key={h.id} className="flex gap-3 py-2 border-b border-gray-50 last:border-0 text-sm">
+                  <span className="text-gray-800 font-medium">
+                    {h.from_status ? (STATUS_LABEL[h.from_status as StatusValue] ?? h.from_status) : "—"}
+                    {" → "}
+                    {STATUS_LABEL[h.to_status as StatusValue] ?? h.to_status}
+                  </span>
+                  <span className="text-gray-400 ml-auto whitespace-nowrap">
+                    {new Date(h.changed_at).toLocaleDateString("th-TH", {
+                      day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
         {/* Assessment result (agent-filled) */}
         <AssessmentResultForm
           assessmentId={s.id as string}
@@ -147,12 +189,6 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
           resultSentAt={(s.result_sent_at as string | null) ?? null}
         />
 
-        {/* PDPA anonymize */}
-        <AnonymizeButton
-          accountId={account.id as string}
-          isAnonymized={account.full_name === "[ลบแล้ว]"}
-        />
-
         {/* LINE */}
         <Section title="LINE">
           <Row title="Display Name" value={account.line_display_name} />
@@ -166,7 +202,13 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         </Section>
 
         {/* Personal */}
-        <Section title="S1 · ข้อมูลส่วนตัว">
+        <Section
+          title="S1 · ข้อมูลส่วนตัว"
+          menu={!isAnonymized ? <AnonymizeButton accountId={account.id as string} /> : undefined}
+        >
+          {isAnonymized && (
+            <p className="text-xs text-gray-400 -mt-1 mb-2">ลบข้อมูลส่วนตัวแล้ว (PDPA)</p>
+          )}
           <Row title="ชื่อ-นามสกุล" value={name} />
           <Row title="สัญชาติ" value={account.nationality === "other" ? `อื่นๆ: ${account.nationality_other}` : label("nationality", account.nationality)} />
           <Row title="เบอร์โทร" value={phone} />

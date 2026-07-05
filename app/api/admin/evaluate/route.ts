@@ -43,6 +43,11 @@ export async function POST(request: NextRequest) {
       .eq("id", assessmentId);
 
     if (statusError) return NextResponse.json({ ok: false }, { status: 500 });
+
+    const { error: historyError } = await supabase
+      .from("status_history")
+      .insert({ assessment_id: assessmentId, from_status: assessment.status, to_status: nextStatus });
+    if (historyError) console.error("status_history insert failed:", historyError);
   }
 
   return NextResponse.json({ ok: true, status: nextStatus });

@@ -75,10 +75,10 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
                 key={s.id}
                 onClick={() => router.push(`/admin/${s.id}`)}
                 className={`border-b border-gray-50 transition-colors cursor-pointer ${
-                  overdue ? "bg-red-50 hover:bg-red-100" : "hover:bg-blue-50"
+                  overdue ? "bg-red-100 hover:bg-red-200" : "hover:bg-blue-50"
                 }`}
               >
-                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                <td className={`px-4 py-3 whitespace-nowrap ${overdue ? "text-red-700 font-semibold" : "text-gray-500"}`}>
                   {new Date(s.created_at).toLocaleDateString("th-TH", {
                     day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
                   })}
