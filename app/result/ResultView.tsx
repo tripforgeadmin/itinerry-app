@@ -1,11 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
-import { CUSTOMER_STATUS_LABEL, CUSTOMER_STATUS_COLOR, STATUS_LABEL, STATUS_COLOR, type StatusValue } from "@/lib/status";
+import { CUSTOMER_STATUS_LABEL, CUSTOMER_STATUS_COLOR, type StatusValue } from "@/lib/status";
 import { label, refusedText, overstayText, TIES_LABELS, PAST_VISA_LABELS, LABELS } from "@/lib/answer-labels";
 import { COUNTRIES } from "@/lib/countries";
-import SubmissionPicker, { type SubmissionOption } from "./SubmissionPicker";
 
 type Dict = Record<string, unknown>;
 
@@ -23,14 +23,14 @@ interface Account {
 
 export default function ResultView({
   account,
-  assessments,
-  activeId,
+  assessment,
+  hasMultiple,
 }: {
   account: Account;
-  assessments: Dict[];
-  activeId: string;
+  assessment: Dict;
+  hasMultiple: boolean;
 }) {
-  const active = assessments.find((a) => a.id === activeId) ?? assessments[0];
+  const active = assessment;
   const trip = (active.trip ?? {}) as Dict;
   const visaType = trip.visa_type as string;
   const occ = active.occupation as string;
@@ -52,24 +52,6 @@ export default function ResultView({
       }) + " น."
     : null;
 
-  const options: SubmissionOption[] = assessments.map((a, i) => {
-    const aTrip = (a.trip ?? {}) as Dict;
-    const aStatus = (a.status as string) ?? "pending_review";
-    return {
-      id: a.id as string,
-      isLatest: i === 0,
-      dateLabel: new Date(a.created_at as string).toLocaleDateString("th-TH", {
-        day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
-      }),
-      destination:
-        COUNTRIES.find((c) => c.code === (aTrip.destination as string)?.toUpperCase())?.th ??
-        (aTrip.destination as string)?.toUpperCase() ?? "—",
-      visaType: label("visa_type", aTrip.visa_type),
-      statusLabel: STATUS_LABEL[aStatus as StatusValue] ?? aStatus,
-      statusColor: STATUS_COLOR[aStatus as StatusValue] ?? "bg-surface text-muted",
-    };
-  });
-
   return (
     <main className="min-h-screen bg-surface relative overflow-hidden">
       {/* Watermark — public/mascot/itin_main.png, 524×524 RGBA, low-opacity behind content */}
@@ -82,6 +64,12 @@ export default function ResultView({
       />
 
       <div className="relative z-10 max-w-sm mx-auto w-full px-5 pt-8 pb-12">
+        {hasMultiple && (
+          <Link href="/result" className="inline-flex items-center gap-1 text-xs text-muted mb-4">
+            ← กลับไปที่รายการ
+          </Link>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -115,13 +103,6 @@ export default function ResultView({
             ส่งเมื่อ {createdAt.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
           </p>
         </motion.div>
-
-        {/* Submission picker — only when there's a retake to switch between */}
-        {assessments.length > 1 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
-            <SubmissionPicker options={options} activeId={active.id as string} />
-          </motion.div>
-        )}
 
         <Section title="ข้อมูลผู้สมัคร" delay={0.2}>
           <Row title="ชื่อ-นามสกุล" value={name} />
