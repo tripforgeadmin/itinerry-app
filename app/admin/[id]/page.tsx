@@ -4,9 +4,13 @@ import { notFound } from "next/navigation";
 import StatusUpdater from "./StatusUpdater";
 import AnonymizeButton from "./AnonymizeButton";
 import AssessmentResultForm from "./AssessmentResultForm";
-import SendResultButton from "./SendResultButton";
+import SendResultFlow from "./SendResultFlow";
 import CopyLineIdButton from "./CopyLineIdButton";
 import MessageLogPanel from "./MessageLogPanel";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { healthcheckFromDbRow } from "@/lib/healthcheck-data";
+import { assessmentResultMessage } from "@/lib/line-messaging";
 import { STATUS_LABEL, type StatusValue } from "@/lib/status";
 import { LABELS, TIES_LABELS, PAST_VISA_LABELS, label, refusedText, overstayText } from "@/lib/answer-labels";
 
@@ -255,13 +259,41 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
           initialImprovements={Array.isArray(evaluation.improvements) ? (evaluation.improvements as string[]) : []}
         />
 
-        {/* Send result to LINE */}
-        <SendResultButton
-          assessmentId={s.id as string}
-          status={s.status as string}
-          hasEvaluation={evaluation.pass != null}
-          resultSentAt={(s.result_sent_at as string | null) ?? null}
-        />
+        {/* Send result to LINE — healthcheck image + message, 2-step confirm */}
+        {(() => {
+          const hcData = healthcheckFromDbRow(s);
+          const ready =
+            evaluation.pass != null && hcData.strengths.length > 0 && hcData.improvements.length > 0;
+          const flagSrc = existsSync(path.join(process.cwd(), "public", "flags", `${hcData.destCode}.png`))
+            ? `/flags/${hcData.destCode}.png`
+            : null;
+          const blockReason = !account.line_user_id
+            ? "ลูกค้าไม่มีบัญชี LINE ในระบบ — ส่งไม่ได้"
+            : account.is_friend === false
+              ? "ลูกค้ายังไม่ได้เพิ่มเพื่อน LINE OA — ส่งไม่ได้"
+              : null;
+          const prefillMessage =
+            evaluation.pass != null
+              ? (assessmentResultMessage(
+                  evaluation.pass as boolean,
+                  (evaluation.notes as string) ?? "",
+                  account.nationality === "other" ? "en" : "th",
+                ) as { text: string }).text
+              : "";
+          return (
+            <SendResultFlow
+              assessmentId={s.id as string}
+              status={s.status as string}
+              ready={ready}
+              resultSentAt={(s.result_sent_at as string | null) ?? null}
+              canSend={blockReason === null}
+              blockReason={blockReason}
+              data={hcData}
+              flagSrc={flagSrc}
+              prefillMessage={prefillMessage}
+            />
+          );
+        })()}
 
         {/* LINE */}
         <Section title="LINE">
