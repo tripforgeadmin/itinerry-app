@@ -139,6 +139,11 @@ const TEXTS = {
   },
 } as const;
 
+const HERO_IMAGE: Record<"th" | "en", string> = {
+  th: "share-card-v3.png",
+  en: "share-card-en.png",
+};
+
 export function shareCardFlex(lang: "th" | "en" = "th") {
   const t = TEXTS[lang];
   return {
@@ -148,7 +153,7 @@ export function shareCardFlex(lang: "th" | "en" = "th") {
       type: "bubble",
       hero: {
         type: "image",
-        url: `${APP_URL}/line/share-card-v3.png`,
+        url: `${APP_URL}/line/${HERO_IMAGE[lang]}`,
         size: "full",
         aspectRatio: "16:9",
         aspectMode: "cover",

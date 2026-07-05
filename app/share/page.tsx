@@ -28,6 +28,11 @@ export default function SharePage() {
           return;
         }
 
+        // TODO: dynamic nationality-based lang detection was reverted here — calling
+        // liff.getProfile() broke shareTargetPicker entirely (both languages) in
+        // production, likely a first-consent-prompt interaction with this LIFF app.
+        // Needs a safer detection method before re-enabling. Follow-webhook path
+        // (app/api/line/webhook/route.ts) still correctly sends the English card.
         await liff.shareTargetPicker(
           // cast: the SDK wants its literal message types; our builder returns plain JSON
           [shareCardFlex()] as Parameters<typeof liff.shareTargetPicker>[0],
