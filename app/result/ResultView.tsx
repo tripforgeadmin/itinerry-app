@@ -45,6 +45,12 @@ export default function ResultView({
     (trip.destination as string)?.toUpperCase();
   const status = (active.status as string) ?? "pending_review";
   const createdAt = new Date(active.created_at as string);
+  const callbackDatetime = active.callback_datetime
+    ? new Date(active.callback_datetime as string).toLocaleString("th-TH", {
+        timeZone: "Asia/Bangkok",
+        weekday: "short", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
+      }) + " น."
+    : null;
 
   const options: SubmissionOption[] = assessments.map((a, i) => ({
     id: a.id as string,
@@ -159,7 +165,7 @@ export default function ResultView({
 
         <Section title="ช่องทางติดต่อ" delay={0.4}>
           <Row title="ติดต่อผ่าน" value={label("contact_preference", active.contact_preference)} />
-          <Row title="ช่วงเวลาโทร" value={label("callback_time", active.callback_time)} />
+          <Row title="นัดโทรกลับ" value={callbackDatetime} />
           <Row title="ความต้องการ" value={label("intent", active.intent)} />
         </Section>
       </div>
