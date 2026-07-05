@@ -28,9 +28,22 @@ export default function SharePage() {
           return;
         }
 
+        // Best-effort: show the sharer's own nationality-matched card. Any failure
+        // here (no profile scope, network error, unknown account) falls back to Thai
+        // rather than blocking the share.
+        let lang: "th" | "en" = "th";
+        try {
+          const profile = await liff.getProfile();
+          const res = await fetch(`/api/share-lang?lineUserId=${profile.userId}`);
+          const data = await res.json();
+          if (data.lang === "en") lang = "en";
+        } catch (err) {
+          console.error("share-lang lookup error:", err);
+        }
+
         await liff.shareTargetPicker(
           // cast: the SDK wants its literal message types; our builder returns plain JSON
-          [shareCardFlex()] as Parameters<typeof liff.shareTargetPicker>[0],
+          [shareCardFlex(lang)] as Parameters<typeof liff.shareTargetPicker>[0],
           { isMultiple: true }
         );
         setStatus("done");
