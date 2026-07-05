@@ -124,16 +124,16 @@ const OPEN_APP_URL = `${APP_URL}/?ref=line-share`;
 
 const TEXTS = {
   th: {
-    alt: "itinerry — เช็คโอกาสผ่านวีซ่าฟรี ใน 3 นาที",
+    alt: "itinerry — เช็คโอกาสผ่านวีซ่าฟรี ใน 2 นาที",
     title: "เช็คโอกาสผ่านวีซ่าของคุณ ฟรี!",
-    subtitle: "ตอบคำถามสั้นๆ 3 นาที ผู้เชี่ยวชาญวิเคราะห์ รู้ผลใน 24 ชม.",
+    subtitle: "ตอบคำถามสั้นๆ 2 นาที ผู้เชี่ยวชาญวิเคราะห์ รู้ผลใน 24 ชม.",
     open: "เปิดแอป",
     share: "แชร์ให้เพื่อน",
   },
   en: {
-    alt: "itinerry — free visa eligibility check in 3 minutes",
+    alt: "itinerry — free visa eligibility check in 2 minutes",
     title: "Check your visa chances — free!",
-    subtitle: "A 3-minute questionnaire, reviewed by experts, results within 24 hours",
+    subtitle: "A 2-minute questionnaire, reviewed by experts, results within 24 hours",
     open: "Open app",
     share: "Share with friends",
   },
