@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { cookies } from "next/headers";
+import { runAssessment } from "@/lib/assessment";
 import { verifySessionToken } from "@/lib/line";
 import { supabase } from "@/lib/supabase";
 import { sendNewLeadEmail } from "@/lib/email";
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
 
   // ===== 3) user_assessment (qualification + screening) =====
   const ticketId = await generateTicketId(answers.q8 ?? "");
-  const { error: assessError } = await supabase.from("user_assessment").insert({
+  const { data: assessment, error: assessError } = await supabase.from("user_assessment").insert({
     trip_id:              trip.id,
     account_id:           account.id,
     ticket_id:            ticketId,
@@ -175,11 +176,34 @@ export async function POST(request: NextRequest) {
     callback_datetime:    callbackDatetime ? callbackDatetime.toISOString() : null,
     due_date:             dueDate.toISOString(),
     branch_answers:       branchAnswers,
-  });
-  if (assessError) {
+  }).select("id").single();
+  if (assessError || !assessment) {
     console.error("assessment insert error:", assessError);
-    return NextResponse.json({ ok: false, error: assessError.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: assessError?.message ?? "assessment failed" }, { status: 500 });
   }
+
+  // Auto rule-engine evaluation — runs AFTER the response so it never adds latency.
+  // Writes only the system fields (score/result/evaluated_by); the human's manual
+  // pass/notes on the same row are left untouched (separate upsert columns).
+  const assessmentId = assessment.id;
+  after(async () => {
+    try {
+      const { score, result, evaluatedBy } = runAssessment(answers);
+      const { error } = await supabase.from("visa_evaluation").upsert(
+        {
+          assessment_id: assessmentId,
+          score,
+          result,
+          evaluated_by: evaluatedBy,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "assessment_id" },
+      );
+      if (error) console.error("auto-assessment upsert error:", error);
+    } catch (err) {
+      console.error("auto-assessment error:", err);
+    }
+  });
 
   // Send email notification (PDF is optional — email sends even if PDF fails)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
