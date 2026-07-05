@@ -54,8 +54,9 @@ export default function HealthcheckCard({ data: d, flagSrc }: { data: Healthchec
                 "สรุปเบื้องต้นจากข้อมูลที่คุณกรอกเข้ามา — เพื่อวางแผนให้พร้อมก่อนยื่นจริง",
                 "A first-pass summary from what you told us — so we can plan before the real application")}
             </div>
-            <div style={{ display: "flex", marginTop: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", backgroundColor: "#ffffff", borderRadius: 999, padding: "10px 22px", fontSize: 21, fontWeight: 600, color: NAVY, marginRight: 12 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 20 }}>
+              {/* name pill — widened + roomy so long names fit; wraps to its own row if needed */}
+              <div style={{ display: "flex", alignItems: "center", backgroundColor: "#ffffff", borderRadius: 999, padding: "10px 26px", fontSize: 21, fontWeight: 600, color: NAVY, minWidth: 320, whiteSpace: "nowrap" }}>
                 👤 {d.customerName}
               </div>
               <div style={{ display: "flex", alignItems: "center", backgroundColor: "#ffffff", borderRadius: 999, padding: "10px 22px", fontSize: 21, fontWeight: 600, color: NAVY }}>

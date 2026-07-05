@@ -144,10 +144,10 @@ export function healthcheckFromDbRow(row: Dict, langOverride?: "th" | "en"): Hea
   const visaType = (trip.visa_type as string) ?? "";
   const visa = VISA_LABEL[visaType] ?? { th: visaType, en: visaType };
 
-  // customer display name — nickname (or legacy full-name's first token), คุณ/Khun prefix
+  // customer display name — full nickname (kept whole so long names show), คุณ/Khun prefix
   const shown = displayName(account as NameFields);
-  const firstName = shown === "—" ? "-" : shown.split(/\s+/)[0];
-  const customerName = lang === "th" ? `คุณ ${firstName}` : `Khun ${firstName}`;
+  const nameForCard = shown === "—" ? "-" : shown;
+  const customerName = lang === "th" ? `คุณ ${nameForCard}` : `Khun ${nameForCard}`;
 
   // per-visa-type third info cell
   let slot3Label = t(lang, "ประวัติวีซ่า 10 ปี", "Visa history (10y)");
