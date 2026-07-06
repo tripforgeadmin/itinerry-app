@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 // onto its "จุดแข็งของคุณ" / "ที่เราจะช่วยเสริม" columns, so these caps keep that
 // layout unbreakable. Enforced here AND in /api/admin/evaluate.
 const MAX_ITEMS = 5;
-const MAX_ITEM_LEN = 90;
+const MAX_ITEM_LEN = 150;
 
 function ItemListCard({
   title,

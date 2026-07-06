@@ -8,6 +8,7 @@ import { renderWorksheetPdf, worksheetFromSubmission } from "@/lib/worksheet-pdf
 import { generateTicketId } from "@/lib/ticket";
 import { assessmentFollowUpMessage } from "@/lib/line-messaging";
 import { pushMessageLogged } from "@/lib/message-log";
+import { normalizePhone, formatPhone } from "@/lib/dialCodes";
 import { assessmentReceivedFlex } from "@/lib/line-flex";
 import { bangkokDateTimeToUtc } from "@/lib/holidays";
 
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
     line_picture_url:   toNull(profile?.pictureUrl),
     is_friend:          isFriendCookie === "1" ? true : isFriendCookie === "0" ? false : null,
     nickname:           nickname,
-    phone:              answers.q5 ?? "",
+    phone:              normalizePhone(answers.q5 ?? ""), // store the E.164 national number (trunk 0 dropped)
     phone_country_code: toNull(answers.q5_cc) ?? "+66",
     email:              toNull(answers.q6),
     nationality:        answers.q4 === "thai" ? "thai" : "other",
@@ -214,7 +215,7 @@ export async function POST(request: NextRequest) {
       assessmentId: trip.id,
       ticketId,
       fullName: nickname,
-      phone: answers.q5 ?? "",
+      phone: formatPhone(toNull(answers.q5_cc) ?? "+66", answers.q5 ?? ""),
       visaType: answers.q9 ?? "",
       destination: answers.q8 ?? "",
       travelArrival: answers.q10 ?? answers.q13 ?? answers.q17 ?? "",

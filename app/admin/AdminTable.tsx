@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { STATUS_OPTIONS, STATUS_LABEL, STATUS_COLOR, isOverdue, type StatusValue } from "@/lib/status";
 import { displayName } from "@/lib/account-name";
+import { formatPhone } from "@/lib/dialCodes";
 
 const VISA_LABEL: Record<string, string> = {
   tourist: "ท่องเที่ยว", visitor: "เยี่ยมเยียน", business: "ธุรกิจ", student: "นักเรียน",
@@ -17,7 +18,7 @@ type PageSize = (typeof PAGE_SIZES)[number];
 
 type Account = {
   nickname: string | null; full_name: string | null; first_name: string | null; last_name: string | null;
-  line_display_name: string | null; phone: string | null; is_friend: boolean | null;
+  line_display_name: string | null; phone: string | null; phone_country_code: string | null; is_friend: boolean | null;
 };
 type Trip = { visa_type: string; destination: string; travel_arrival: string | null; study_start: string | null };
 
@@ -232,7 +233,7 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
                   }`}>
                     {days == null ? "—" : `${days} วัน`}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{acc?.phone ?? "—"}</td>
+                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{acc?.phone ? formatPhone(acc.phone_country_code ?? "+66", acc.phone) : "—"}</td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
                     {s.contact_preference === "line" ? "💬 LINE" : s.contact_preference === "call" ? "📞 โทร" : s.contact_preference}
                   </td>

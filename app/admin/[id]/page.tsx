@@ -15,6 +15,7 @@ import { assessmentResultMessage } from "@/lib/line-messaging";
 import { STATUS_LABEL, type StatusValue } from "@/lib/status";
 import { LABELS, TIES_LABELS, PAST_VISA_LABELS, label, refusedText, overstayText } from "@/lib/answer-labels";
 import { displayName } from "@/lib/account-name";
+import { formatPhone } from "@/lib/dialCodes";
 
 export const dynamic = "force-dynamic";
 
@@ -184,7 +185,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const b = (s.branch_answers ?? {}) as Record<string, string | string[]>;
   const visaType = trip.visa_type as string;
   const occ = s.occupation as string;
-  const phone = account.phone_country_code ? `${account.phone_country_code} ${account.phone}` : (account.phone as string);
+  const phone = formatPhone((account.phone_country_code as string) ?? "+66", (account.phone as string) ?? "");
   const name = displayName(account);
   const isAnonymized = account.full_name === "[ลบแล้ว]" || account.nickname === "[ลบแล้ว]";
 

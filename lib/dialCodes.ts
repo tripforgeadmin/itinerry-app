@@ -33,10 +33,36 @@ export function dialCodeOf(code: string): DialCode | undefined {
   return DIAL_CODES.find((d) => d.code === code);
 }
 
-/** Validate the LOCAL part for a dial code. Strips spaces/dashes and a single leading trunk "0",
- * then checks the digit count against the code's range (generic 7–14 when unknown). */
+/**
+ * National significant number: the number the way E.164 wants it — separators removed and the
+ * single leading national trunk "0" dropped. That trunk "0" is only for domestic dialling; it is
+ * NOT part of the international number, so "0812345678" and "812345678" normalize to the same
+ * "812345678". (Blanket-stripping one leading 0 is correct for every country in DIAL_CODES; the
+ * few countries that keep a significant leading 0, e.g. Italy, aren't in the list — for full
+ * international coverage swap this for libphonenumber-js.)
+ */
+export function normalizePhone(local: string): string {
+  return local.replace(/[\s\-()]/g, "").replace(/^0/, "").replace(/\D/g, "");
+}
+
+/** Canonical E.164 — e.g. ("+66", "081-234-5678") → "+66812345678". Empty string if no digits. */
+export function toE164(code: string, local: string): string {
+  const nat = normalizePhone(local);
+  return nat ? `${code}${nat}` : "";
+}
+
+/** Friendly display: Thai national (leading 0, what local staff dial) for +66, else "+cc nat".
+ * Works regardless of how the value was originally typed/stored. */
+export function formatPhone(code: string, local: string): string {
+  const nat = normalizePhone(local);
+  if (!nat) return "";
+  return code === "+66" ? `0${nat}` : `${code} ${nat}`;
+}
+
+/** Validate the LOCAL part for a dial code — normalize first, then check the digit count against
+ * the code's range (generic 7–14 when unknown). */
 export function isValidPhone(code: string, local: string): boolean {
-  const digits = local.replace(/[\s\-()]/g, "").replace(/^0/, "");
+  const digits = normalizePhone(local);
   if (!/^\d+$/.test(digits)) return false;
   const d = dialCodeOf(code);
   const min = d?.min ?? 7;
