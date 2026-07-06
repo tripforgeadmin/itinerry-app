@@ -207,9 +207,6 @@ export const QUESTIONS: Question[] = [
     question: "ประเภทวีซ่าที่ต้องการ",
     questionEn: "Visa Type",
     required: true,
-    allowOtherText: true,
-    otherPlaceholder: "ระบุประเภทวีซ่าที่ต้องการ",
-    otherPlaceholderEn: "Specify the visa type",
     section: "S2",
     sectionTitle: "ปลายทาง + ประเภทวีซ่า",
     sectionTitleEn: "Destination + Visa Type",
@@ -219,7 +216,6 @@ export const QUESTIONS: Question[] = [
       { value: "visitor", label: "วีซ่าเยี่ยมเยียน", labelEn: "Visitor", emoji: "👨‍👩‍👧", nextId: "q13" },
       { value: "business", label: "วีซ่าธุรกิจ", labelEn: "Business", emoji: "🤝", nextId: "q17" },
       { value: "student", label: "วีซ่านักเรียน", labelEn: "Student", emoji: "🎓", nextId: "q21" },
-      { value: "other", label: "วีซ่าประเภทอื่นๆ (โปรดระบุ)", labelEn: "Other visa type", emoji: "✨", nextId: "q10" },
     ],
   },
 

@@ -82,11 +82,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // "อื่นๆ (โปรดระบุ)" visa type — keep the write-in alongside visa_type = "other"
-  if (answers.q9_other && answers.q9_other !== "") {
-    branchAnswers["visa_type_other"] = answers.q9_other;
-  }
-
   // q3 is now the customer's nickname (ชื่อเล่น); full_name/first_name/last_name are legacy
   // columns kept for historical rows but no longer written.
   const nickname = toNull(answers.q3) ?? "";
