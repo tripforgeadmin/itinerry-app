@@ -44,6 +44,7 @@ export default async function AdminPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Submissions</h1>
           <div className="flex items-center gap-4">
+            <Link href="/admin/lost-reasons" className="text-sm font-medium text-blue-600 hover:text-blue-800">🏷️ เหตุผลปิดดีล</Link>
             <Link href="/admin/holidays" className="text-sm font-medium text-blue-600 hover:text-blue-800">📅 วันหยุด</Link>
             <span className="text-sm text-gray-500">{submissions?.length ?? 0} รายการ</span>
           </div>

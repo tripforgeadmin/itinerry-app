@@ -18,9 +18,17 @@ export const STATUS_OPTIONS: StatusOption[] = [
   { value: "evaluated", label: "ประเมินแล้ว", color: "bg-purple-100 text-purple-700" },
   { value: "contacted", label: "ติดต่อแล้ว", color: "bg-yellow-100 text-yellow-700" },
   { value: "pending_decision", label: "รอตัดสินใจ", color: "bg-orange-100 text-orange-700" },
-  { value: "win", label: "Win", color: "bg-green-100 text-green-700" },
-  { value: "lost", label: "Lost", color: "bg-red-100 text-red-700" },
+  { value: "win", label: "Closed Won", color: "bg-green-100 text-green-700" },
+  { value: "lost", label: "Closed Lost", color: "bg-red-100 text-red-700" },
 ];
+
+// The two Salesforce-style closing statuses. A close stamps close_date + (for lost) a reason;
+// re-opening one clears those and returns the case to REOPEN_TARGET.
+export const CLOSED_STATUSES: StatusValue[] = ["win", "lost"];
+export const REOPEN_TARGET: StatusValue = "pending_decision";
+export function isClosed(status: string): boolean {
+  return status === "win" || status === "lost";
+}
 
 export const STATUS_LABEL = Object.fromEntries(
   STATUS_OPTIONS.map((s) => [s.value, s.label])
