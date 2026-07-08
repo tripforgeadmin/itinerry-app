@@ -8,7 +8,7 @@ export default async function AdminPage() {
   const { data, error } = await supabase
     .from("user_assessment")
     .select(
-      "id, ticket_id, created_at, due_date, status, contact_preference, intent, savings_balance, account:account_id(nickname, full_name, first_name, last_name, line_display_name, phone, phone_country_code, is_friend), trip:trip_id(visa_type, destination, travel_arrival, study_start), visa_evaluation(pass, strengths, improvements)"
+      "id, ticket_id, created_at, due_date, status, contact_preference, intent, savings_balance, account:account_id(nickname, full_name, first_name, last_name, line_display_name, phone, phone_country_code, is_friend, source), trip:trip_id(visa_type, destination, travel_arrival, study_start), visa_evaluation(pass, strengths, improvements)"
     )
     .order("created_at", { ascending: false });
 
@@ -40,7 +40,7 @@ export default async function AdminPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Submissions</h1>
           <div className="flex items-center gap-4">
@@ -48,7 +48,7 @@ export default async function AdminPage() {
             <span className="text-sm text-gray-500">{submissions?.length ?? 0} รายการ</span>
           </div>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm p-4">
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           <AdminTable rows={(submissions ?? []) as any[]} />
         </div>

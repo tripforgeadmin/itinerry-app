@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  STATE_WORD,
+  HISTORY_WORD,
+  BAND_WORD,
+  TIES_FUNDING_SELECT_OPTIONS,
+  RISK_SELECT_OPTIONS,
+  BAND_SELECT_OPTIONS,
+} from "@/lib/assessment-vocab";
 
 // Layout guarantees for the customer healthcheck PDF — the itemized lines map 1:1
 // onto its "จุดแข็งของคุณ" / "ที่เราจะช่วยเสริม" columns, so these caps keep that
@@ -69,6 +77,42 @@ function ItemListCard({
   );
 }
 
+function PillarSelect({
+  label,
+  value,
+  onChange,
+  options,
+  autoValue,
+  autoWord,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly { value: string; label: string }[];
+  autoValue: string | null;
+  autoWord: string | null;
+}) {
+  const isOverridden = autoValue != null && value !== "" && value !== autoValue;
+  return (
+    <div>
+      <label className="block text-[11px] font-medium text-gray-400 mb-1">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-200"
+      >
+        <option value="" disabled>— เลือก —</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+      {isOverridden && autoWord && (
+        <p className="mt-1 text-[10px] text-gray-400">แก้ไขจากระบบ (auto: {autoWord})</p>
+      )}
+    </div>
+  );
+}
+
 export default function AssessmentResultForm({
   assessmentId,
   status,
@@ -76,6 +120,14 @@ export default function AssessmentResultForm({
   initialNotes,
   initialStrengths,
   initialImprovements,
+  autoTies,
+  autoFunding,
+  autoRisk,
+  autoBand,
+  initialOverrideTies,
+  initialOverrideFunding,
+  initialOverrideRisk,
+  initialOverrideBand,
 }: {
   assessmentId: string;
   status: string;
@@ -83,6 +135,14 @@ export default function AssessmentResultForm({
   initialNotes: string | null;
   initialStrengths: string[];
   initialImprovements: string[];
+  autoTies: "g" | "y" | "r" | null;
+  autoFunding: "g" | "y" | "r" | null;
+  autoRisk: "g" | "y" | "r" | null;
+  autoBand: "High" | "Med" | "Low" | "OVERRIDE" | null;
+  initialOverrideTies: "g" | "y" | "r" | null;
+  initialOverrideFunding: "g" | "y" | "r" | null;
+  initialOverrideRisk: "g" | "y" | "r" | null;
+  initialOverrideBand: "High" | "Med" | "Low" | null;
 }) {
   const router = useRouter();
   const [pass, setPass] = useState<boolean | null>(initialPass);
@@ -90,6 +150,16 @@ export default function AssessmentResultForm({
   const [strengths, setStrengths] = useState<string[]>(initialStrengths.length ? initialStrengths : [""]);
   const [improvements, setImprovements] = useState<string[]>(initialImprovements.length ? initialImprovements : [""]);
   const [saving, setSaving] = useState(false);
+
+  // g/y/r selects: previously-saved override wins, else fall back to the auto value,
+  // else unset. Band's legacy "OVERRIDE" auto value has no honest High/Med/Low mapping
+  // (see lib/assessment/types.ts), so it's never defaulted into the select.
+  const [ties, setTies] = useState(initialOverrideTies ?? autoTies ?? "");
+  const [funding, setFunding] = useState(initialOverrideFunding ?? autoFunding ?? "");
+  const [risk, setRisk] = useState(initialOverrideRisk ?? autoRisk ?? "");
+  const [band, setBand] = useState(
+    initialOverrideBand ?? (autoBand && autoBand !== "OVERRIDE" ? autoBand : "")
+  );
 
   const canSave = pass !== null && notes.trim().length > 0;
 
@@ -105,6 +175,10 @@ export default function AssessmentResultForm({
         notes,
         strengths: strengths.map((s) => s.trim()).filter(Boolean),
         improvements: improvements.map((s) => s.trim()).filter(Boolean),
+        overrideTies: ties || null,
+        overrideFunding: funding || null,
+        overrideRisk: risk || null,
+        overrideBand: band || null,
       }),
     });
     if (res.ok) {
@@ -131,6 +205,48 @@ export default function AssessmentResultForm({
         onChange={setImprovements}
         accent="amber"
       />
+      <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
+          ระดับความแข็งแรง (ภายใน — เอเจนต์ปรับได้)
+        </h2>
+        <p className="text-xs text-gray-400 mb-3">
+          ค่าเริ่มต้นมาจากระบบประเมินอัตโนมัติ ปรับได้ก่อนส่งผลให้ลูกค้า — ไม่แสดงในรายงานลูกค้า
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <PillarSelect
+            label="ผูกพันไทย"
+            value={ties}
+            onChange={setTies}
+            options={TIES_FUNDING_SELECT_OPTIONS}
+            autoValue={autoTies}
+            autoWord={autoTies ? STATE_WORD[autoTies] : null}
+          />
+          <PillarSelect
+            label="การเงิน"
+            value={funding}
+            onChange={setFunding}
+            options={TIES_FUNDING_SELECT_OPTIONS}
+            autoValue={autoFunding}
+            autoWord={autoFunding ? STATE_WORD[autoFunding] : null}
+          />
+          <PillarSelect
+            label="ประวัติเดินทาง"
+            value={risk}
+            onChange={setRisk}
+            options={RISK_SELECT_OPTIONS}
+            autoValue={autoRisk}
+            autoWord={autoRisk ? HISTORY_WORD[autoRisk] : null}
+          />
+          <PillarSelect
+            label="โอกาสผ่าน"
+            value={band}
+            onChange={setBand}
+            options={BAND_SELECT_OPTIONS}
+            autoValue={autoBand !== "OVERRIDE" ? autoBand : null}
+            autoWord={autoBand && autoBand !== "OVERRIDE" ? BAND_WORD[autoBand] : null}
+          />
+        </div>
+      </div>
       <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">ผลการประเมิน (เอเจนต์)</h2>
         <p className="text-xs text-gray-400 mb-3">ข้อความในช่องนี้แสดงในรายงานลูกค้าใต้หัวข้อ “ความเห็นเพิ่มเติม”</p>

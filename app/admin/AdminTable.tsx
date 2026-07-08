@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { STATUS_OPTIONS, STATUS_LABEL, STATUS_COLOR, isOverdue, type StatusValue } from "@/lib/status";
 import { displayName } from "@/lib/account-name";
 import { formatPhone } from "@/lib/dialCodes";
+import { applyConditions, newConditionId, type FilterCondition } from "@/lib/admin-filters";
+import FilterBar from "./FilterBar";
 
 const VISA_LABEL: Record<string, string> = {
   tourist: "ท่องเที่ยว", visitor: "เยี่ยมเยียน", business: "ธุรกิจ", student: "นักเรียน",
@@ -19,6 +21,7 @@ type PageSize = (typeof PAGE_SIZES)[number];
 type Account = {
   nickname: string | null; full_name: string | null; first_name: string | null; last_name: string | null;
   line_display_name: string | null; phone: string | null; phone_country_code: string | null; is_friend: boolean | null;
+  source: string | null;
 };
 type Trip = { visa_type: string; destination: string; travel_arrival: string | null; study_start: string | null };
 
@@ -49,19 +52,48 @@ type SortEntry = { key: SortKey; dir: "asc" | "desc" };
 export default function AdminTable({ rows }: { rows: Row[] }) {
   const router = useRouter();
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const [filter, setFilter] = useState<StatusValue | "all">("all");
+  const [conditions, setConditions] = useState<FilterCondition[]>([]);
+  const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortEntry[]>([{ key: "date", dir: "desc" }]);
   const [pageSize, setPageSize] = useState<PageSize>(25);
   const [page, setPage] = useState(1);
 
-  // per-filter default page size: รอประเมิน shows 100, everything else 25
+  // Default page size: a single "รอประเมิน" status filter shows 100 (matches the old
+  // one-click pill habit), everything else shows 25.
   useEffect(() => {
-    setPageSize(filter === "pending_review" ? 100 : 25);
-  }, [filter]);
+    const soleStatus =
+      conditions.length === 1 && conditions[0].field === "status" ? conditions[0].value : null;
+    setPageSize(soleStatus?.length === 1 && soleStatus[0] === "pending_review" ? 100 : 25);
+  }, [conditions]);
   // any change to what's shown resets to the first page
   useEffect(() => {
     setPage(1);
-  }, [filter, sort, pageSize]);
+  }, [conditions, search, sort, pageSize]);
+
+  function addCondition(c: FilterCondition) {
+    setConditions((prev) => [...prev, c]);
+  }
+  function removeCondition(id: string) {
+    setConditions((prev) => prev.filter((c) => c.id !== id));
+  }
+  function applySavedFilter(saved: FilterCondition[]) {
+    setConditions(saved.map((c) => ({ ...c, id: c.id || newConditionId() })));
+  }
+
+  // Ticket ID / ชื่อเล่น / LINE display name / phone (digit-only match, so dashes/spaces
+  // don't matter). Runs before the status pill filter — search narrows within any status.
+  const searchFiltered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    const qDigits = q.replace(/\D/g, "");
+    return rows.filter((r) => {
+      const acc = r.account;
+      const haystacks = [r.ticket_id ?? "", displayName(acc), acc?.line_display_name ?? ""];
+      if (haystacks.some((h) => h.toLowerCase().includes(q))) return true;
+      if (qDigits && (acc?.phone ?? "").replace(/\D/g, "").includes(qDigits)) return true;
+      return false;
+    });
+  }, [rows, search]);
 
   const sortValue = useMemo(() => {
     const v: Record<SortKey, (r: Row) => string | number> = {
@@ -82,7 +114,7 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
     return v;
   }, [todayIso]);
 
-  const filtered = filter === "all" ? rows : rows.filter((s) => s.status === filter);
+  const filtered = applyConditions(searchFiltered, conditions);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -147,33 +179,46 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
   ];
 
   return (
-    <div>
-      <div className="flex flex-wrap gap-2 mb-4">
-        <button
-          onClick={() => setFilter("all")}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity ${
-            filter === "all" ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-600"
-          }`}
-        >
-          ทั้งหมด ({rows.length})
-        </button>
-        {STATUS_OPTIONS.map((opt) => (
+    <div className="w-full">
+      <div className="relative mb-4">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="ค้นหา: Ticket ID, ชื่อเล่น, LINE, เบอร์โทร…"
+          className="w-full rounded-xl border-2 border-gray-200 bg-white py-3 pl-10 pr-9 text-sm text-gray-800 placeholder:text-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+        />
+        {search && (
           <button
-            key={opt.value}
-            onClick={() => setFilter(opt.value)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity ${opt.color} ${
-              filter === opt.value ? "" : "opacity-50"
-            }`}
+            onClick={() => setSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500"
+            aria-label="ล้างการค้นหา"
           >
-            {opt.label} ({rows.filter((s) => s.status === opt.value).length})
+            ✕
           </button>
-        ))}
+        )}
       </div>
+
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xs text-gray-400">
+          {filtered.length === searchFiltered.length ? `ทั้งหมด (${searchFiltered.length})` : `${filtered.length} จาก ${searchFiltered.length}`}
+        </span>
+      </div>
+      <FilterBar
+        conditions={conditions}
+        onAdd={addCondition}
+        onRemove={removeCondition}
+        onApplySaved={applySavedFilter}
+      />
 
       <p className="mb-2 text-[11px] text-gray-400">คลิกหัวคอลัมน์เพื่อเรียง · Shift-คลิกเพื่อเรียงหลายชั้น</p>
 
-      <div className="overflow-auto rounded-xl border border-gray-100" style={{ maxHeight: "calc(100vh - 260px)" }}>
-        <table className="w-full text-sm">
+      <div
+        className="w-full overflow-x-auto overflow-y-auto rounded-xl border border-gray-100"
+        style={{ maxHeight: "calc(100vh - 260px)" }}
+      >
+        <table className="w-full min-w-[1400px] text-sm">
           <thead className="sticky top-0 z-10 bg-white">
             <tr className="border-b border-gray-100 text-left text-xs text-gray-500 uppercase tracking-wider">
               {columns.map((col, i) => (

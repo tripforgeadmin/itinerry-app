@@ -14,6 +14,7 @@ import { healthcheckFromDbRow, defaultLangFor } from "@/lib/healthcheck-data";
 import { assessmentResultMessage } from "@/lib/line-messaging";
 import { STATUS_LABEL, type StatusValue } from "@/lib/status";
 import { LABELS, TIES_LABELS, PAST_VISA_LABELS, label, refusedText, overstayText } from "@/lib/answer-labels";
+import { STATE_WORD, HISTORY_WORD, BAND_WORD, BAND_COLOR, URGENCY_WORD, URGENCY_COLOR } from "@/lib/assessment-vocab";
 import { displayName } from "@/lib/account-name";
 import { formatPhone } from "@/lib/dialCodes";
 
@@ -72,12 +73,6 @@ function one(v: unknown): Dict {
 const CARD_BG: Record<string, string> = { g: "bg-green-50", y: "bg-amber-50", r: "bg-red-50" };
 const CARD_TEXT: Record<string, string> = { g: "text-green-700", y: "text-amber-700", r: "text-red-700" };
 const DOT_BG: Record<string, string> = { g: "bg-green-500", y: "bg-amber-500", r: "bg-red-500" };
-const STATE_WORD: Record<string, string> = { g: "แข็งแรง", y: "ปานกลาง", r: "ไม่แข็งแรง" };
-const HISTORY_WORD: Record<string, string> = { g: "สะอาด", y: "มีจุดต้องตรวจ", r: "มีประวัติ" };
-const BAND_WORD: Record<string, string> = { High: "สูง", Med: "ปานกลาง", Low: "น้อย", OVERRIDE: "ต้องรีวิว" };
-const BAND_COLOR: Record<string, string> = { High: "g", Med: "y", Low: "r", OVERRIDE: "r" };
-const URGENCY_WORD: Record<string, string> = { Low: "ไม่ด่วน", Med: "ปานกลาง", High: "ด่วน" };
-const URGENCY_COLOR: Record<string, string> = { Low: "g", Med: "y", High: "r" };
 
 function StateCard({ title, color, word, sub }: { title: string; color: string; word: string; sub?: string }) {
   return (
@@ -105,6 +100,21 @@ function AutoAssessment({ evaluation }: { evaluation: Dict }) {
   const override = result.override_flag === true;
   const urgency = result.urgency as string;
 
+  // Agent overrides win over the auto value for display; the auto value stays visible
+  // as a small "auto: X" note whenever it differs, so the override is auditable, not
+  // destructive. Never surfaced on the customer healthcheck card (lib/healthcheck-data.ts).
+  const autoTies = (colors.ties as string) ?? "";
+  const autoFunding = (result.pillar_funding as string) ?? "";
+  const autoRisk = (result.pillar_risk as string) ?? "";
+  const oTies = evaluation.override_ties as string | null;
+  const oFunding = evaluation.override_funding as string | null;
+  const oRisk = evaluation.override_risk as string | null;
+  const oBand = evaluation.override_band as string | null;
+  const tiesColor = oTies ?? autoTies;
+  const fundingColor = oFunding ?? autoFunding;
+  const riskColor = oRisk ?? autoRisk;
+  const bandVal = oBand ?? band;
+
   return (
     <Section title="ผลประเมินอัตโนมัติ (ระบบ)">
       {!band ? (
@@ -118,17 +128,36 @@ function AutoAssessment({ evaluation }: { evaluation: Dict }) {
           )}
 
           <div className="grid grid-cols-3 gap-2">
-            <StateCard title="ความผูกพันในไทย" color={(colors.ties as string) ?? ""} word={STATE_WORD[colors.ties as string] ?? "—"} />
-            <StateCard title="การเงิน" color={(result.pillar_funding as string) ?? ""} word={STATE_WORD[result.pillar_funding as string] ?? "—"} />
-            <StateCard title="ประวัติการเดินทาง" color={(result.pillar_risk as string) ?? ""} word={HISTORY_WORD[result.pillar_risk as string] ?? "—"} />
+            <StateCard
+              title="ความผูกพันในไทย"
+              color={tiesColor}
+              word={STATE_WORD[tiesColor] ?? "—"}
+              sub={oTies && oTies !== autoTies ? `auto: ${STATE_WORD[autoTies] ?? "—"}` : undefined}
+            />
+            <StateCard
+              title="การเงิน"
+              color={fundingColor}
+              word={STATE_WORD[fundingColor] ?? "—"}
+              sub={oFunding && oFunding !== autoFunding ? `auto: ${STATE_WORD[autoFunding] ?? "—"}` : undefined}
+            />
+            <StateCard
+              title="ประวัติการเดินทาง"
+              color={riskColor}
+              word={HISTORY_WORD[riskColor] ?? "—"}
+              sub={oRisk && oRisk !== autoRisk ? `auto: ${HISTORY_WORD[autoRisk] ?? "—"}` : undefined}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <StateCard
               title="โอกาสผ่าน (ระบบ)"
-              color={BAND_COLOR[band] ?? "y"}
-              word={BAND_WORD[band] ?? band}
-              sub={`คะแนน ${String(evaluation.score ?? result.approvability_score ?? "—")}/98`}
+              color={BAND_COLOR[bandVal ?? ""] ?? "y"}
+              word={BAND_WORD[bandVal ?? ""] ?? bandVal ?? "—"}
+              sub={
+                oBand && oBand !== band
+                  ? `auto: ${BAND_WORD[band ?? ""] ?? band}`
+                  : `คะแนน ${String(evaluation.score ?? result.approvability_score ?? "—")}/98`
+              }
             />
             <StateCard
               title="ความด่วน"
@@ -284,6 +313,14 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         initialNotes={(evaluation.notes as string | null) ?? null}
         initialStrengths={Array.isArray(evaluation.strengths) ? (evaluation.strengths as string[]) : []}
         initialImprovements={Array.isArray(evaluation.improvements) ? (evaluation.improvements as string[]) : []}
+        autoTies={(((evaluation.result as Dict)?._colors as Dict)?.ties as "g" | "y" | "r" | null) ?? null}
+        autoFunding={((evaluation.result as Dict)?.pillar_funding as "g" | "y" | "r" | null) ?? null}
+        autoRisk={((evaluation.result as Dict)?.pillar_risk as "g" | "y" | "r" | null) ?? null}
+        autoBand={((evaluation.result as Dict)?.approvability_band as "High" | "Med" | "Low" | "OVERRIDE" | null) ?? null}
+        initialOverrideTies={(evaluation.override_ties as "g" | "y" | "r" | null) ?? null}
+        initialOverrideFunding={(evaluation.override_funding as "g" | "y" | "r" | null) ?? null}
+        initialOverrideRisk={(evaluation.override_risk as "g" | "y" | "r" | null) ?? null}
+        initialOverrideBand={(evaluation.override_band as "High" | "Med" | "Low" | null) ?? null}
       />
 
       {sendResult}

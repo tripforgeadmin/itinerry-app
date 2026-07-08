@@ -8,9 +8,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  const { assessmentId, pass, notes, strengths, improvements } = await request.json();
+  const {
+    assessmentId, pass, notes, strengths, improvements,
+    overrideTies, overrideFunding, overrideRisk, overrideBand,
+  } = await request.json();
   if (!assessmentId || typeof pass !== "boolean" || typeof notes !== "string" || !notes.trim()) {
     return NextResponse.json({ ok: false, error: "invalid input" }, { status: 400 });
+  }
+
+  // Agent-overridable pillar dropdowns — internal decision-support only, never surfaced
+  // on the customer healthcheck card (lib/healthcheck-data.ts reads strengths/improvements/
+  // notes only). null/undefined always allowed ("no override").
+  const GYR = new Set(["g", "y", "r"]);
+  const BANDS = new Set(["High", "Med", "Low"]);
+  const validOverride = (v: unknown, allowed: Set<string>) =>
+    v === null || v === undefined || (typeof v === "string" && allowed.has(v));
+  if (
+    !validOverride(overrideTies, GYR) ||
+    !validOverride(overrideFunding, GYR) ||
+    !validOverride(overrideRisk, GYR) ||
+    !validOverride(overrideBand, BANDS)
+  ) {
+    return NextResponse.json({ ok: false, error: "invalid override value" }, { status: 400 });
   }
 
   // จุดแข็ง / ที่เราจะช่วยเสริม — itemized lines that map 1:1 onto the customer healthcheck
@@ -47,6 +66,10 @@ export async function POST(request: NextRequest) {
         notes: notes.trim(),
         strengths: strengthItems,
         improvements: improvementItems,
+        override_ties: overrideTies ?? null,
+        override_funding: overrideFunding ?? null,
+        override_risk: overrideRisk ?? null,
+        override_band: overrideBand ?? null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "assessment_id" }

@@ -4,7 +4,9 @@ export type StatusValue =
   | "contacted"
   | "pending_decision"
   | "win"
-  | "lost";
+  | "lost"
+  | "out_of_scope"
+  | "human_error";
 
 export interface StatusOption {
   value: StatusValue;
@@ -20,6 +22,8 @@ export const STATUS_OPTIONS: StatusOption[] = [
   { value: "pending_decision", label: "รอตัดสินใจ", color: "bg-orange-100 text-orange-700" },
   { value: "win", label: "Win", color: "bg-green-100 text-green-700" },
   { value: "lost", label: "Lost", color: "bg-red-100 text-red-700" },
+  { value: "out_of_scope", label: "นอกขอบเขตงาน", color: "bg-gray-200 text-gray-700" },
+  { value: "human_error", label: "ผิดพลาดจากเจ้าหน้าที่", color: "bg-pink-100 text-pink-700" },
 ];
 
 export const STATUS_LABEL = Object.fromEntries(

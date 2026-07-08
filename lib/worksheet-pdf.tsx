@@ -7,6 +7,7 @@ import path from "path";
 import { COUNTRIES } from "./countries";
 import { LABELS, TIES_LABELS, PAST_VISA_LABELS, label } from "./answer-labels";
 import type { StoredEvaluation } from "./assessment";
+import { STATE_WORD, HISTORY_WORD, BAND_WORD, BAND_COLOR, URGENCY_WORD, URGENCY_COLOR } from "./assessment-vocab";
 
 /**
  * Internal case worksheet (ใบงานประเมินวีซ่า) — the PDF the evaluation team works from.
@@ -75,7 +76,13 @@ export interface WorksheetData {
     intent: string | null; // token
   };
   auto: StoredEvaluation | null;
-  manual: { pass: boolean | null; notes: string; strengths: string[]; improvements: string[] } | null;
+  manual: {
+    pass: boolean | null; notes: string; strengths: string[]; improvements: string[];
+    overrideTies: "g" | "y" | "r" | null;
+    overrideFunding: "g" | "y" | "r" | null;
+    overrideRisk: "g" | "y" | "r" | null;
+    overrideBand: "High" | "Med" | "Low" | null;
+  } | null;
 }
 
 const FREELANCE_PROOF: Record<string, string> = {
@@ -110,6 +117,7 @@ const MUTED = "#64748b";
 const LINE = "#e2e8f0";
 const DOT: Record<string, string> = { g: "#16a34a", y: "#d97706", r: "#dc2626" };
 const DOT_BG: Record<string, string> = { g: "#dcfce7", y: "#fef3c7", r: "#fee2e2" };
+
 
 const s = StyleSheet.create({
   page: { fontFamily: "Sarabun", padding: 36, paddingBottom: 52, fontSize: 9.5, color: "#1e293b", lineHeight: 1.55 },
@@ -173,12 +181,6 @@ function StateCard({ title, color, word, sub, last }: { title: string; color: st
   );
 }
 
-const STATE_WORD: Record<string, string> = { g: "แข็งแรง", y: "ปานกลาง", r: "ไม่แข็งแรง" };
-const HISTORY_WORD: Record<string, string> = { g: "สะอาด", y: "มีจุดต้องตรวจ", r: "มีประวัติ" };
-const BAND_WORD: Record<string, string> = { High: "สูง", Med: "ปานกลาง", Low: "น้อย", OVERRIDE: "ต้องรีวิว" };
-const BAND_COLOR: Record<string, string> = { High: "g", Med: "y", Low: "r", OVERRIDE: "r" };
-const URGENCY_WORD: Record<string, string> = { Low: "ไม่ด่วน", Med: "ปานกลาง", High: "ด่วน" };
-const URGENCY_COLOR: Record<string, string> = { Low: "g", Med: "y", High: "r" };
 
 // ---------------------------------------------------------------------- document --
 
@@ -280,32 +282,55 @@ function Worksheet({ d }: { d: WorksheetData }) {
                 </Text>
               </View>
             )}
-            <View style={s.cardsRow}>
-              <StateCard title="ความผูกพันในไทย" color={auto._colors.ties} word={STATE_WORD[auto._colors.ties] ?? "—"} />
-              <StateCard title="การเงิน" color={auto.pillar_funding} word={STATE_WORD[auto.pillar_funding] ?? "—"} />
-              <StateCard title="ประวัติการเดินทาง" color={auto.pillar_risk} word={HISTORY_WORD[auto.pillar_risk] ?? "—"} last />
-            </View>
-            <View style={s.cardsRow}>
-              <StateCard
-                title="โอกาสผ่าน (ระบบ)"
-                color={BAND_COLOR[auto.approvability_band] ?? "y"}
-                word={BAND_WORD[auto.approvability_band] ?? auto.approvability_band}
-                sub={`คะแนน ${auto.approvability_score}/98`}
-              />
+            {(() => {
+              const oTies = d.manual?.overrideTies ?? null;
+              const oFunding = d.manual?.overrideFunding ?? null;
+              const oRisk = d.manual?.overrideRisk ?? null;
+              const oBand = d.manual?.overrideBand ?? null;
+              const tiesColor = oTies ?? auto._colors.ties;
+              const fundingColor = oFunding ?? auto.pillar_funding;
+              const riskColor = oRisk ?? auto.pillar_risk;
+              const bandVal = oBand ?? auto.approvability_band;
+              return (
+                <>
+                  <View style={s.cardsRow}>
+                    <StateCard
+                      title="ความผูกพันในไทย" color={tiesColor} word={STATE_WORD[tiesColor] ?? "—"}
+                      sub={oTies && oTies !== auto._colors.ties ? `auto: ${STATE_WORD[auto._colors.ties] ?? "—"}` : undefined}
+                    />
+                    <StateCard
+                      title="การเงิน" color={fundingColor} word={STATE_WORD[fundingColor] ?? "—"}
+                      sub={oFunding && oFunding !== auto.pillar_funding ? `auto: ${STATE_WORD[auto.pillar_funding] ?? "—"}` : undefined}
+                    />
+                    <StateCard
+                      title="ประวัติการเดินทาง" color={riskColor} word={HISTORY_WORD[riskColor] ?? "—"} last
+                      sub={oRisk && oRisk !== auto.pillar_risk ? `auto: ${HISTORY_WORD[auto.pillar_risk] ?? "—"}` : undefined}
+                    />
+                  </View>
+                  <View style={s.cardsRow}>
+                    <StateCard
+                      title="โอกาสผ่าน (ระบบ)"
+                      color={BAND_COLOR[bandVal] ?? "y"}
+                      word={BAND_WORD[bandVal] ?? bandVal}
+                      sub={oBand && oBand !== auto.approvability_band ? `auto: ${BAND_WORD[auto.approvability_band] ?? auto.approvability_band}` : `คะแนน ${auto.approvability_score}/98`}
+                    />
               <StateCard
                 title="ความด่วน"
                 color={URGENCY_COLOR[auto.urgency] ?? "y"}
                 word={URGENCY_WORD[auto.urgency] ?? auto.urgency}
                 sub={auto.days_left != null ? `เหลือ ${auto.days_left} วันก่อนเดินทาง` : "ไม่ทราบวันเดินทาง"}
               />
-              <StateCard
-                title="แนวทางการทำงาน"
-                color={auto.override_flag ? "r" : BAND_COLOR[auto.approvability_band] ?? "y"}
-                word={auto.decision_cell.name}
-                sub={`${stripEmoji(auto.decision_cell.action)} · ราคา: ${stripEmoji(auto.decision_cell.pricing)}`}
-                last
-              />
-            </View>
+                    <StateCard
+                      title="แนวทางการทำงาน"
+                      color={auto.override_flag ? "r" : BAND_COLOR[auto.approvability_band] ?? "y"}
+                      word={auto.decision_cell.name}
+                      sub={`${stripEmoji(auto.decision_cell.action)} · ราคา: ${stripEmoji(auto.decision_cell.pricing)}`}
+                      last
+                    />
+                  </View>
+                </>
+              );
+            })()}
             {auto.consistency_flags.length > 0 && (
               <View style={s.flagList}>
                 {auto.consistency_flags.map((f, i) => (
@@ -450,6 +475,10 @@ export function worksheetFromDbRow(row: Dict): WorksheetData {
           notes: (ev.notes as string) ?? "",
           strengths: Array.isArray(ev.strengths) ? (ev.strengths as string[]) : [],
           improvements: Array.isArray(ev.improvements) ? (ev.improvements as string[]) : [],
+          overrideTies: (ev.override_ties as "g" | "y" | "r" | null) ?? null,
+          overrideFunding: (ev.override_funding as "g" | "y" | "r" | null) ?? null,
+          overrideRisk: (ev.override_risk as "g" | "y" | "r" | null) ?? null,
+          overrideBand: (ev.override_band as "High" | "Med" | "Low" | null) ?? null,
         }
       : null,
   };
