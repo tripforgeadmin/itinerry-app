@@ -59,13 +59,21 @@ export function customerStatus(status: string): { label: string; color: string }
   return { label: "ประเมินแล้ว", color: "bg-success-bg text-success-deep" };
 }
 
-// The customer-facing "result within 24h" promise (lib/line-messaging.ts's
-// assessmentReceivedMessage) is only outstanding while a case is pending_review.
-const SLA_PENDING_STATUS: StatusValue = "pending_review";
-const SLA_HOURS = 24;
+// The customer-facing promise (lib/line-messaging.ts's assessmentReceivedMessage) is
+// "result SENT within 24h" — so the clock runs until result_sent_at is stamped, whatever
+// the pipeline status. It only stops early for closed (win/lost) cases: the deal is over,
+// flagging them forever would be noise. The submit route derives due_date from this same
+// constant (LINE = submit + SLA_HOURS, call = the chosen callback slot).
+export const SLA_HOURS = 24;
 
-export function isOverdue(createdAt: string, status: string, dueDate?: string | null): boolean {
-  if (status !== SLA_PENDING_STATUS) return false;
+export function isOverdue(
+  createdAt: string,
+  status: string,
+  dueDate?: string | null,
+  resultSentAt?: string | null
+): boolean {
+  if (resultSentAt) return false; // promise fulfilled
+  if (isClosed(status)) return false;
   // Prefer the stored SLA due date (LINE = +24h, call = chosen slot). Fall back to created+24h
   // for rows written before due_date existed.
   const deadline = dueDate

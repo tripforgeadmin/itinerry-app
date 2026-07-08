@@ -11,6 +11,7 @@ import { pushMessageLogged } from "@/lib/message-log";
 import { normalizePhone, formatPhone } from "@/lib/dialCodes";
 import { assessmentReceivedFlex } from "@/lib/line-flex";
 import { bangkokDateTimeToUtc } from "@/lib/holidays";
+import { SLA_HOURS } from "@/lib/status";
 
 function toNull(v: string | undefined): string | null {
   return v && v !== "" ? v : null;
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
   const rawCb = isCall && validSlot ? bangkokDateTimeToUtc(answers.q37_date, answers.q37) : null;
   const callbackDatetime = rawCb && !isNaN(rawCb.getTime()) ? rawCb : null;
   // LINE (or a call with no usable slot) → 24h SLA; a valid call slot → that exact time.
-  const dueDate = isCall && callbackDatetime ? callbackDatetime : new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const dueDate = isCall && callbackDatetime ? callbackDatetime : new Date(Date.now() + SLA_HOURS * 60 * 60 * 1000);
 
   // ===== 3) user_assessment (qualification + screening) =====
   const ticketId = await generateTicketId(answers.q8 ?? "");

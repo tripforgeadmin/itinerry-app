@@ -8,7 +8,7 @@ export default async function AdminPage() {
   const { data, error } = await supabase
     .from("user_assessment")
     .select(
-      "id, ticket_id, created_at, due_date, status, contact_preference, intent, savings_balance, account:account_id(nickname, full_name, first_name, last_name, line_display_name, phone, phone_country_code, is_friend), trip:trip_id(visa_type, destination, travel_arrival, study_start), visa_evaluation(pass, strengths, improvements)"
+      "id, ticket_id, created_at, due_date, status, contact_preference, intent, savings_balance, result_sent_at, account:account_id(nickname, full_name, first_name, last_name, line_display_name, phone, phone_country_code, is_friend), trip:trip_id(visa_type, destination, travel_arrival, study_start), visa_evaluation(pass, strengths, improvements)"
     )
     .order("created_at", { ascending: false });
 
@@ -28,6 +28,7 @@ export default async function AdminPage() {
       status: r.status,
       contact_preference: r.contact_preference,
       intent: r.intent,
+      result_sent_at: r.result_sent_at,
       account,
       trip,
       // healthcheck card is built from the evaluator's lists — printable only when both exist

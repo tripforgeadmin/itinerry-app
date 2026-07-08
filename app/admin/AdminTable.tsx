@@ -30,6 +30,7 @@ type Row = {
   status: string;
   contact_preference: string;
   intent: string | null;
+  result_sent_at: string | null;
   account: Account | null;
   trip: Trip | null;
   printable: boolean;
@@ -194,7 +195,7 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
             {visible.map((s) => {
               const acc = s.account;
               const trip = s.trip;
-              const overdue = isOverdue(s.created_at, s.status, s.due_date);
+              const overdue = isOverdue(s.created_at, s.status, s.due_date, s.result_sent_at);
               const days = daysToTravel(trip, todayIso);
               return (
                 <tr
