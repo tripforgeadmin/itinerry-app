@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import StatusUpdater from "./StatusUpdater";
 import AnonymizeButton from "./AnonymizeButton";
+import ContactEditor from "./ContactEditor";
 import AssessmentResultForm from "./AssessmentResultForm";
 import SendResultFlow from "./SendResultFlow";
 import CopyLineIdButton from "./CopyLineIdButton";
@@ -15,7 +16,6 @@ import { assessmentResultMessage } from "@/lib/line-messaging";
 import { STATUS_LABEL, isClosed, type StatusValue } from "@/lib/status";
 import { LABELS, TIES_LABELS, PAST_VISA_LABELS, label, refusedText, overstayText } from "@/lib/answer-labels";
 import { displayName } from "@/lib/account-name";
-import { formatPhone } from "@/lib/dialCodes";
 import { fetchLostReasonTree, fetchLostReasonLabels } from "@/lib/lost-reasons";
 import { bangkokNow } from "@/lib/holidays";
 
@@ -193,7 +193,6 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const b = (s.branch_answers ?? {}) as Record<string, string | string[]>;
   const visaType = trip.visa_type as string;
   const occ = s.occupation as string;
-  const phone = formatPhone((account.phone_country_code as string) ?? "+66", (account.phone as string) ?? "");
   const name = displayName(account);
   const isAnonymized = account.full_name === "[ลบแล้ว]" || account.nickname === "[ลบแล้ว]";
 
@@ -337,7 +336,6 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const center = (
     <>
       <Section title="S6–S8 · ช่องทางติดต่อ + ความต้องการ">
-        <Row title="ติดต่อผ่าน" value={label("contact_preference", s.contact_preference)} />
         <Row title="นัดโทรกลับ" value={fmtDateTime(s.callback_datetime)} />
         <Row title="Due date" value={fmtDateTime(s.due_date)} />
         <Row title="ความต้องการ" value={label("intent", s.intent)} />
@@ -356,20 +354,20 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         <Row title="รูปโปรไฟล์" value={account.line_picture_url ? "มี" : null} />
       </Section>
 
-      <Section
-        title="S1 · ข้อมูลส่วนตัว"
-        menu={!isAnonymized ? <AnonymizeButton accountId={account.id as string} /> : undefined}
-      >
-        {isAnonymized && (
-          <p className="text-xs text-gray-400 -mt-1 mb-2">ลบข้อมูลส่วนตัวแล้ว (PDPA)</p>
-        )}
-        <Row title="ชื่อเล่น" value={name} />
-        <Row title="สัญชาติ" value={account.nationality === "other" ? `อื่นๆ: ${account.nationality_other}` : label("nationality", account.nationality)} />
-        <Row title="เบอร์โทร" value={phone} />
-        <Row title="อีเมล" value={account.email} />
-        <Row title="รู้จักจาก" value={account.source === "other" ? `อื่นๆ: ${account.source_other}` : label("source", account.source)} />
-        <Row title="ยินยอม PDPA เมื่อ" value={account.consented_at ? new Date(account.consented_at as string).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : null} />
-      </Section>
+      <ContactEditor
+        accountId={account.id as string}
+        assessmentId={s.id as string}
+        isAnonymized={isAnonymized}
+        nickname={(account.nickname as string) ?? ""}
+        fullName={(account.full_name as string) ?? ""}
+        phoneCode={(account.phone_country_code as string) ?? "+66"}
+        phoneLocal={(account.phone as string) ?? ""}
+        email={(account.email as string) ?? ""}
+        contactPreference={(s.contact_preference as string) ?? ""}
+        nationalityDisplay={account.nationality === "other" ? `อื่นๆ: ${account.nationality_other}` : label("nationality", account.nationality)}
+        sourceDisplay={account.source === "other" ? `อื่นๆ: ${account.source_other}` : label("source", account.source)}
+        consentedDisplay={account.consented_at ? new Date(account.consented_at as string).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : null}
+      />
 
       <Section title="S2 · ปลายทาง + วีซ่า">
         <Row title="ประเทศปลายทาง" value={(trip.destination as string)?.toUpperCase()} />
