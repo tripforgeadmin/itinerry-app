@@ -335,7 +335,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   // CENTER column — case data (S6-S8 first, then the auto assessment, then the rest)
   const center = (
     <>
-      <Section title="S6–S8 · ช่องทางติดต่อ + ความต้องการ">
+      <Section title="เวลาตอบกลับ + ความต้องการ">
         <Row title="นัดโทรกลับ" value={fmtDateTime(s.callback_datetime)} />
         <Row title="Due date" value={fmtDateTime(s.due_date)} />
         <Row title="ความต้องการ" value={label("intent", s.intent)} />
