@@ -20,11 +20,19 @@ export const STATUS_OPTIONS: StatusOption[] = [
   { value: "evaluated", label: "ประเมินแล้ว", color: "bg-purple-100 text-purple-700" },
   { value: "contacted", label: "ติดต่อแล้ว", color: "bg-yellow-100 text-yellow-700" },
   { value: "pending_decision", label: "รอตัดสินใจ", color: "bg-orange-100 text-orange-700" },
-  { value: "win", label: "Win", color: "bg-green-100 text-green-700" },
-  { value: "lost", label: "Lost", color: "bg-red-100 text-red-700" },
+  { value: "win", label: "Closed Won", color: "bg-green-100 text-green-700" },
+  { value: "lost", label: "Closed Lost", color: "bg-red-100 text-red-700" },
   { value: "out_of_scope", label: "นอกขอบเขตงาน", color: "bg-gray-200 text-gray-700" },
   { value: "human_error", label: "ผิดพลาดจากเจ้าหน้าที่", color: "bg-pink-100 text-pink-700" },
 ];
+
+// The two Salesforce-style closing statuses. A close stamps close_date + (for lost) a reason;
+// re-opening one clears those and returns the case to REOPEN_TARGET.
+export const CLOSED_STATUSES: StatusValue[] = ["win", "lost"];
+export const REOPEN_TARGET: StatusValue = "pending_decision";
+export function isClosed(status: string): boolean {
+  return status === "win" || status === "lost";
+}
 
 export const STATUS_LABEL = Object.fromEntries(
   STATUS_OPTIONS.map((s) => [s.value, s.label])
@@ -55,13 +63,21 @@ export function customerStatus(status: string): { label: string; color: string }
   return { label: "ประเมินแล้ว", color: "bg-success-bg text-success-deep" };
 }
 
-// The customer-facing "result within 24h" promise (lib/line-messaging.ts's
-// assessmentReceivedMessage) is only outstanding while a case is pending_review.
-const SLA_PENDING_STATUS: StatusValue = "pending_review";
-const SLA_HOURS = 24;
+// The customer-facing promise (lib/line-messaging.ts's assessmentReceivedMessage) is
+// "result SENT within 24h" — so the clock runs until result_sent_at is stamped, whatever
+// the pipeline status. It only stops early for closed (win/lost) cases: the deal is over,
+// flagging them forever would be noise. The submit route derives due_date from this same
+// constant (LINE = submit + SLA_HOURS, call = the chosen callback slot).
+export const SLA_HOURS = 24;
 
-export function isOverdue(createdAt: string, status: string, dueDate?: string | null): boolean {
-  if (status !== SLA_PENDING_STATUS) return false;
+export function isOverdue(
+  createdAt: string,
+  status: string,
+  dueDate?: string | null,
+  resultSentAt?: string | null
+): boolean {
+  if (resultSentAt) return false; // promise fulfilled
+  if (isClosed(status)) return false;
   // Prefer the stored SLA due date (LINE = +24h, call = chosen slot). Fall back to created+24h
   // for rows written before due_date existed.
   const deadline = dueDate

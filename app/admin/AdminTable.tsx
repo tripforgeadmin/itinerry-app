@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { STATUS_OPTIONS, STATUS_LABEL, STATUS_COLOR, isOverdue, type StatusValue } from "@/lib/status";
+import { staleBadge, DEFAULT_STAGE_HOURS } from "@/lib/sla";
 import { displayName } from "@/lib/account-name";
 import { formatPhone } from "@/lib/dialCodes";
 import { applyConditions, newConditionId, type FilterCondition } from "@/lib/admin-filters";
@@ -33,6 +34,8 @@ type Row = {
   status: string;
   contact_preference: string;
   intent: string | null;
+  result_sent_at: string | null;
+  status_entered_at: string | null;
   account: Account | null;
   trip: Trip | null;
   printable: boolean;
@@ -49,7 +52,13 @@ type SortKey =
   | "ticket" | "date" | "due" | "name" | "line" | "visa" | "dest" | "intent" | "days" | "phone" | "contact" | "friend" | "status";
 type SortEntry = { key: SortKey; dir: "asc" | "desc" };
 
-export default function AdminTable({ rows }: { rows: Row[] }) {
+export default function AdminTable({
+  rows,
+  slaStageHours = DEFAULT_STAGE_HOURS,
+}: {
+  rows: Row[];
+  slaStageHours?: Record<string, number>;
+}) {
   const router = useRouter();
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [conditions, setConditions] = useState<FilterCondition[]>([]);
@@ -239,7 +248,7 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
             {visible.map((s) => {
               const acc = s.account;
               const trip = s.trip;
-              const overdue = isOverdue(s.created_at, s.status, s.due_date);
+              const overdue = isOverdue(s.created_at, s.status, s.due_date, s.result_sent_at);
               const days = daysToTravel(trip, todayIso);
               return (
                 <tr
@@ -286,9 +295,22 @@ export default function AdminTable({ rows }: { rows: Row[] }) {
                     {acc?.is_friend === true ? "✅" : acc?.is_friend === false ? "❌" : "—"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-lg text-xs font-medium ${STATUS_COLOR[s.status as StatusValue] ?? ""}`}>
-                      {STATUS_LABEL[s.status as StatusValue] ?? s.status}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`px-2 py-1 rounded-lg text-xs font-medium ${STATUS_COLOR[s.status as StatusValue] ?? ""}`}>
+                        {STATUS_LABEL[s.status as StatusValue] ?? s.status}
+                      </span>
+                      {(() => {
+                        const stale = staleBadge(s.status, s.status_entered_at, slaStageHours);
+                        return stale ? (
+                          <span
+                            className="px-2 py-1 rounded-lg text-xs font-medium bg-amber-100 text-amber-700"
+                            title="ค้างในสถานะนี้เกิน SLA ที่ตั้งไว้"
+                          >
+                            ⏳ {stale}
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-center">
                     {s.printable ? (

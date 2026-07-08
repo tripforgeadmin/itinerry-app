@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import StatusUpdater from "./StatusUpdater";
 import AnonymizeButton from "./AnonymizeButton";
+import ContactEditor from "./ContactEditor";
 import AssessmentResultForm from "./AssessmentResultForm";
 import SendResultFlow from "./SendResultFlow";
 import CopyLineIdButton from "./CopyLineIdButton";
@@ -12,11 +13,18 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { healthcheckFromDbRow, defaultLangFor } from "@/lib/healthcheck-data";
 import { assessmentResultMessage } from "@/lib/line-messaging";
-import { STATUS_LABEL, type StatusValue } from "@/lib/status";
+import { STATUS_LABEL, isClosed, type StatusValue } from "@/lib/status";
 import { LABELS, TIES_LABELS, PAST_VISA_LABELS, label, refusedText, overstayText } from "@/lib/answer-labels";
 import { STATE_WORD, HISTORY_WORD, BAND_WORD, BAND_COLOR, URGENCY_WORD, URGENCY_COLOR } from "@/lib/assessment-vocab";
 import { displayName } from "@/lib/account-name";
-import { formatPhone } from "@/lib/dialCodes";
+import { fetchLostReasonTree, fetchLostReasonLabels } from "@/lib/lost-reasons";
+import { bangkokNow } from "@/lib/holidays";
+
+function fmtDate(iso: unknown): string | null {
+  if (!iso || typeof iso !== "string") return null;
+  const d = new Date(`${iso.slice(0, 10)}T00:00:00`);
+  return isNaN(d.getTime()) ? null : d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
+}
 
 export const dynamic = "force-dynamic";
 
@@ -214,14 +222,25 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const b = (s.branch_answers ?? {}) as Record<string, string | string[]>;
   const visaType = trip.visa_type as string;
   const occ = s.occupation as string;
-  const phone = formatPhone((account.phone_country_code as string) ?? "+66", (account.phone as string) ?? "");
   const name = displayName(account);
   const isAnonymized = account.full_name === "[ลบแล้ว]" || account.nickname === "[ลบแล้ว]";
 
-  type StatusHistoryEntry = { id: string; from_status: string | null; to_status: string; changed_at: string };
+  type StatusHistoryEntry = { id: string; from_status: string | null; to_status: string; changed_at: string; note: string | null };
   const statusHistory = ((s.status_history ?? []) as StatusHistoryEntry[])
     .slice()
     .sort((h1, h2) => new Date(h2.changed_at).getTime() - new Date(h1.changed_at).getTime());
+
+  // Sales-close: reason taxonomy (for the close modal + labels) + current close snapshot.
+  const reasons = await fetchLostReasonTree(true);
+  const reasonLabels = await fetchLostReasonLabels();
+  const todayIso = bangkokNow().iso;
+  const closeInfo = {
+    close_date: (s.close_date as string | null) ?? null,
+    lost_reason_l1: (s.lost_reason_l1 as string | null) ?? null,
+    lost_reason_l2: (s.lost_reason_l2 as string | null) ?? null,
+    close_notes: (s.close_notes as string | null) ?? null,
+    won_service_type: (s.won_service_type as string | null) ?? null,
+  };
 
   // Send-result card (healthcheck image + message, 2-step confirm) — lives in the LEFT column.
   const hcTh = healthcheckFromDbRow(s, "th");
@@ -263,7 +282,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
       {typeof s.ticket_id === "string" && s.ticket_id && (
         <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700">{s.ticket_id}</span>
       )}
-      <StatusUpdater id={s.id as string} currentStatus={s.status as string} inline />
+      <StatusUpdater id={s.id as string} currentStatus={s.status as string} inline reasons={reasons} todayIso={todayIso} closeInfo={closeInfo} />
       <span className="ml-auto whitespace-nowrap text-xs text-gray-400">
         {new Date(s.created_at as string).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" })} น.
       </span>
@@ -279,27 +298,50 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
     </div>
   );
 
-  // LEFT column — the evaluation workflow (status history + agent forms + send result)
+  // LEFT column — the evaluation workflow (close summary + status history + agent forms + send result)
   const left = (
     <>
+      {isClosed(s.status as string) && (
+        <Section title="การปิดดีล">
+          <Row title="ผลการปิด" value={s.status === "win" ? "Closed Won ✅" : "Closed Lost ❌"} />
+          <Row title="วันที่ปิดดีล" value={fmtDate(closeInfo.close_date)} />
+          {s.status === "win" && (
+            <Row title="ประเภทบริการ" value={closeInfo.won_service_type === "diy" ? "DIY" : closeInfo.won_service_type === "full" ? "Full service" : null} />
+          )}
+          {s.status === "lost" && (
+            <Row
+              title="เหตุผล"
+              value={[closeInfo.lost_reason_l1, closeInfo.lost_reason_l2]
+                .filter(Boolean)
+                .map((k) => reasonLabels[k as string] ?? k)
+                .join(" · ")}
+            />
+          )}
+          <Row title="โน้ต" value={closeInfo.close_notes} />
+        </Section>
+      )}
+
       <Section title="ประวัติสถานะ">
         {statusHistory.length === 0 ? (
           <p className="text-sm text-gray-400">ยังไม่มีการเปลี่ยนสถานะ</p>
         ) : (
           <div>
             {statusHistory.map((h) => (
-              <div key={h.id} className="flex gap-3 py-2 border-b border-gray-50 last:border-0 text-sm">
-                <span className="text-gray-800 font-medium">
-                  {h.from_status ? (STATUS_LABEL[h.from_status as StatusValue] ?? h.from_status) : "—"}
-                  {" → "}
-                  {STATUS_LABEL[h.to_status as StatusValue] ?? h.to_status}
-                </span>
-                <span className="text-gray-400 ml-auto whitespace-nowrap">
-                  {new Date(h.changed_at).toLocaleDateString("th-TH", {
-                    timeZone: "Asia/Bangkok",
-                    day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
-                  })}
-                </span>
+              <div key={h.id} className="py-2 border-b border-gray-50 last:border-0 text-sm">
+                <div className="flex gap-3">
+                  <span className="text-gray-800 font-medium">
+                    {h.from_status ? (STATUS_LABEL[h.from_status as StatusValue] ?? h.from_status) : "—"}
+                    {" → "}
+                    {STATUS_LABEL[h.to_status as StatusValue] ?? h.to_status}
+                  </span>
+                  <span className="text-gray-400 ml-auto whitespace-nowrap">
+                    {new Date(h.changed_at).toLocaleDateString("th-TH", {
+                      timeZone: "Asia/Bangkok",
+                      day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+                {h.note && <div className="mt-0.5 text-xs text-gray-400">{h.note}</div>}
               </div>
             ))}
           </div>
@@ -330,8 +372,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   // CENTER column — case data (S6-S8 first, then the auto assessment, then the rest)
   const center = (
     <>
-      <Section title="S6–S8 · ช่องทางติดต่อ + ความต้องการ">
-        <Row title="ติดต่อผ่าน" value={label("contact_preference", s.contact_preference)} />
+      <Section title="เวลาตอบกลับ + ความต้องการ">
         <Row title="นัดโทรกลับ" value={fmtDateTime(s.callback_datetime)} />
         <Row title="Due date" value={fmtDateTime(s.due_date)} />
         <Row title="ความต้องการ" value={label("intent", s.intent)} />
@@ -350,20 +391,20 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         <Row title="รูปโปรไฟล์" value={account.line_picture_url ? "มี" : null} />
       </Section>
 
-      <Section
-        title="S1 · ข้อมูลส่วนตัว"
-        menu={!isAnonymized ? <AnonymizeButton accountId={account.id as string} /> : undefined}
-      >
-        {isAnonymized && (
-          <p className="text-xs text-gray-400 -mt-1 mb-2">ลบข้อมูลส่วนตัวแล้ว (PDPA)</p>
-        )}
-        <Row title="ชื่อเล่น" value={name} />
-        <Row title="สัญชาติ" value={account.nationality === "other" ? `อื่นๆ: ${account.nationality_other}` : label("nationality", account.nationality)} />
-        <Row title="เบอร์โทร" value={phone} />
-        <Row title="อีเมล" value={account.email} />
-        <Row title="รู้จักจาก" value={account.source === "other" ? `อื่นๆ: ${account.source_other}` : label("source", account.source)} />
-        <Row title="ยินยอม PDPA เมื่อ" value={account.consented_at ? new Date(account.consented_at as string).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : null} />
-      </Section>
+      <ContactEditor
+        accountId={account.id as string}
+        assessmentId={s.id as string}
+        isAnonymized={isAnonymized}
+        nickname={(account.nickname as string) ?? ""}
+        fullName={(account.full_name as string) ?? ""}
+        phoneCode={(account.phone_country_code as string) ?? "+66"}
+        phoneLocal={(account.phone as string) ?? ""}
+        email={(account.email as string) ?? ""}
+        contactPreference={(s.contact_preference as string) ?? ""}
+        nationalityDisplay={account.nationality === "other" ? `อื่นๆ: ${account.nationality_other}` : label("nationality", account.nationality)}
+        sourceDisplay={account.source === "other" ? `อื่นๆ: ${account.source_other}` : label("source", account.source)}
+        consentedDisplay={account.consented_at ? new Date(account.consented_at as string).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : null}
+      />
 
       <Section title="S2 · ปลายทาง + วีซ่า">
         <Row title="ประเทศปลายทาง" value={(trip.destination as string)?.toUpperCase()} />
