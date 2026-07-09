@@ -4,6 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { STATUS_OPTIONS, type StatusValue } from "@/lib/status";
 import { SOURCE_OPTIONS, newConditionId, type FilterCondition, type FilterField } from "@/lib/admin-filters";
 
+// Presentation-only grouping for the popover's status checklist — NOT the same concept
+// as lib/status.ts's isClosed()/CLOSED_STATUSES (which drives SLA-clock-stops-here logic
+// and deliberately excludes out_of_scope/human_error). Keep these separate so editing one
+// never silently changes the other's behavior.
+const OPEN_STATUSES: StatusValue[] = ["pending_review", "evaluated", "contacted", "pending_decision"];
+const CLOSED_STATUSES_UI: StatusValue[] = ["win", "lost", "out_of_scope", "human_error"];
+
 const FIELDS: { field: FilterField; label: string }[] = [
   { field: "status", label: "สถานะ" },
   { field: "source", label: "แหล่งที่มา" },
@@ -85,21 +92,56 @@ export default function AddFilterPopover({ onAdd }: { onAdd: (c: FilterCondition
               </button>
 
               {field === "status" && (
-                <div className="flex flex-col gap-1 max-h-56 overflow-auto">
-                  {STATUS_OPTIONS.map((opt) => (
-                    <label key={opt.value} className="flex items-center gap-2 px-1 py-1 text-xs text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={statusValue.includes(opt.value)}
-                        onChange={(e) =>
-                          setStatusValue((prev) =>
-                            e.target.checked ? [...prev, opt.value] : prev.filter((v) => v !== opt.value)
-                          )
-                        }
-                      />
-                      <span className={`px-1.5 py-0.5 rounded ${opt.color}`}>{opt.label}</span>
-                    </label>
-                  ))}
+                <div>
+                  <div className="flex gap-2 mb-1.5 text-[11px]">
+                    <button
+                      onClick={() => setStatusValue(STATUS_OPTIONS.map((o) => o.value))}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      เลือกทั้งหมด
+                    </button>
+                    <span className="text-gray-300">·</span>
+                    <button onClick={() => setStatusValue([])} className="text-blue-500 hover:text-blue-700">
+                      ล้างทั้งหมด
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-2 max-h-56 overflow-auto">
+                    {[
+                      { title: "เปิดอยู่", group: OPEN_STATUSES },
+                      { title: "ปิดแล้ว", group: CLOSED_STATUSES_UI },
+                    ].map(({ title, group }) => (
+                      <div key={title}>
+                        <div className="flex items-center justify-between px-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{title}</span>
+                          <button
+                            onClick={() =>
+                              setStatusValue((prev) => [...new Set([...prev, ...group])])
+                            }
+                            className="text-[10px] text-blue-500 hover:text-blue-700"
+                          >
+                            เลือกกลุ่มนี้
+                          </button>
+                        </div>
+                        {group.map((value) => {
+                          const opt = STATUS_OPTIONS.find((o) => o.value === value)!;
+                          return (
+                            <label key={opt.value} className="flex items-center gap-2 px-1 py-1 text-xs text-gray-700">
+                              <input
+                                type="checkbox"
+                                checked={statusValue.includes(opt.value)}
+                                onChange={(e) =>
+                                  setStatusValue((prev) =>
+                                    e.target.checked ? [...prev, opt.value] : prev.filter((v) => v !== opt.value)
+                                  )
+                                }
+                              />
+                              <span className={`px-1.5 py-0.5 rounded ${opt.color}`}>{opt.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

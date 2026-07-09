@@ -89,6 +89,26 @@ export default function AdminTable({
     setConditions(saved.map((c) => ({ ...c, id: c.id || newConditionId() })));
   }
 
+  // Quick status pills — a shorthand for "add/replace/remove a single-value status
+  // condition", so they compose with everything else in `conditions` (source/date
+  // filters, saved filters) instead of being a second, disconnected filter mechanism.
+  const soleStatusCondition = conditions.find((c) => c.field === "status");
+  const activeStatusValue =
+    soleStatusCondition?.field === "status" && soleStatusCondition.value.length === 1
+      ? soleStatusCondition.value[0]
+      : null;
+
+  function clickStatusPill(value: StatusValue) {
+    setConditions((prev) => {
+      const withoutStatus = prev.filter((c) => c.field !== "status");
+      if (activeStatusValue === value) return withoutStatus; // toggle off
+      return [...withoutStatus, { id: newConditionId(), field: "status", operator: "is_any_of", value: [value] }];
+    });
+  }
+  function clickAllPill() {
+    setConditions((prev) => prev.filter((c) => c.field !== "status"));
+  }
+
   // Ticket ID / ชื่อเล่น / LINE display name / phone (digit-only match, so dashes/spaces
   // don't matter). Runs before the status pill filter — search narrows within any status.
   const searchFiltered = useMemo(() => {
@@ -161,7 +181,7 @@ export default function AdminTable({
 
   function sortIndicator(key: SortKey) {
     const idx = sort.findIndex((e) => e.key === key);
-    if (idx === -1) return null;
+    if (idx === -1) return <span className="ml-1 text-gray-300">⇅</span>;
     return (
       <span className="ml-1 text-blue-500">
         {sort[idx].dir === "asc" ? "▲" : "▼"}
@@ -209,10 +229,26 @@ export default function AdminTable({
         )}
       </div>
 
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs text-gray-400">
-          {filtered.length === searchFiltered.length ? `ทั้งหมด (${searchFiltered.length})` : `${filtered.length} จาก ${searchFiltered.length}`}
-        </span>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <button
+          onClick={clickAllPill}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity ${
+            activeStatusValue === null ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-600"
+          }`}
+        >
+          ทั้งหมด ({searchFiltered.length})
+        </button>
+        {STATUS_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => clickStatusPill(opt.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity ${opt.color} ${
+              activeStatusValue === opt.value ? "" : "opacity-50"
+            }`}
+          >
+            {opt.label} ({searchFiltered.filter((s) => s.status === opt.value).length})
+          </button>
+        ))}
       </div>
       <FilterBar
         conditions={conditions}
