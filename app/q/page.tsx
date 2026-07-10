@@ -67,14 +67,14 @@ const RESKINNED_SCREENS: Record<string, ScreenComponent> = {
 
 // Elephant loader (itin-hold-ipad) plays when advancing OUT of these screens — the 5-category
 // boundaries: พื้นฐาน→เดินทาง (q9), อาชีพ→คุณสมบัติ (work-branch end), คุณสมบัติ→ข้อมูลติดต่อ (q35).
-const WORK_END = { cap: "เกือบครบแล้ว!", sub: "เตรียมคำถามคัดกรอง…" };
+const WORK_END = { cap: "มาเกินครึ่งทางแล้ว!", sub: "เตรียมคำถามคัดกรอง…" };
 const PHASE_END_LOADER: Record<string, { cap: string; sub?: string }> = {
   q9: { cap: "กำลังบันทึกคำตอบของคุณ", sub: "เตรียมคำถามเรื่องการเดินทาง…" },
   q25: WORK_END,
   q27: WORK_END,
   q28: WORK_END,
   q29: WORK_END,
-  q35: { cap: "เกือบเสร็จแล้ว!", sub: "เตรียมส่วนข้อมูลติดต่อ…" },
+  q35: { cap: "ใกล้เสร็จแล้ว!", sub: "เตรียมส่วนข้อมูลติดต่อ…" },
 };
 
 // Steps skipped based on the visa type: "อื่นๆ" has an arrival date but no return (q11), and

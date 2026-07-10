@@ -83,28 +83,29 @@ export function CountryScreen({
       title={lang === "th" ? "จะยื่นวีซ่าประเทศไหน?" : "Which country?"}
       subtitle={lang === "th" ? "ค้นหาหรือเลือกประเทศปลายทาง" : "Search or pick your destination"}
       footerHint="แตะเพื่อเลือกและไปต่อ"
+      headerExtra={
+        <div className="relative">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-soft">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={
+              query
+                ? ""
+                : lang === "th"
+                  ? `ค้นหาประเทศ เช่น ${typedExample}`
+                  : `Search country, e.g. ${typedExample}`
+            }
+            className="w-full rounded-2xl border border-border bg-card py-3 pl-11 pr-4 text-primary outline-none transition-colors placeholder:text-muted-soft focus:border-accent"
+          />
+        </div>
+      }
     >
-      <div className="relative mb-4">
-        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-soft">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-        </span>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={
-            query
-              ? ""
-              : lang === "th"
-                ? `ค้นหาประเทศ เช่น ${typedExample}`
-                : `Search country, e.g. ${typedExample}`
-          }
-          className="w-full rounded-2xl border border-border bg-card py-3 pl-11 pr-4 text-primary outline-none transition-colors placeholder:text-muted-soft focus:border-accent"
-        />
-      </div>
-
       {otherMode ? (
         <>
           <button

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ConsentCheck } from "@/components/ui/ConsentCheck";
+import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { RevealBlock } from "@/components/ui/RevealBlock";
 import { QuestionShell } from "@/components/screens/QuestionShell";
@@ -56,7 +56,6 @@ function display(qid: string, answers: Record<string, string>, lang: "th" | "en"
  * (RowEditor) that writes back via onAnswer. Certify + submit. */
 export function SummaryScreen({
   question,
-  value,
   answers,
   onAnswer,
   onNext,
@@ -70,7 +69,7 @@ export function SummaryScreen({
 }: ScreenProps) {
   const [editing, setEditing] = useState(false);
   const [openQid, setOpenQid] = useState<string | null>(null);
-  const certified = value === "true";
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const history = useFormStore((s) => s.history);
 
   // Show only the current branch's answers — stale dates/docs left behind when the user switched
@@ -83,7 +82,15 @@ export function SummaryScreen({
     items: answered.filter((r) => categoryIndexOf(r.qid) === i),
   })).filter((g) => g.items.length > 0);
 
+  // Certifying happens in the confirm dialog now (the checkbox is gone). Recording q2 = "true"
+  // on confirm preserves the consent flag in the submitted data, exactly as the checkbox did.
+  function confirmSubmit() {
+    onAnswer(question.id, "true");
+    onNext();
+  }
+
   return (
+    <>
     <QuestionShell
       boxes={boxes}
       activeIndex={activeIndex}
@@ -92,7 +99,7 @@ export function SummaryScreen({
       lang={lang}
       onLangChange={onLangChange}
       screenKey={question.id}
-      title={lang === "th" ? "สรุปข้อมูลของคุณ" : "Review your info"}
+      title={lang === "th" ? "ตรวจสอบก่อนส่ง" : "Review your info"}
       subtitle={lang === "th" ? "ตรวจความถูกต้องก่อนส่งให้ทีมวีซ่า" : "Check before sending to our visa team"}
       headerRight={
         <button
@@ -107,7 +114,7 @@ export function SummaryScreen({
         </button>
       }
       footer={
-        <Button disabled={!certified || submitting} onClick={onNext}>
+        <Button disabled={submitting} onClick={() => setConfirmOpen(true)}>
           {submitting ? (lang === "th" ? "กำลังส่ง…" : "Submitting…") : lang === "th" ? "ส่งแบบประเมิน →" : "Submit →"}
         </Button>
       }
@@ -171,11 +178,52 @@ export function SummaryScreen({
         </div>
       )}
 
-      <div className="mt-4">
-        <ConsentCheck checked={certified} onToggle={() => onAnswer(question.id, certified ? "" : "true")}>
-          {question.question}
-        </ConsentCheck>
-      </div>
     </QuestionShell>
+
+      {/* Confirm submit — carries the consent statement (moved off the removed checkbox).
+          Rendered OUTSIDE QuestionShell so its `fixed` overlay is viewport-anchored, not trapped
+          inside ScreenTransition's transform. */}
+      <AnimatePresence>
+        {confirmOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-4 pb-6 pt-4 sm:items-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => !submitting && setConfirmOpen(false)}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              className="w-full max-w-sm rounded-card bg-card p-6 shadow-glass"
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-primary">
+                {lang === "th" ? "ยืนยันการส่งแบบประเมิน?" : "Submit assessment?"}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{question.question}</p>
+              <div className="mt-6 flex flex-col gap-2">
+                <Button disabled={submitting} onClick={confirmSubmit}>
+                  {submitting ? (lang === "th" ? "กำลังส่ง…" : "Submitting…") : lang === "th" ? "ยืนยันส่ง" : "Confirm & submit"}
+                </Button>
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => setConfirmOpen(false)}
+                  className="rounded-full py-3 text-sm font-semibold text-muted transition-colors hover:text-primary disabled:opacity-40"
+                >
+                  {lang === "th" ? "ยกเลิก" : "Cancel"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

@@ -15,7 +15,7 @@ interface QuestionShellProps {
   lang: Lang;
   onLangChange: (l: Lang) => void;
   screenKey: string;
-  title: ReactNode;
+  title?: ReactNode;
   subtitle?: string;
   /** Centered hint (auto-advance screens). Ignored when `footer` is provided. */
   footerHint?: string;
@@ -27,6 +27,9 @@ interface QuestionShellProps {
   compactTitle?: boolean;
   /** Optional action rendered on the title/subtitle row, right-aligned (e.g. the summary Edit toggle). */
   headerRight?: ReactNode;
+  /** Extra content pinned inside the sticky title band, below the title (e.g. a sticky search box).
+   *  Lives outside ScreenTransition, so its sticky/fixed positioning is reliable. */
+  headerExtra?: ReactNode;
   children: ReactNode;
 }
 
@@ -86,8 +89,10 @@ export function QuestionShell({
   hideTitleDivider,
   compactTitle,
   headerRight,
+  headerExtra,
   children,
 }: QuestionShellProps) {
+  const hasHeader = title || subtitle || headerRight || headerExtra;
   const kbOpen = useKeyboardOpen();
   // Every step change resets the page to the top (before paint → no flash of the old scroll).
   useLayoutEffect(() => {
@@ -109,19 +114,25 @@ export function QuestionShell({
         />
         {/* Sticky headline — a sibling of (never inside) ScreenTransition, since sticky breaks
             inside a transformed/animated ancestor. Pins right below the measured top bar (or to the
-            very top while the keyboard is open and the bar is hidden). */}
-        <div
-          className={`sticky z-20 bg-surface px-5 ${compactTitle ? "pb-2 pt-6" : "pb-3 pt-4"} ${hideTitleDivider ? "" : "border-b border-border"}`}
-          style={{ top: kbOpen ? "0px" : "var(--topbar-h, 128px)" }}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h2 className={`leading-snug ${compactTitle ? "text-xl font-bold text-muted" : "text-2xl font-extrabold text-primary"}`}>{title}</h2>
-              {subtitle && <p className="mt-1.5 text-sm text-muted">{subtitle}</p>}
-            </div>
-            {headerRight && <div className="shrink-0">{headerRight}</div>}
+            very top while the keyboard is open and the bar is hidden). Skipped entirely when the
+            screen supplies no header content. */}
+        {hasHeader && (
+          <div
+            className={`sticky z-20 bg-surface px-5 ${compactTitle ? "pb-2 pt-6" : "pb-3 pt-4"} ${hideTitleDivider ? "" : "border-b border-border"}`}
+            style={{ top: kbOpen ? "0px" : "var(--topbar-h, 128px)" }}
+          >
+            {(title || subtitle || headerRight) && (
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  {title && <h2 className={`leading-snug ${compactTitle ? "text-xl font-bold text-muted" : "text-2xl font-extrabold text-primary"}`}>{title}</h2>}
+                  {subtitle && <p className="mt-1.5 text-sm text-muted">{subtitle}</p>}
+                </div>
+                {headerRight && <div className="shrink-0">{headerRight}</div>}
+              </div>
+            )}
+            {headerExtra && <div className="mt-3">{headerExtra}</div>}
           </div>
-        </div>
+        )}
         <ScreenTransition screenKey={screenKey}>
           <div className={`px-5 pb-40 ${compactTitle ? "pt-2" : "pt-5"}`}>{children}</div>
         </ScreenTransition>
