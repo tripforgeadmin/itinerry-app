@@ -45,3 +45,38 @@ export const BAND_SELECT_OPTIONS = [
 export const tiesFundingOptions = (lang: Lang = "th") => (["g", "y", "r"] as const).map((v) => ({ value: v, label: stateWord(v, lang) }));
 export const riskOptions = (lang: Lang = "th") => (["g", "y", "r"] as const).map((v) => ({ value: v, label: historyWord(v, lang) }));
 export const bandOptions = (lang: Lang = "th") => (["High", "Med", "Low"] as const).map((v) => ({ value: v, label: bandWord(v, lang) }));
+
+// The rule-engine bakes its Thai decision-cell action + consistency flags INTO each stored
+// evaluation JSON (lib/assessment/config.ts + engine.ts). We translate those at render time
+// rather than at the engine — keyed by the stable English cell `name` / the exact flag text —
+// so existing stored rows flip too and the scoring engine (+ its tests) stay untouched.
+// Keys mirror decision_matrix[*].name in lib/assessment/config.ts.
+const DECISION_ACTION_EN: Record<string, string> = {
+  Nurture: "Keep nurturing — strong case, not urgent, close gradually",
+  Close: "Close now — good case, enough time",
+  "Hot-Close": "Close fast — good case but time is tight",
+  Build: "Build the case — shore up weak points before filing",
+  Develop: "Help prepare the case — work to do, limited time",
+  "Rush-Fix": "Rush prep — lots to do, little time",
+  Advise: "Advise — low odds, set expectations honestly",
+  "Reality-check": "Reality-check — state the risks plainly",
+  Honest: "Be straight — not enough time + low odds",
+  "Senior Review": "🛑 Escalate to Senior + verify history before quoting",
+};
+
+/** EN action for a decision cell, keyed by its English `name`. Falls back to the stored Thai
+ *  (which is authoritative for lang="th" and for any unmapped/new cell name). */
+export const cellActionEn = (name: string, storedThai: string, lang: Lang = "th") =>
+  lang === "en" ? DECISION_ACTION_EN[name] ?? storedThai : storedThai;
+
+// Keyed by the exact Thai literal pushed in lib/assessment/engine.ts consistencyChecks().
+const CONSISTENCY_FLAG_EN: Record<string, string> = {
+  "ใครจ่ายจริง? (no-income persona + self-pay + <50K)": "Who really pays? (no-income persona + self-pay + <50K)",
+  "ธุรกิจมีจริงไหม? (owner + DBD not yet)": "Is the business real? (owner + DBD not yet)",
+  "ขัดกัน: อ้างมีงานในไทย แต่อาชีพเป็นนักเรียน/แม่บ้าน": "Contradiction: claims a job in Thailand but persona is student/homemaker",
+  "อ่อนคูณอ่อน: ความสัมพันธ์แฟน + ผู้เชิญถือ Student visa": "Weak × weak: partner relationship + inviter on a Student visa",
+};
+
+/** EN text for a stored consistency flag; falls back to the stored Thai when unmapped. */
+export const consistencyFlagEn = (flag: string, lang: Lang = "th") =>
+  lang === "en" ? CONSISTENCY_FLAG_EN[flag] ?? flag : flag;

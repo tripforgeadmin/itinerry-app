@@ -15,7 +15,7 @@ import { healthcheckFromDbRow, defaultLangFor } from "@/lib/healthcheck-data";
 import { assessmentResultMessage } from "@/lib/line-messaging";
 import { statusLabel, isClosed } from "@/lib/status";
 import { LABELS, LABELS_EN, label, tieLabel, pastVisaLabel, refusedText, overstayText } from "@/lib/answer-labels";
-import { BAND_COLOR, URGENCY_COLOR, stateWord, historyWord, bandWord, urgencyWord } from "@/lib/assessment-vocab";
+import { BAND_COLOR, URGENCY_COLOR, stateWord, historyWord, bandWord, urgencyWord, cellActionEn, consistencyFlagEn } from "@/lib/assessment-vocab";
 import { displayName } from "@/lib/account-name";
 import { fetchLostReasonTree, fetchLostReasonLabels } from "@/lib/lost-reasons";
 import { bangkokNow } from "@/lib/holidays";
@@ -175,7 +175,7 @@ function AutoAssessment({ evaluation, lang }: { evaluation: Dict; lang: Lang }) 
 
           <div className="rounded-xl bg-gray-50 p-3">
             <div className="text-sm font-bold text-gray-800">{cell.name as string}</div>
-            <div className="text-sm text-gray-600">{cell.action as string}</div>
+            <div className="text-sm text-gray-600">{cellActionEn(cell.name as string, cell.action as string, lang)}</div>
             <div className="mt-1 text-xs text-gray-400">
               {t(lang, "ราคา", "Price")}: {cell.pricing as string} · {t(lang, "งานเอกสาร", "Docs")} {result.billable_scope as string} · {t(lang, "ความซับซ้อน", "Complexity")} {result.complexity as string} · {t(lang, "เวลา", "Time")} {result.time_feasibility as string}
             </div>
@@ -185,7 +185,7 @@ function AutoAssessment({ evaluation, lang }: { evaluation: Dict; lang: Lang }) 
             <div className="rounded-xl bg-amber-50 p-3">
               <div className="text-xs font-bold text-amber-700 mb-1">{t(lang, "จุดที่ต้องตรวจ", "To check")}</div>
               <ul className="list-disc pl-4 text-xs text-amber-800 space-y-0.5">
-                {flags.map((f, i) => <li key={i}>{f}</li>)}
+                {flags.map((f, i) => <li key={i}>{consistencyFlagEn(f, lang)}</li>)}
               </ul>
             </div>
           )}
