@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AnonymizeButton from "./AnonymizeButton";
 import { DIAL_CODES, formatPhone } from "@/lib/dialCodes";
+import { t, type Lang } from "@/lib/i18n";
 
-const PREF_LABEL: Record<string, string> = { line: "LINE OA", call: "โทรกลับ" };
+const prefLabel = (p: string, lang: Lang) => (p === "line" ? "LINE OA" : p === "call" ? t(lang, "โทรกลับ", "Call back") : p);
 
 /** One read-only row — matches the <Row> helper in page.tsx. Hides empty values. */
 function ReadRow({ title, value }: { title: string; value?: string | null }) {
@@ -41,6 +42,7 @@ export interface ContactEditorProps {
   accountId: string;
   assessmentId: string;
   isAnonymized: boolean;
+  lang?: Lang;
   // editable — account
   nickname: string;
   fullName: string;
@@ -57,6 +59,7 @@ export interface ContactEditorProps {
 
 export default function ContactEditor(props: ContactEditorProps) {
   const router = useRouter();
+  const lang = props.lang ?? "th";
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -98,7 +101,7 @@ export default function ContactEditor(props: ContactEditorProps) {
       setEditing(false);
       router.refresh();
     } catch {
-      alert("บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง");
+      alert(t(lang, "บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง", "Save failed. Please try again."));
     } finally {
       setSaving(false);
     }
@@ -109,7 +112,7 @@ export default function ContactEditor(props: ContactEditorProps) {
   return (
     <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">S1 · ข้อมูลติดต่อ</h2>
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t(lang, "S1 · ข้อมูลติดต่อ", "S1 · Contact info")}</h2>
         <div className="flex items-center gap-2">
           {!props.isAnonymized && !editing && (
             <button
@@ -117,39 +120,39 @@ export default function ContactEditor(props: ContactEditorProps) {
               onClick={() => setEditing(true)}
               className="rounded-full border border-blue-500 px-3 py-1 text-xs font-bold text-blue-600 hover:bg-blue-50"
             >
-              ✎ แก้ไข
+              ✎ {t(lang, "แก้ไข", "Edit")}
             </button>
           )}
-          {!props.isAnonymized && <AnonymizeButton accountId={props.accountId} />}
+          {!props.isAnonymized && <AnonymizeButton accountId={props.accountId} lang={lang} />}
         </div>
       </div>
 
       {props.isAnonymized && (
-        <p className="text-xs text-gray-400 -mt-1 mb-2">ลบข้อมูลส่วนตัวแล้ว (PDPA)</p>
+        <p className="text-xs text-gray-400 -mt-1 mb-2">{t(lang, "ลบข้อมูลส่วนตัวแล้ว (PDPA)", "Personal data deleted (PDPA)")}</p>
       )}
 
       {editing ? (
         <div className="space-y-1">
-          <Field label="ชื่อเล่น">
-            <input value={nickname} onChange={(e) => setNickname(e.target.value)} className={inputCls} placeholder="ชื่อเล่น (โชว์บนรายงาน)" />
+          <Field label={t(lang, "ชื่อเล่น", "Nickname")}>
+            <input value={nickname} onChange={(e) => setNickname(e.target.value)} className={inputCls} placeholder={t(lang, "ชื่อเล่น (โชว์บนรายงาน)", "Nickname (shown on the report)")} />
           </Field>
-          <Field label="ชื่อ-นามสกุล">
-            <input value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputCls} placeholder="ชื่อจริง-นามสกุล" />
+          <Field label={t(lang, "ชื่อ-นามสกุล", "Full name")}>
+            <input value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputCls} placeholder={t(lang, "ชื่อจริง-นามสกุล", "First and last name")} />
           </Field>
-          <Field label="เบอร์โทร">
+          <Field label={t(lang, "เบอร์โทร", "Phone")}>
             <div className="flex gap-2">
               <select value={phoneCode} onChange={(e) => setPhoneCode(e.target.value)} className={`${inputCls} w-32 shrink-0`}>
                 {DIAL_CODES.map((d) => (
                   <option key={d.code} value={d.code}>{d.code} {d.th}</option>
                 ))}
               </select>
-              <input value={phoneLocal} onChange={(e) => setPhoneLocal(e.target.value)} className={inputCls} placeholder="เบอร์ (ใส่ 0 นำหน้าหรือไม่ก็ได้)" inputMode="tel" />
+              <input value={phoneLocal} onChange={(e) => setPhoneLocal(e.target.value)} className={inputCls} placeholder={t(lang, "เบอร์ (ใส่ 0 นำหน้าหรือไม่ก็ได้)", "Phone (with or without leading 0)")} inputMode="tel" />
             </div>
           </Field>
-          <Field label="อีเมล">
-            <input value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} placeholder="อีเมล" inputMode="email" />
+          <Field label={t(lang, "อีเมล", "Email")}>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} placeholder={t(lang, "อีเมล", "Email")} inputMode="email" />
           </Field>
-          <Field label="ติดต่อผ่าน">
+          <Field label={t(lang, "ติดต่อผ่าน", "Contact via")}>
             <div className="flex gap-2">
               {(["line", "call"] as const).map((p) => (
                 <button
@@ -160,7 +163,7 @@ export default function ContactEditor(props: ContactEditorProps) {
                     pref === p ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500 opacity-60"
                   }`}
                 >
-                  {PREF_LABEL[p]}
+                  {prefLabel(p, lang)}
                 </button>
               ))}
             </div>
@@ -173,7 +176,7 @@ export default function ContactEditor(props: ContactEditorProps) {
               disabled={saving}
               className="rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-bold text-white disabled:opacity-40"
             >
-              {saving ? "กำลังบันทึก…" : "บันทึก"}
+              {saving ? t(lang, "กำลังบันทึก…", "Saving…") : t(lang, "บันทึก", "Save")}
             </button>
             <button
               type="button"
@@ -181,20 +184,20 @@ export default function ContactEditor(props: ContactEditorProps) {
               disabled={saving}
               className="rounded-lg bg-gray-100 px-4 py-1.5 text-xs font-medium text-gray-600 disabled:opacity-40"
             >
-              ยกเลิก
+              {t(lang, "ยกเลิก", "Cancel")}
             </button>
           </div>
         </div>
       ) : (
         <>
-          <ReadRow title="ชื่อเล่น" value={props.nickname} />
-          <ReadRow title="ชื่อ-นามสกุล" value={props.fullName} />
-          <ReadRow title="เบอร์โทร" value={phoneShown} />
-          <ReadRow title="อีเมล" value={props.email} />
-          <ReadRow title="ติดต่อผ่าน" value={PREF_LABEL[props.contactPreference] ?? props.contactPreference} />
-          <ReadRow title="สัญชาติ" value={props.nationalityDisplay} />
-          <ReadRow title="รู้จักจาก" value={props.sourceDisplay} />
-          <ReadRow title="ยินยอม PDPA เมื่อ" value={props.consentedDisplay} />
+          <ReadRow title={t(lang, "ชื่อเล่น", "Nickname")} value={props.nickname} />
+          <ReadRow title={t(lang, "ชื่อ-นามสกุล", "Full name")} value={props.fullName} />
+          <ReadRow title={t(lang, "เบอร์โทร", "Phone")} value={phoneShown} />
+          <ReadRow title={t(lang, "อีเมล", "Email")} value={props.email} />
+          <ReadRow title={t(lang, "ติดต่อผ่าน", "Contact via")} value={prefLabel(props.contactPreference, lang)} />
+          <ReadRow title={t(lang, "สัญชาติ", "Nationality")} value={props.nationalityDisplay} />
+          <ReadRow title={t(lang, "รู้จักจาก", "Found via")} value={props.sourceDisplay} />
+          <ReadRow title={t(lang, "ยินยอม PDPA เมื่อ", "PDPA consent at")} value={props.consentedDisplay} />
         </>
       )}
     </div>

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { STATUS_LABEL, STATUS_COLOR, MANUAL_STATUS_OPTIONS, REOPEN_TARGET, isClosed, type StatusValue } from "@/lib/status";
+import { STATUS_COLOR, MANUAL_STATUS_OPTIONS, REOPEN_TARGET, statusLabel, isClosed, type StatusValue } from "@/lib/status";
 import type { LostReasonCategory } from "@/lib/lost-reasons";
+import { t, type Lang } from "@/lib/i18n";
 
 type CloseInfo = {
   close_date: string | null;
@@ -20,6 +21,7 @@ export default function StatusUpdater({
   reasons,
   todayIso,
   closeInfo,
+  lang = "th",
 }: {
   id: string;
   currentStatus: string;
@@ -27,7 +29,9 @@ export default function StatusUpdater({
   reasons: LostReasonCategory[];
   todayIso: string;
   closeInfo?: CloseInfo | null;
+  lang?: Lang;
 }) {
+  const reasonLabel = (r: { label_th: string; label_en: string | null }) => (lang === "en" ? r.label_en || r.label_th : r.label_th);
   const router = useRouter();
   const [status] = useState(currentStatus);
   const [pendingStatus, setPendingStatus] = useState<string | null>(null); // simple statuses (contacted/pending_decision)
@@ -57,7 +61,7 @@ export default function StatusUpdater({
         router.refresh();
         return true;
       }
-      alert(data.error === "invalid or missing lost reason" ? "กรุณาเลือกเหตุผลให้ครบทั้ง 2 ระดับ" : "เกิดข้อผิดพลาด กรุณาลองใหม่");
+      alert(data.error === "invalid or missing lost reason" ? t(lang, "กรุณาเลือกเหตุผลให้ครบทั้ง 2 ระดับ", "Please pick both reason levels") : t(lang, "เกิดข้อผิดพลาด กรุณาลองใหม่", "Something went wrong. Please try again."));
       return false;
     } finally {
       setSaving(false);
@@ -101,7 +105,7 @@ export default function StatusUpdater({
         pendingStatus === s.value ? "ring-2 ring-offset-1 ring-gray-800" : ""
       }`}
     >
-      {s.label}
+      {statusLabel(s.value, lang)}
     </button>
   ));
 
@@ -110,31 +114,31 @@ export default function StatusUpdater({
       onClick={() => post({ id, status: REOPEN_TARGET })}
       disabled={saving}
       className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-800 text-white transition-opacity disabled:opacity-50"
-      title="ย้ายกลับเป็น รอตัดสินใจ (ล้างข้อมูลการปิด)"
+      title={t(lang, "ย้ายกลับเป็น รอตัดสินใจ (ล้างข้อมูลการปิด)", "Move back to Pending decision (clears close data)")}
     >
-      🔄 เปิดเคสใหม่
+      🔄 {t(lang, "เปิดเคสใหม่", "Re-open")}
     </button>
   );
 
   const confirmButtons = hasPendingChange && (
     <>
       <button onClick={() => setPendingStatus(null)} disabled={saving} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 transition-opacity disabled:opacity-50">
-        ยกเลิก
+        {t(lang, "ยกเลิก", "Cancel")}
       </button>
       <button onClick={saveSimple} disabled={saving} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-800 text-white transition-opacity disabled:opacity-50">
-        {saving ? "กำลังบันทึก…" : "บันทึก"}
+        {saving ? t(lang, "กำลังบันทึก…", "Saving…") : t(lang, "บันทึก", "Save")}
       </button>
     </>
   );
 
   const currentColor = STATUS_COLOR[status as StatusValue] ?? "";
-  const currentLabel = STATUS_LABEL[status as StatusValue] ?? status;
+  const currentLabel = statusLabel(status, lang);
 
   const body = (
     <>
       {inline ? (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-gray-400">สถานะ:</span>
+          <span className="text-xs text-gray-400">{t(lang, "สถานะ", "Status")}:</span>
           <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${currentColor}`}>{currentLabel}</span>
           {statusButtons}
           {reopenButton}
@@ -143,13 +147,13 @@ export default function StatusUpdater({
       ) : (
         <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
           <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-sm text-gray-500">สถานะ:</span>
+            <span className="text-sm text-gray-500">{t(lang, "สถานะ", "Status")}:</span>
             <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${currentColor}`}>{currentLabel}</span>
             <div className="flex gap-2 ml-auto flex-wrap">{statusButtons}{reopenButton}</div>
           </div>
           {hasPendingChange && (
             <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-gray-50">
-              <span className="text-xs text-gray-400 mr-auto">เปลี่ยนเป็น &quot;{STATUS_LABEL[pendingStatus as StatusValue] ?? pendingStatus}&quot; — ยังไม่บันทึก</span>
+              <span className="text-xs text-gray-400 mr-auto">{t(lang, "เปลี่ยนเป็น", "Change to")} &quot;{statusLabel(pendingStatus ?? "", lang)}&quot; — {t(lang, "ยังไม่บันทึก", "not saved yet")}</span>
               {confirmButtons}
             </div>
           )}
@@ -160,23 +164,23 @@ export default function StatusUpdater({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !saving && setCloseModal(null)}>
           <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-bold text-gray-800 mb-3">
-              {closeModal === "win" ? "ปิดดีล — Closed Won" : "ปิดดีล — Closed Lost"}
+              {closeModal === "win" ? t(lang, "ปิดดีล — Closed Won", "Close — Closed Won") : t(lang, "ปิดดีล — Closed Lost", "Close — Closed Lost")}
             </h3>
 
             {closeModal === "lost" && (
               <div className="space-y-2 mb-3">
                 <div>
-                  <label className="text-xs text-gray-400">เหตุผลหลัก *</label>
+                  <label className="text-xs text-gray-400">{t(lang, "เหตุผลหลัก", "Main reason")} *</label>
                   <select value={l1} onChange={(e) => { setL1(e.target.value); setL2(""); }} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
-                    <option value="">— เลือก —</option>
-                    {reasons.map((c) => <option key={c.key} value={c.key}>{c.label_th}</option>)}
+                    <option value="">{t(lang, "— เลือก —", "— Select —")}</option>
+                    {reasons.map((c) => <option key={c.key} value={c.key}>{reasonLabel(c)}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400">เหตุผลย่อย *</label>
+                  <label className="text-xs text-gray-400">{t(lang, "เหตุผลย่อย", "Sub-reason")} *</label>
                   <select value={l2} onChange={(e) => setL2(e.target.value)} disabled={!l1} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm disabled:bg-gray-50">
-                    <option value="">— เลือก —</option>
-                    {reasons.find((c) => c.key === l1)?.children.map((s) => <option key={s.key} value={s.key}>{s.label_th}</option>)}
+                    <option value="">{t(lang, "— เลือก —", "— Select —")}</option>
+                    {reasons.find((c) => c.key === l1)?.children.map((s) => <option key={s.key} value={s.key}>{reasonLabel(s)}</option>)}
                   </select>
                 </div>
               </div>
@@ -184,11 +188,11 @@ export default function StatusUpdater({
 
             {closeModal === "win" && (
               <div className="mb-3">
-                <label className="text-xs text-gray-400">ประเภทบริการ</label>
+                <label className="text-xs text-gray-400">{t(lang, "ประเภทบริการ", "Service type")}</label>
                 <div className="mt-1 flex gap-2">
-                  {(["full", "diy"] as const).map((t) => (
-                    <button key={t} onClick={() => setServiceType(t)} className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${serviceType === t ? "bg-green-600 text-white" : "bg-gray-100 text-gray-600"}`}>
-                      {t === "full" ? "Full service" : "DIY"}
+                  {(["full", "diy"] as const).map((st) => (
+                    <button key={st} onClick={() => setServiceType(st)} className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${serviceType === st ? "bg-green-600 text-white" : "bg-gray-100 text-gray-600"}`}>
+                      {st === "full" ? "Full service" : "DIY"}
                     </button>
                   ))}
                 </div>
@@ -196,23 +200,23 @@ export default function StatusUpdater({
             )}
 
             <div className="mb-3">
-              <label className="text-xs text-gray-400">วันที่ปิดดีล</label>
+              <label className="text-xs text-gray-400">{t(lang, "วันที่ปิดดีล", "Close date")}</label>
               <input type="date" value={closeDate} onChange={(e) => setCloseDate(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
             </div>
 
             <div className="mb-4">
-              <label className="text-xs text-gray-400">โน้ตเพิ่มเติม (ไม่บังคับ)</label>
+              <label className="text-xs text-gray-400">{t(lang, "โน้ตเพิ่มเติม (ไม่บังคับ)", "Notes (optional)")}</label>
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-gray-200 p-2 text-sm" />
             </div>
 
             <div className="flex items-center justify-end gap-2">
-              <button onClick={() => setCloseModal(null)} disabled={saving} className="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600">ยกเลิก</button>
+              <button onClick={() => setCloseModal(null)} disabled={saving} className="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600">{t(lang, "ยกเลิก", "Cancel")}</button>
               <button
                 onClick={saveClose}
                 disabled={saving || (closeModal === "lost" && (!l1 || !l2))}
                 className={`rounded-lg px-5 py-2 text-xs font-bold text-white disabled:opacity-40 ${closeModal === "win" ? "bg-green-600" : "bg-red-600"}`}
               >
-                {saving ? "กำลังบันทึก…" : "ยืนยันปิดดีล"}
+                {saving ? t(lang, "กำลังบันทึก…", "Saving…") : t(lang, "ยืนยันปิดดีล", "Confirm close")}
               </button>
             </div>
           </div>

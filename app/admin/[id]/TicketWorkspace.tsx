@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { t, type Lang } from "@/lib/i18n";
 
 /**
  * Three-column ticket workspace: a sticky full-width header over LEFT / CENTER / RIGHT
@@ -19,11 +20,13 @@ export default function TicketWorkspace({
   left,
   center,
   right,
+  lang = "th",
 }: {
   header: React.ReactNode;
   left: React.ReactNode;
   center: React.ReactNode;
   right: React.ReactNode;
+  lang?: Lang;
 }) {
   const [isLg, setIsLg] = useState(true);
   const [leftW, setLeftW] = useState(380);
@@ -67,7 +70,7 @@ export default function TicketWorkspace({
     <div
       onMouseDown={startDrag(side)}
       className="hidden lg:flex w-1.5 shrink-0 cursor-col-resize items-center justify-center bg-gray-200 hover:bg-blue-300 transition-colors"
-      title="ลากเพื่อปรับความกว้าง"
+      title={t(lang, "ลากเพื่อปรับความกว้าง", "Drag to resize")}
     >
       <div className="h-8 w-0.5 rounded bg-gray-400" />
     </div>

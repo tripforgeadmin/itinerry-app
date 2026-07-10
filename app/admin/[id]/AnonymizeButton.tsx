@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmModal from "./ConfirmModal";
+import { t, type Lang } from "@/lib/i18n";
 
-export default function AnonymizeButton({ accountId }: { accountId: string }) {
+export default function AnonymizeButton({ accountId, lang = "th" }: { accountId: string; lang?: Lang }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -32,7 +33,7 @@ export default function AnonymizeButton({ accountId }: { accountId: string }) {
       setModalOpen(false);
       router.refresh();
     } else {
-      alert("เกิดข้อผิดพลาด กรุณาลองใหม่");
+      alert(t(lang, "เกิดข้อผิดพลาด กรุณาลองใหม่", "Something went wrong. Please try again."));
     }
   }
 
@@ -40,7 +41,7 @@ export default function AnonymizeButton({ accountId }: { accountId: string }) {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setMenuOpen((v) => !v)}
-        aria-label="เมนูเพิ่มเติม"
+        aria-label={t(lang, "เมนูเพิ่มเติม", "More")}
         className="w-8 h-8 grid place-items-center rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 leading-none text-xl font-bold"
       >
         ⋮
@@ -54,17 +55,19 @@ export default function AnonymizeButton({ accountId }: { accountId: string }) {
             }}
             className="w-full text-left px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
           >
-            ลบข้อมูลส่วนตัว (PDPA)
+            {t(lang, "ลบข้อมูลส่วนตัว (PDPA)", "Delete personal data (PDPA)")}
           </button>
         </div>
       )}
       <ConfirmModal
         open={modalOpen}
-        title="ยืนยันการลบข้อมูลส่วนตัว"
-        message={
-          "ยืนยันการลบข้อมูลส่วนตัวของลูกค้ารายนี้?\n\nชื่อ, เบอร์, อีเมล และข้อมูล LINE จะถูกลบถาวร ไม่สามารถย้อนกลับได้"
-        }
-        confirmLabel="ยืนยัน"
+        title={t(lang, "ยืนยันการลบข้อมูลส่วนตัว", "Confirm personal-data deletion")}
+        message={t(
+          lang,
+          "ยืนยันการลบข้อมูลส่วนตัวของลูกค้ารายนี้?\n\nชื่อ, เบอร์, อีเมล และข้อมูล LINE จะถูกลบถาวร ไม่สามารถย้อนกลับได้",
+          "Delete this customer's personal data?\n\nName, phone, email and LINE data will be permanently removed. This cannot be undone."
+        )}
+        confirmLabel={t(lang, "ยืนยัน", "Confirm")}
         danger
         loading={loading}
         onConfirm={handleConfirm}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toJpeg } from "html-to-image";
 import type { HealthcheckData } from "@/lib/healthcheck-data";
 import HealthcheckCard from "@/app/admin/healthcheck/[id]/HealthcheckCard";
+import { t, dateLocale, type Lang } from "@/lib/i18n";
 
 const MAX_MESSAGE = 500;
 
@@ -28,6 +29,7 @@ export default function SendResultFlow({
   flagSrc,
   prefillTh,
   prefillEn,
+  uiLang = "th",
 }: {
   assessmentId: string;
   status: string;
@@ -41,6 +43,9 @@ export default function SendResultFlow({
   flagSrc: string | null;
   prefillTh: string;
   prefillEn: string;
+  // admin-chrome language — distinct from the card language (`lang` state below),
+  // which decides whether the Thai or English card is sent to the customer.
+  uiLang?: Lang;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -83,12 +88,12 @@ export default function SendResultFlow({
         setOpen(false);
         router.refresh();
       } else {
-        setError(body.error ?? "ส่งไม่สำเร็จ กรุณาลองใหม่");
+        setError(body.error ?? t(uiLang, "ส่งไม่สำเร็จ กรุณาลองใหม่", "Send failed. Please try again."));
         setConfirming(false);
       }
     } catch (err) {
       console.error(err);
-      setError("สร้างรูปไม่สำเร็จ กรุณาลองใหม่");
+      setError(t(uiLang, "สร้างรูปไม่สำเร็จ กรุณาลองใหม่", "Could not generate the image. Please try again."));
       setConfirming(false);
     } finally {
       setSending(false);
@@ -97,29 +102,29 @@ export default function SendResultFlow({
 
   return (
     <div className="bg-white rounded-2xl shadow-sm p-4 mb-4 flex items-center gap-3">
-      <span className="text-sm text-gray-500 flex-1">ส่งผลการประเมิน (รูป + ข้อความ) ให้ลูกค้าทาง LINE</span>
+      <span className="text-sm text-gray-500 flex-1">{t(uiLang, "ส่งผลการประเมิน (รูป + ข้อความ) ให้ลูกค้าทาง LINE", "Send the assessment (image + message) to the customer via LINE")}</span>
       {resultSentAt ? (
         <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-500">
-          ส่งแล้ว ·{" "}
-          {new Date(resultSentAt).toLocaleDateString("th-TH", {
+          {t(uiLang, "ส่งแล้ว", "Sent")} ·{" "}
+          {new Date(resultSentAt).toLocaleDateString(dateLocale(uiLang), {
             timeZone: "Asia/Bangkok",
             day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
           })}
         </span>
       ) : !ready ? (
-        <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-600" title="กรอกจุดแข็ง/จุดที่ช่วยเสริมอย่างน้อยอย่างละ 1 ข้อก่อน">
-          กรอกจุดแข็ง/จุดเสริมก่อนจึงจะส่งได้
+        <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-600" title={t(uiLang, "กรอกจุดแข็ง/จุดที่ช่วยเสริมอย่างน้อยอย่างละ 1 ข้อก่อน", "Fill in at least one strength and one improvement first")}>
+          {t(uiLang, "กรอกจุดแข็ง/จุดเสริมก่อนจึงจะส่งได้", "Fill strengths/improvements before sending")}
         </span>
       ) : !canSend ? (
         <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-600" title={blockReason ?? ""}>
-          {blockReason ?? "ส่งไม่ได้"}
+          {blockReason ?? t(uiLang, "ส่งไม่ได้", "Can't send")}
         </span>
       ) : (
         <button
           onClick={() => { setOpen(true); setConfirming(false); setError(null); }}
           className="px-3 py-1.5 rounded-lg text-xs font-bold bg-green-600 text-white hover:bg-green-700"
         >
-          ส่งผลประเมินให้ลูกค้า
+          {t(uiLang, "ส่งผลประเมินให้ลูกค้า", "Send result to customer")}
         </button>
       )}
 
@@ -134,7 +139,7 @@ export default function SendResultFlow({
 
           <div className="flex max-h-[92vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-3">
-              <span className="text-sm font-bold text-gray-800">ส่งผลประเมินให้ลูกค้า</span>
+              <span className="text-sm font-bold text-gray-800">{t(uiLang, "ส่งผลประเมินให้ลูกค้า", "Send result to customer")}</span>
               <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700">{data.ticketId}</span>
               <div className="ml-auto flex items-center gap-1 rounded-lg bg-gray-100 p-0.5">
                 {(["th", "en"] as const).map((l) => (
@@ -153,7 +158,7 @@ export default function SendResultFlow({
 
             {/* only the card preview scrolls */}
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              <p className="mb-2 text-xs text-gray-400">รูปที่ลูกค้าจะได้รับ ({lang === "th" ? "ภาษาไทย" : "English"})</p>
+              <p className="mb-2 text-xs text-gray-400">{t(uiLang, "รูปที่ลูกค้าจะได้รับ", "Image the customer receives")} ({lang === "th" ? t(uiLang, "ภาษาไทย", "Thai") : "English"})</p>
               <div className="overflow-hidden rounded-xl border border-gray-200" style={{ zoom: 0.52 }}>
                 <HealthcheckCard data={data} flagSrc={flagSrc} />
               </div>
@@ -161,7 +166,7 @@ export default function SendResultFlow({
 
             {/* sticky message section — always visible while the card scrolls above it */}
             <div className="border-t border-gray-100 px-5 py-3">
-              <p className="mb-1 text-xs text-gray-400">ข้อความที่ส่งตามหลังรูป</p>
+              <p className="mb-1 text-xs text-gray-400">{t(uiLang, "ข้อความที่ส่งตามหลังรูป", "Message sent after the image")}</p>
               <textarea
                 value={message}
                 onChange={(e) => { setMessage(e.target.value.slice(0, MAX_MESSAGE)); setMessageEdited(true); }}
@@ -178,28 +183,28 @@ export default function SendResultFlow({
               {!confirming ? (
                 <>
                   <button onClick={() => setOpen(false)} className="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600">
-                    ยกเลิก
+                    {t(uiLang, "ยกเลิก", "Cancel")}
                   </button>
                   <button
                     onClick={() => setConfirming(true)}
                     disabled={!message.trim()}
                     className="ml-auto rounded-lg bg-green-600 px-5 py-2 text-xs font-bold text-white disabled:opacity-40"
                   >
-                    ส่ง
+                    {t(uiLang, "ส่ง", "Send")}
                   </button>
                 </>
               ) : (
                 <>
-                  <span className="text-xs font-bold text-gray-700">ยืนยันส่งรูป + ข้อความถึงลูกค้าทาง LINE?</span>
+                  <span className="text-xs font-bold text-gray-700">{t(uiLang, "ยืนยันส่งรูป + ข้อความถึงลูกค้าทาง LINE?", "Confirm sending the image + message to the customer via LINE?")}</span>
                   <button onClick={() => setConfirming(false)} disabled={sending} className="ml-auto rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-600">
-                    ยกเลิก
+                    {t(uiLang, "ยกเลิก", "Cancel")}
                   </button>
                   <button
                     onClick={handleConfirmedSend}
                     disabled={sending}
                     className="rounded-lg bg-green-600 px-5 py-2 text-xs font-bold text-white disabled:opacity-60"
                   >
-                    {sending ? "กำลังส่ง…" : "ยืนยันส่ง"}
+                    {sending ? t(uiLang, "กำลังส่ง…", "Sending…") : t(uiLang, "ยืนยันส่ง", "Confirm send")}
                   </button>
                 </>
               )}

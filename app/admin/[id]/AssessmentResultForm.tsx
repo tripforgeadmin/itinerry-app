@@ -2,14 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  STATE_WORD,
-  HISTORY_WORD,
-  BAND_WORD,
-  TIES_FUNDING_SELECT_OPTIONS,
-  RISK_SELECT_OPTIONS,
-  BAND_SELECT_OPTIONS,
-} from "@/lib/assessment-vocab";
+import { stateWord, historyWord, bandWord, tiesFundingOptions, riskOptions, bandOptions } from "@/lib/assessment-vocab";
+import { t, type Lang } from "@/lib/i18n";
 
 // Layout guarantees for the customer healthcheck PDF — the itemized lines map 1:1
 // onto its "จุดแข็งของคุณ" / "ที่เราจะช่วยเสริม" columns, so these caps keep that
@@ -23,12 +17,14 @@ function ItemListCard({
   items,
   onChange,
   accent,
+  lang,
 }: {
   title: string;
   hint: string;
   items: string[];
   onChange: (next: string[]) => void;
   accent: "green" | "amber";
+  lang: Lang;
 }) {
   const chip = accent === "green" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700";
   return (
@@ -47,7 +43,7 @@ function ItemListCard({
               value={item}
               maxLength={MAX_ITEM_LEN}
               onChange={(e) => onChange(items.map((x, j) => (j === i ? e.target.value : x)))}
-              placeholder="พิมพ์เป็นประโยคสั้น 1 ข้อ…"
+              placeholder={t(lang, "พิมพ์เป็นประโยคสั้น 1 ข้อ…", "One short sentence…")}
               className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-200"
             />
             <span className={`text-[10px] w-9 text-right shrink-0 ${item.length >= MAX_ITEM_LEN ? "text-red-500 font-bold" : "text-gray-300"}`}>
@@ -57,7 +53,7 @@ function ItemListCard({
               type="button"
               onClick={() => onChange(items.filter((_, j) => j !== i))}
               className="text-gray-300 hover:text-red-500 text-sm px-1"
-              aria-label="ลบข้อนี้"
+              aria-label={t(lang, "ลบข้อนี้", "Remove this item")}
             >
               ✕
             </button>
@@ -70,7 +66,7 @@ function ItemListCard({
           onClick={() => onChange([...items, ""])}
           className="mt-3 rounded-lg border border-dashed border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-500 hover:border-blue-400 hover:text-blue-600"
         >
-          ＋ เพิ่มข้อ
+          {t(lang, "＋ เพิ่มข้อ", "＋ Add item")}
         </button>
       )}
     </div>
@@ -84,6 +80,7 @@ function PillarSelect({
   options,
   autoValue,
   autoWord,
+  lang,
 }: {
   label: string;
   value: string;
@@ -91,6 +88,7 @@ function PillarSelect({
   options: readonly { value: string; label: string }[];
   autoValue: string | null;
   autoWord: string | null;
+  lang: Lang;
 }) {
   const isOverridden = autoValue != null && value !== "" && value !== autoValue;
   return (
@@ -101,13 +99,13 @@ function PillarSelect({
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-200"
       >
-        <option value="" disabled>— เลือก —</option>
+        <option value="" disabled>{t(lang, "— เลือก —", "— Select —")}</option>
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
       {isOverridden && autoWord && (
-        <p className="mt-1 text-[10px] text-gray-400">แก้ไขจากระบบ (auto: {autoWord})</p>
+        <p className="mt-1 text-[10px] text-gray-400">{t(lang, "แก้ไขจากระบบ", "Overridden")} (auto: {autoWord})</p>
       )}
     </div>
   );
@@ -128,6 +126,7 @@ export default function AssessmentResultForm({
   initialOverrideFunding,
   initialOverrideRisk,
   initialOverrideBand,
+  lang = "th",
 }: {
   assessmentId: string;
   status: string;
@@ -143,6 +142,7 @@ export default function AssessmentResultForm({
   initialOverrideFunding: "g" | "y" | "r" | null;
   initialOverrideRisk: "g" | "y" | "r" | null;
   initialOverrideBand: "High" | "Med" | "Low" | null;
+  lang?: Lang;
 }) {
   const router = useRouter();
   const [pass, setPass] = useState<boolean | null>(initialPass);
@@ -184,7 +184,7 @@ export default function AssessmentResultForm({
     if (res.ok) {
       router.refresh();
     } else {
-      alert("เกิดข้อผิดพลาด กรุณาลองใหม่");
+      alert(t(lang, "เกิดข้อผิดพลาด กรุณาลองใหม่", "Something went wrong. Please try again."));
     }
     setSaving(false);
   }
@@ -192,64 +192,70 @@ export default function AssessmentResultForm({
   return (
     <>
       <ItemListCard
-        title="จุดแข็งของคุณ (ลง PDF ลูกค้า)"
-        hint="ใส่ทีละข้อ — แสดงเป็นรายการติ๊กถูกในรายงานสุขภาพวีซ่าของลูกค้า"
+        title={t(lang, "จุดแข็งของคุณ (ลง PDF ลูกค้า)", "Your strengths (on customer PDF)")}
+        hint={t(lang, "ใส่ทีละข้อ — แสดงเป็นรายการติ๊กถูกในรายงานสุขภาพวีซ่าของลูกค้า", "One per line — shown as a checklist in the customer's visa health report")}
         items={strengths}
         onChange={setStrengths}
         accent="green"
+        lang={lang}
       />
       <ItemListCard
-        title="ที่เราจะช่วยเสริม (ลง PDF ลูกค้า)"
-        hint="ใส่ทีละข้อ — แสดงเป็นรายการเครื่องหมายบวกในรายงานสุขภาพวีซ่าของลูกค้า"
+        title={t(lang, "ที่เราจะช่วยเสริม (ลง PDF ลูกค้า)", "Where we'll help (on customer PDF)")}
+        hint={t(lang, "ใส่ทีละข้อ — แสดงเป็นรายการเครื่องหมายบวกในรายงานสุขภาพวีซ่าของลูกค้า", "One per line — shown as a plus list in the customer's visa health report")}
         items={improvements}
         onChange={setImprovements}
         accent="amber"
+        lang={lang}
       />
       <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-          ระดับความแข็งแรง (ภายใน — เอเจนต์ปรับได้)
+          {t(lang, "ระดับความแข็งแรง (ภายใน — เอเจนต์ปรับได้)", "Strength levels (internal — agent adjustable)")}
         </h2>
         <p className="text-xs text-gray-400 mb-3">
-          ค่าเริ่มต้นมาจากระบบประเมินอัตโนมัติ ปรับได้ก่อนส่งผลให้ลูกค้า — ไม่แสดงในรายงานลูกค้า
+          {t(lang, "ค่าเริ่มต้นมาจากระบบประเมินอัตโนมัติ ปรับได้ก่อนส่งผลให้ลูกค้า — ไม่แสดงในรายงานลูกค้า", "Defaults come from the auto-assessment; adjust before sending — not shown in the customer report")}
         </p>
         <div className="grid grid-cols-2 gap-3">
           <PillarSelect
-            label="ผูกพันไทย"
+            label={t(lang, "ผูกพันไทย", "Ties to Thailand")}
             value={ties}
             onChange={setTies}
-            options={TIES_FUNDING_SELECT_OPTIONS}
+            options={tiesFundingOptions(lang)}
             autoValue={autoTies}
-            autoWord={autoTies ? STATE_WORD[autoTies] : null}
+            autoWord={autoTies ? stateWord(autoTies, lang) : null}
+            lang={lang}
           />
           <PillarSelect
-            label="การเงิน"
+            label={t(lang, "การเงิน", "Finances")}
             value={funding}
             onChange={setFunding}
-            options={TIES_FUNDING_SELECT_OPTIONS}
+            options={tiesFundingOptions(lang)}
             autoValue={autoFunding}
-            autoWord={autoFunding ? STATE_WORD[autoFunding] : null}
+            autoWord={autoFunding ? stateWord(autoFunding, lang) : null}
+            lang={lang}
           />
           <PillarSelect
-            label="ประวัติเดินทาง"
+            label={t(lang, "ประวัติเดินทาง", "Travel history")}
             value={risk}
             onChange={setRisk}
-            options={RISK_SELECT_OPTIONS}
+            options={riskOptions(lang)}
             autoValue={autoRisk}
-            autoWord={autoRisk ? HISTORY_WORD[autoRisk] : null}
+            autoWord={autoRisk ? historyWord(autoRisk, lang) : null}
+            lang={lang}
           />
           <PillarSelect
-            label="โอกาสผ่าน"
+            label={t(lang, "โอกาสผ่าน", "Approval odds")}
             value={band}
             onChange={setBand}
-            options={BAND_SELECT_OPTIONS}
+            options={bandOptions(lang)}
             autoValue={autoBand !== "OVERRIDE" ? autoBand : null}
-            autoWord={autoBand && autoBand !== "OVERRIDE" ? BAND_WORD[autoBand] : null}
+            autoWord={autoBand && autoBand !== "OVERRIDE" ? bandWord(autoBand, lang) : null}
+            lang={lang}
           />
         </div>
       </div>
       <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
-        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">ผลการประเมิน (เอเจนต์)</h2>
-        <p className="text-xs text-gray-400 mb-3">ข้อความในช่องนี้แสดงในรายงานลูกค้าใต้หัวข้อ “ความเห็นเพิ่มเติม”</p>
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{t(lang, "ผลการประเมิน (เอเจนต์)", "Assessment result (agent)")}</h2>
+        <p className="text-xs text-gray-400 mb-3">{t(lang, "ข้อความในช่องนี้แสดงในรายงานลูกค้าใต้หัวข้อ “ความเห็นเพิ่มเติม”", "This text appears in the customer report under “Additional notes”")}</p>
         <div className="flex gap-2 mb-3">
           <button
             onClick={() => setPass(true)}
@@ -257,7 +263,7 @@ export default function AssessmentResultForm({
               pass === true ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500 opacity-60"
             }`}
           >
-            ผ่านเกณฑ์
+            {t(lang, "ผ่านเกณฑ์", "Pass")}
           </button>
           <button
             onClick={() => setPass(false)}
@@ -265,13 +271,13 @@ export default function AssessmentResultForm({
               pass === false ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-500 opacity-60"
             }`}
           >
-            ไม่ผ่านเกณฑ์
+            {t(lang, "ไม่ผ่านเกณฑ์", "Fail")}
           </button>
         </div>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="รายละเอียด/เหตุผลของการประเมิน…"
+          placeholder={t(lang, "รายละเอียด/เหตุผลของการประเมิน…", "Details / reasoning for the assessment…")}
           rows={4}
           className="w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-800 mb-3 focus:outline-none focus:ring-2 focus:ring-blue-200"
         />
@@ -280,7 +286,7 @@ export default function AssessmentResultForm({
           disabled={!canSave || saving}
           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-100 text-purple-700 transition-opacity disabled:opacity-40"
         >
-          {saving ? "กำลังบันทึก…" : status === "pending_review" ? "บันทึกและทำเครื่องหมายว่าประเมินแล้ว" : "แก้ไขการประเมิน"}
+          {saving ? t(lang, "กำลังบันทึก…", "Saving…") : status === "pending_review" ? t(lang, "บันทึกและทำเครื่องหมายว่าประเมินแล้ว", "Save and mark evaluated") : t(lang, "แก้ไขการประเมิน", "Edit assessment")}
         </button>
       </div>
     </>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { t, type Lang } from "@/lib/i18n";
 
-export default function CopyLineIdButton({ userId }: { userId: string | null }) {
+export default function CopyLineIdButton({ userId, lang = "th" }: { userId: string | null; lang?: Lang }) {
   const [copied, setCopied] = useState(false);
 
   if (!userId) return null;
@@ -19,7 +20,7 @@ export default function CopyLineIdButton({ userId }: { userId: string | null }) 
       onClick={handleCopy}
       className="px-2 py-0.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 transition-opacity hover:bg-gray-200"
     >
-      {copied ? "คัดลอกแล้ว ✓" : "คัดลอก User ID"}
+      {copied ? t(lang, "คัดลอกแล้ว ✓", "Copied ✓") : t(lang, "คัดลอก User ID", "Copy User ID")}
     </button>
   );
 }
