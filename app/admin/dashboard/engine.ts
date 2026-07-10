@@ -5,6 +5,7 @@
 // wires it up and returns a cleanup fn.
 
 import { flagEmoji, sortedCountries } from "@/lib/countries";
+import { t, type Lang } from "@/lib/i18n";
 import type { DashboardData } from "@/lib/dashboard-data";
 
 type Row = [string, number, string?];
@@ -33,9 +34,18 @@ const SKL: Record<string, string> = { pending_review: "รอตรวจ", eval
 const SKC: Record<string, string> = { pending_review: "#8FBFDE", evaluated: "#2B86B5", contacted: "#44A8DB", pending_decision: "#FFD166", lost: "#9DB4C4", win: "#1A7A4A", human_error: "#5E7A91", out_of_scope: "#B7C4CE" };
 const SK_COLS = [["pending_review"], ["evaluated"], ["contacted"], ["pending_decision", "lost"], ["win", "human_error", "out_of_scope"]];
 
-// Full ISO→[flag, Thai name] map so any real destination resolves (mockup hardcoded ~17).
-const CTRY: Record<string, [string, string]> = {};
-for (const c of sortedCountries("th")) CTRY[c.code.toLowerCase()] = [flagEmoji(c.code), c.th];
+// English label overrides for the TH/EN toggle.
+const SRC_EN: Record<string, string> = { facebook: "Facebook", instagram: "Instagram", tiktok: "TikTok", google: "Google", referral: "Referral", other: "Other" };
+const STL_EN: Record<string, string> = { contacted: "Contacted", lost: "Lost", out_of_scope: "Out of scope", human_error: "Data error", pending_decision: "Pending decision", pending_review: "Pending", win: "Won", evaluated: "Evaluated" };
+const OCC_EN: Record<string, string> = { employee: "Employee", freelance: "Freelance", homemaker: "Homemaker", business_owner: "Business owner", government: "Government", retired: "Retired", student_occ: "Student" };
+const INT_EN: Record<string, string> = { explore: "Exploring", execute: "Intent to go", ready: "Ready to apply" };
+const VT_EN: Record<string, string> = { tourist: "Tourist", visitor: "Visitor", business: "Business", student: "Student", other: "Other" };
+const TIE_EN: Record<string, string> = { dependents: "Dependents", job: "Has a job", property: "Property/home", spouse_children: "Spouse/children", investments: "Investments", none: "None" };
+const SKL_EN: Record<string, string> = { pending_review: "Pending", evaluated: "Evaluated", contacted: "Contacted", pending_decision: "Pending decision", lost: "Lost", win: "Won", human_error: "Data error", out_of_scope: "Out of scope" };
+
+// Full ISO→[flag, Thai, English] map so any real destination resolves (mockup hardcoded ~17).
+const CTRY: Record<string, [string, string, string]> = {};
+for (const c of sortedCountries("th")) CTRY[c.code.toLowerCase()] = [flagEmoji(c.code), c.th, c.en];
 
 // ---- pure helpers (verbatim from the mockup) ----
 const esc = (s: unknown) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -137,11 +147,12 @@ function lineChart(data: [string, number][]): string {
   return '<svg viewBox="0 0 ' + w + " " + h + '" width="100%" class="lc">' + grid + '<path d="' + area + '" fill="' + C.sky + '" opacity="0.10"/>' + bars + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="' + C.skyd + '" stroke-width="2.5"/>' + dots + xl + "</svg>";
 }
 function skHeight(cols: string[][]): number { const mx = Math.max(...cols.map((c) => c.length), 1); return Math.max(320, 120 + mx * 70); }
-function sankey(trans: { f: string | null; t: string }[]): string {
+function sankey(trans: { f: string | null; t: string }[], skl: Record<string, string>, lang: Lang): string {
   const em = new Map<string, number>();
   trans.forEach((x) => { const k = x.f + ">" + x.t; em.set(k, (em.get(k) || 0) + 1); });
   const edges = [...em.entries()].map(([k, n]) => { const p = k.split(">"); return { f: p[0], t: p[1], n, sy: 0, ty: 0 }; });
-  if (!edges.length) return empty("ไม่มีการเปลี่ยนสถานะในช่วงนี้");
+  if (!edges.length) return empty(t(lang, "ไม่มีการเปลี่ยนสถานะในช่วงนี้", "No status changes in this range"));
+  const CASES = t(lang, "เคส", "cases"), OF_LEADS = t(lang, "% ของ leads", "% of leads");
   const present = new Set<string>(); edges.forEach((e) => { present.add(e.f); present.add(e.t); });
   const nodes: Record<string, { in: number; out: number }> = {}; present.forEach((s) => (nodes[s] = { in: 0, out: 0 }));
   edges.forEach((e) => { nodes[e.f].out += e.n; nodes[e.t].in += e.n; });
@@ -165,15 +176,15 @@ function sankey(trans: { f: string | null; t: string }[]): string {
   const ribs = edges.map((e) => {
     const x0 = meta[e.f].x + nodeW, x1 = meta[e.t].x, xm = (x0 + x1) / 2, h = e.n * scale, sy = e.sy, ty = e.ty, col = SKC[e.f] || C.sky;
     const d = "M " + x0.toFixed(1) + "," + sy.toFixed(1) + " C " + xm.toFixed(1) + "," + sy.toFixed(1) + " " + xm.toFixed(1) + "," + ty.toFixed(1) + " " + x1.toFixed(1) + "," + ty.toFixed(1) + " L " + x1.toFixed(1) + "," + (ty + h).toFixed(1) + " C " + xm.toFixed(1) + "," + (ty + h).toFixed(1) + " " + xm.toFixed(1) + "," + (sy + h).toFixed(1) + " " + x0.toFixed(1) + "," + (sy + h).toFixed(1) + " Z";
-    return '<path d="' + d + '" fill="' + col + '" fill-opacity="0.34"><title>' + SKL[e.f] + " → " + SKL[e.t] + ": " + e.n + " เคส (" + pctOf(e.n, totalOut) + "% ของ leads)</title></path>";
+    return '<path d="' + d + '" fill="' + col + '" fill-opacity="0.34"><title>' + skl[e.f] + " → " + skl[e.t] + ": " + e.n + " " + CASES + " (" + pctOf(e.n, totalOut) + OF_LEADS + ")</title></path>";
   }).join("");
   const nds = Object.keys(meta).map((s) => {
     const m = meta[s], col = SKC[s] || C.sky, val = Math.max(nodes[s].in, nodes[s].out), cy = m.y + m.h / 2;
-    const rect = '<rect x="' + m.x.toFixed(1) + '" y="' + m.y.toFixed(1) + '" width="' + nodeW + '" height="' + Math.max(m.h, 2).toFixed(1) + '" rx="3" fill="' + col + '"><title>' + SKL[s] + ": " + val + " เคส</title></rect>";
+    const rect = '<rect x="' + m.x.toFixed(1) + '" y="' + m.y.toFixed(1) + '" width="' + nodeW + '" height="' + Math.max(m.h, 2).toFixed(1) + '" rx="3" fill="' + col + '"><title>' + skl[s] + ": " + val + " " + CASES + "</title></rect>";
     let lab: string;
-    if (m.col === 0) { const lx = m.x - 8; lab = '<text x="' + lx + '" y="' + (cy - 1).toFixed(1) + '" text-anchor="end" class="sk-lab">' + SKL[s] + '</text><text x="' + lx + '" y="' + (cy + 11).toFixed(1) + '" text-anchor="end" class="sk-val">' + val + ' <tspan class="sk-pct">' + pctOf(val, totalOut) + "%</tspan></text>"; }
-    else if (m.col === numCols - 1) { const lx = m.x + nodeW + 8; lab = '<text x="' + lx + '" y="' + (cy - 1).toFixed(1) + '" text-anchor="start" class="sk-lab">' + SKL[s] + '</text><text x="' + lx + '" y="' + (cy + 11).toFixed(1) + '" text-anchor="start" class="sk-val">' + val + ' <tspan class="sk-pct">' + pctOf(val, totalOut) + "%</tspan></text>"; }
-    else { const lx = m.x + nodeW / 2; lab = '<text x="' + lx.toFixed(1) + '" y="' + (m.y - 6).toFixed(1) + '" text-anchor="middle" class="sk-lab">' + SKL[s] + ' <tspan class="sk-val">' + val + " (" + pctOf(val, totalOut) + "%)</tspan></text>"; }
+    if (m.col === 0) { const lx = m.x - 8; lab = '<text x="' + lx + '" y="' + (cy - 1).toFixed(1) + '" text-anchor="end" class="sk-lab">' + skl[s] + '</text><text x="' + lx + '" y="' + (cy + 11).toFixed(1) + '" text-anchor="end" class="sk-val">' + val + ' <tspan class="sk-pct">' + pctOf(val, totalOut) + "%</tspan></text>"; }
+    else if (m.col === numCols - 1) { const lx = m.x + nodeW + 8; lab = '<text x="' + lx + '" y="' + (cy - 1).toFixed(1) + '" text-anchor="start" class="sk-lab">' + skl[s] + '</text><text x="' + lx + '" y="' + (cy + 11).toFixed(1) + '" text-anchor="start" class="sk-val">' + val + ' <tspan class="sk-pct">' + pctOf(val, totalOut) + "%</tspan></text>"; }
+    else { const lx = m.x + nodeW / 2; lab = '<text x="' + lx.toFixed(1) + '" y="' + (m.y - 6).toFixed(1) + '" text-anchor="middle" class="sk-lab">' + skl[s] + ' <tspan class="sk-val">' + val + " (" + pctOf(val, totalOut) + "%)</tspan></text>"; }
     return rect + lab;
   }).join("");
   return '<svg viewBox="0 0 ' + W + " " + H + '" width="100%" class="sk" style="min-height:' + H + 'px">' + ribs + nds + "</svg>";
@@ -181,9 +192,9 @@ function sankey(trans: { f: string | null; t: string }[]): string {
 
 // ---- mount: wire the engine to the DOM + live data; returns cleanup ----
 const DAY = 86400000;
-const PRESETS: Record<string, [number, string]> = { all: [0, "ทั้งหมด"], "60": [60 * DAY, "60 วัน"], "30": [30 * DAY, "30 วัน"], "15": [15 * DAY, "15 วัน"], "7": [7 * DAY, "7 วัน"], "3": [3 * DAY, "3 วัน"], "24h": [DAY, "24 ชั่วโมง"] };
+const PRESETS: Record<string, [number, string, string]> = { all: [0, "ทั้งหมด", "All"], "60": [60 * DAY, "60 วัน", "60 days"], "30": [30 * DAY, "30 วัน", "30 days"], "15": [15 * DAY, "15 วัน", "15 days"], "7": [7 * DAY, "7 วัน", "7 days"], "3": [3 * DAY, "3 วัน", "3 days"], "24h": [DAY, "24 ชั่วโมง", "24 hours"] };
 
-export function mountDashboard(data: DashboardData): () => void {
+export function mountDashboard(data: DashboardData, lang: Lang = "th"): () => void {
   const NOW = data.now;
   const LOST = data.lostLabels;
   const ACC = data.acc.map((a) => ({ ...a, t: Date.parse(a.c) }));
@@ -191,11 +202,16 @@ export function mountDashboard(data: DashboardData): () => void {
   const TRANS = data.trans.map((x) => ({ ...x, tm: Date.parse(x.ac) }));
   const USERS_ALL = ACC.length, ASS_ALL = ASS.length;
 
+  // Active-language label maps.
+  const merge = (th: Record<string, string>, en: Record<string, string>) => (lang === "en" ? { ...th, ...en } : th);
+  const SRCa = merge(SRC, SRC_EN), STLa = merge(STL, STL_EN), OCCa = merge(OCC, OCC_EN), INTa = merge(INT, INT_EN), VTa = merge(VT, VT_EN), TIEa = merge(TIE, TIE_EN), SKLa = merge(SKL, SKL_EN);
+  const ctryName = (k: string) => (CTRY[k] ? CTRY[k][0] + " " + (lang === "en" ? CTRY[k][2] : CTRY[k][1]) : k);
+
   function apply(from: number, to: number, label: string) {
     const acc = ACC.filter((a) => a.t >= from && a.t <= to);
     const ass = ASS.filter((a) => a.t >= from && a.t <= to);
     const ro = document.getElementById("readout");
-    if (ro) ro.innerHTML = "แสดง <b>" + acc.length + "</b> ผู้ใช้ · <b>" + ass.length + "</b> เคส · ช่วง <b>" + esc(label) + "</b>";
+    if (ro) ro.innerHTML = t(lang, "แสดง", "Showing") + " <b>" + acc.length + "</b> " + t(lang, "ผู้ใช้", "users") + " · <b>" + ass.length + "</b> " + t(lang, "เคส", "cases") + " · " + t(lang, "ช่วง", "range") + " <b>" + esc(label) + "</b>";
 
     const friends = acc.filter((a) => a.f).length;
     const scores = ass.filter((a) => a.score != null).map((a) => a.score as number);
@@ -205,82 +221,83 @@ export function mountDashboard(data: DashboardData): () => void {
     const won = ass.filter((a) => a.st === "win").length;
     const contacted = ass.filter((a) => ["contacted", "pending_decision", "win", "lost"].includes(a.st)).length;
     const tcs = ass.filter((a) => a.tc != null).map((a) => a.tc as number); const avgtc = tcs.length ? tcs.reduce((s, x) => s + x, 0) / tcs.length : null;
-    setKpi("k-users", acc.length, "= " + pctOf(acc.length, USERS_ALL) + "% ของทั้งหมด " + USERS_ALL);
-    setKpi("k-friends", friends, pctOf(friends, acc.length) + "% ของผู้ใช้ช่วงนี้");
-    setKpi("k-assess", ass.length, "= " + pctOf(ass.length, ASS_ALL) + "% ของทั้งหมด " + ASS_ALL);
-    setKpi("k-score", avg != null ? avg.toFixed(1) : "–", avg != null ? "มัธยฐาน " + med + " · " + scores.length + " เคส" : "ไม่มีคะแนน");
-    setKpi("k-pass", passDec.length ? pctOf(passT, passDec.length) + "%" : "–", passDec.length ? passT + " ผ่าน / " + (passDec.length - passT) + " ไม่ผ่าน" : "ยังไม่ตัดสิน");
-    setKpi("k-won", won, "อัตราปิด " + pctOf(won, contacted) + "% · ติดต่อ " + contacted + (avgtc != null ? " · " + avgtc.toFixed(1) + " ชม." : ""));
+    const ofTotal = t(lang, "ของทั้งหมด", "of total"), cases = t(lang, "เคส", "cases");
+    setKpi("k-users", acc.length, "= " + pctOf(acc.length, USERS_ALL) + "% " + ofTotal + " " + USERS_ALL);
+    setKpi("k-friends", friends, pctOf(friends, acc.length) + "% " + t(lang, "ของผู้ใช้ช่วงนี้", "of users in range"));
+    setKpi("k-assess", ass.length, "= " + pctOf(ass.length, ASS_ALL) + "% " + ofTotal + " " + ASS_ALL);
+    setKpi("k-score", avg != null ? avg.toFixed(1) : "–", avg != null ? t(lang, "มัธยฐาน", "median") + " " + med + " · " + scores.length + " " + cases : t(lang, "ไม่มีคะแนน", "no scores"));
+    setKpi("k-pass", passDec.length ? pctOf(passT, passDec.length) + "%" : "–", passDec.length ? passT + " " + t(lang, "ผ่าน", "pass") + " / " + (passDec.length - passT) + " " + t(lang, "ไม่ผ่าน", "fail") : t(lang, "ยังไม่ตัดสิน", "undecided"));
+    setKpi("k-won", won, t(lang, "อัตราปิด", "close rate") + " " + pctOf(won, contacted) + "% · " + t(lang, "ติดต่อ", "contacted") + " " + contacted + (avgtc != null ? " · " + avgtc.toFixed(1) + " " + t(lang, "ชม.", "h") : ""));
 
     const evald = passDec.length, rsent = ass.filter((a) => a.rs).length;
-    fill("c-funnel", ass.length ? funnel([["ส่งแบบประเมิน", ass.length, "leads เข้าระบบ"], ["ประเมินผลแล้ว", evald, "ทีมให้คะแนน"], ["ส่งผลกลับลูกค้า", rsent, "ส่งผ่าน LINE"], ["เข้าเจรจา/ติดต่อ", contacted, "เข้า pipeline ขาย"], ["ปิดดีลสำเร็จ", won, "เป็นลูกค้า"]]) : empty());
-    const iF = document.getElementById("i-funnel"); if (iF) iF.innerHTML = ass.length ? "จากแบบประเมิน <b>" + ass.length + "</b> ปิดได้ <b>" + won + "</b> (อัตราปิด " + pctOf(won, ass.length) + "%) · ประเมินแล้ว " + pctOf(evald, ass.length) + "%" : "—";
+    fill("c-funnel", ass.length ? funnel([[t(lang, "ส่งแบบประเมิน", "Submitted"), ass.length, t(lang, "leads เข้าระบบ", "leads in")], [t(lang, "ประเมินผลแล้ว", "Evaluated"), evald, t(lang, "ทีมให้คะแนน", "team scored")], [t(lang, "ส่งผลกลับลูกค้า", "Result sent"), rsent, t(lang, "ส่งผ่าน LINE", "via LINE")], [t(lang, "เข้าเจรจา/ติดต่อ", "Contacted"), contacted, t(lang, "เข้า pipeline ขาย", "in sales pipeline")], [t(lang, "ปิดดีลสำเร็จ", "Deal won"), won, t(lang, "เป็นลูกค้า", "became a customer")]]) : empty());
+    const iF = document.getElementById("i-funnel"); if (iF) iF.innerHTML = ass.length ? t(lang, "จากแบบประเมิน", "Of") + " <b>" + ass.length + "</b> " + t(lang, "ปิดได้", "closed") + " <b>" + won + "</b> (" + t(lang, "อัตราปิด", "close rate") + " " + pctOf(won, ass.length) + "%) · " + t(lang, "ประเมินแล้ว", "evaluated") + " " + pctOf(evald, ass.length) + "%" : "—";
 
-    const stMap = countBy(ass, (a) => a.st); const stRows: Row[] = [...stMap.entries()].map(([k, v]) => [STL[k] || k, v, STC[k] || C.sky] as Row).sort((a, b) => b[1] - a[1]);
+    const stMap = countBy(ass, (a) => a.st); const stRows: Row[] = [...stMap.entries()].map(([k, v]) => [STLa[k] || k, v, STC[k] || C.sky] as Row).sort((a, b) => b[1] - a[1]);
     fill("c-status", ass.length ? hbars(stRows, { base: ass.length }) : empty());
-    const lostMap = countBy(ass.filter((a) => a.l1), (a) => a.l1); const lostTxt = [...lostMap.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => esc(LOST[k] || k) + " " + v).join(" · ") || "ยังไม่มีเคสแพ้";
-    const iL = document.getElementById("i-lost"); if (iL) iL.innerHTML = "<b>เหตุผลที่แพ้ดีล:</b> " + lostTxt;
+    const lostMap = countBy(ass.filter((a) => a.l1), (a) => a.l1); const lostTxt = [...lostMap.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => esc(LOST[k] || k) + " " + v).join(" · ") || t(lang, "ยังไม่มีเคสแพ้", "No lost deals");
+    const iL = document.getElementById("i-lost"); if (iL) iL.innerHTML = "<b>" + t(lang, "เหตุผลที่แพ้ดีล:", "Reasons for losing:") + "</b> " + lostTxt;
 
     const tf = TRANS.filter((x) => x.tm >= from && x.tm <= to);
-    fill("c-sankey", sankey(tf));
+    fill("c-sankey", sankey(tf, SKLa, lang));
     const reachedC = tf.filter((x) => x.t === "contacted").length, wonC = tf.filter((x) => x.t === "win").length, lostC = tf.filter((x) => x.t === "lost").length;
-    const cS = document.getElementById("cap-sankey"); if (cS) cS.innerHTML = "การไหลของเคสระหว่างสถานะ · นับจาก " + tf.length + " ครั้งการเปลี่ยนสถานะ (status_history) · % = สัดส่วนของ leads";
-    const iS = document.getElementById("i-sankey"); if (iS) iS.innerHTML = tf.length ? 'จากเคสในช่วงนี้ <b>' + pctOf(reachedC, ass.length) + '%</b> ไปถึงขั้น "ติดต่อ" · ปิดดีล <b>' + wonC + "</b> · แพ้ <b>" + lostC + "</b> · ที่เหลือยังค้างในแต่ละสถานะ" : "—";
+    const cS = document.getElementById("cap-sankey"); if (cS) cS.innerHTML = t(lang, "การไหลของเคสระหว่างสถานะ · นับจาก ", "Case flow between statuses · from ") + tf.length + t(lang, " ครั้งการเปลี่ยนสถานะ (status_history) · % = สัดส่วนของ leads", " status changes (status_history) · % = share of leads");
+    const iS = document.getElementById("i-sankey"); if (iS) iS.innerHTML = tf.length ? t(lang, "จากเคสในช่วงนี้ ", "Of cases in range, ") + "<b>" + pctOf(reachedC, ass.length) + "%</b> " + t(lang, 'ไปถึงขั้น "ติดต่อ" · ปิดดีล ', 'reached "Contacted" · won ') + "<b>" + wonC + "</b> · " + t(lang, "แพ้", "lost") + " <b>" + lostC + "</b> · " + t(lang, "ที่เหลือยังค้างในแต่ละสถานะ", "the rest remain in each status") : "—";
 
-    const srcRows: [string, number][] = SRC_ORDER.map((k) => [SRC[k], acc.filter((a) => a.src === k).length] as [string, number]).filter((r) => r[1] > 0);
-    fill("c-source", acc.length ? donut(srcRows, { top: acc.length, sub: "ผู้ใช้" }) + legend(srcRows) : empty());
+    const srcRows: [string, number][] = SRC_ORDER.map((k) => [SRCa[k], acc.filter((a) => a.src === k).length] as [string, number]).filter((r) => r[1] > 0);
+    fill("c-source", acc.length ? donut(srcRows, { top: acc.length, sub: t(lang, "ผู้ใช้", "users") }) + legend(srcRows) : empty());
     const fbig = acc.filter((a) => a.src === "facebook" || a.src === "instagram").length;
-    const iSo = document.getElementById("i-source"); if (iSo) iSo.innerHTML = acc.length ? "<b>Facebook + Instagram = " + pctOf(fbig, acc.length) + "%</b> ของผู้ใช้ช่วงนี้ — ช่องทางหลัก" : "—";
+    const iSo = document.getElementById("i-source"); if (iSo) iSo.innerHTML = acc.length ? "<b>Facebook + Instagram = " + pctOf(fbig, acc.length) + "%</b> " + t(lang, "ของผู้ใช้ช่วงนี้ — ช่องทางหลัก", "of users in range — the main channels") : "—";
 
     const days = fillDays(acc);
     fill("c-line", lineChart(days));
     const peak = days.reduce((m, d) => (d[1] > m[1] ? d : m), ["", 0] as [string, number]);
     const mPeak = document.getElementById("m-peak"); if (mPeak) mPeak.innerHTML = String(peak[1]);
-    const mPeakL = document.getElementById("m-peak-l"); if (mPeakL) mPeakL.innerHTML = "วันพีค " + (peak[0] || "–") + " (" + pctOf(peak[1], acc.length) + "%)";
+    const mPeakL = document.getElementById("m-peak-l"); if (mPeakL) mPeakL.innerHTML = t(lang, "วันพีค", "Peak") + " " + (peak[0] || "–") + " (" + pctOf(peak[1], acc.length) + "%)";
     const mAvg = document.getElementById("m-avg"); if (mAvg) mAvg.innerHTML = acc.length && days.length ? (acc.length / days.length).toFixed(1) : "0";
     const mFriend = document.getElementById("m-friend"); if (mFriend) mFriend.innerHTML = pctOf(friends, acc.length) + "%";
 
-    const destMap = countBy(ass, (a) => a.dest); const destRows: Row[] = [...destMap.entries()].map(([k, v]) => [CTRY[k] ? CTRY[k][0] + " " + CTRY[k][1] : k, v] as Row).sort((a, b) => b[1] - a[1]);
+    const destMap = countBy(ass, (a) => a.dest); const destRows: Row[] = [...destMap.entries()].map(([k, v]) => [ctryName(k), v] as Row).sort((a, b) => b[1] - a[1]);
     const dpal = destRows.map((r, i) => (i < 3 ? C.sky : i < 5 ? C.skyd : C.navys));
     fill("c-dest", destRows.length ? hbars(destRows.map((r, i) => [r[0], r[1], dpal[i]] as Row), { base: ass.length }) : empty());
-    const cD = document.getElementById("cap-dest"); if (cD) cD.innerHTML = destRows.length + " ประเทศ จาก " + ass.length + " ทริป";
+    const cD = document.getElementById("cap-dest"); if (cD) cD.innerHTML = destRows.length + " " + t(lang, "ประเทศ จาก", "countries from") + " " + ass.length + " " + t(lang, "ทริป", "trips");
 
-    const vtRows: [string, number][] = VT_ORDER.map((k) => [VT[k], ass.filter((a) => a.vt === k).length] as [string, number]).filter((r) => r[1] > 0);
-    fill("c-visa", ass.length ? donut(vtRows, { pal: VT_C, top: ass.length, sub: "ทริป" }) + legend(vtRows, VT_C) : empty());
+    const vtRows: [string, number][] = VT_ORDER.map((k) => [VTa[k], ass.filter((a) => a.vt === k).length] as [string, number]).filter((r) => r[1] > 0);
+    fill("c-visa", ass.length ? donut(vtRows, { pal: VT_C, top: ass.length, sub: t(lang, "ทริป", "trips") }) + legend(vtRows, VT_C) : empty());
     const tv = ass.filter((a) => a.vt === "tourist" || a.vt === "visitor").length;
-    const iV = document.getElementById("i-visa"); if (iV) iV.innerHTML = ass.length ? "<b>ท่องเที่ยว + Visitor = " + pctOf(tv, ass.length) + "%</b> ของดีมานด์ช่วงนี้" : "—";
+    const iV = document.getElementById("i-visa"); if (iV) iV.innerHTML = ass.length ? "<b>" + t(lang, "ท่องเที่ยว + Visitor", "Tourist + Visitor") + " = " + pctOf(tv, ass.length) + "%</b> " + t(lang, "ของดีมานด์ช่วงนี้", "of demand in range") : "—";
 
-    const occRows: Row[] = Object.keys(OCC).map((k) => [OCC[k], ass.filter((a) => a.occ === k).length] as Row).filter((r) => r[1] > 0).sort((a, b) => b[1] - a[1]);
+    const occRows: Row[] = Object.keys(OCC).map((k) => [OCCa[k], ass.filter((a) => a.occ === k).length] as Row).filter((r) => r[1] > 0).sort((a, b) => b[1] - a[1]);
     fill("c-occ", occRows.length ? hbars(occRows, { pal: OCC_C, base: ass.length }) : empty());
 
-    const intRows: Row[] = INT_ORDER.map((k, i) => [INT[k], ass.filter((a) => a.int === k).length, INT_C[i]] as Row).filter((r) => r[1] > 0);
+    const intRows: Row[] = INT_ORDER.map((k, i) => [INTa[k], ass.filter((a) => a.int === k).length, INT_C[i]] as Row).filter((r) => r[1] > 0);
     fill("c-intent", intRows.length ? hbars(intRows, { base: ass.length }) : empty());
     const hot = ass.filter((a) => a.int === "execute" || a.int === "ready").length;
-    const iI = document.getElementById("i-intent"); if (iI) iI.innerHTML = ass.length ? '<b>"ตั้งใจไป" + "พร้อมยื่น" = ' + hot + " เคส</b> (" + pctOf(hot, ass.length) + "%) คือกลุ่มร้อนที่ควรรีบติดตาม" : "—";
+    const iI = document.getElementById("i-intent"); if (iI) iI.innerHTML = ass.length ? "<b>" + t(lang, '"ตั้งใจไป" + "พร้อมยื่น"', '"Intent to go" + "Ready"') + " = " + hot + " " + cases + "</b> (" + pctOf(hot, ass.length) + "%) " + t(lang, "คือกลุ่มร้อนที่ควรรีบติดตาม", "— the hot group to follow up fast") : "—";
 
     const cLine = ass.filter((a) => a.cp === "line").length, cCall = ass.filter((a) => a.cp === "call").length;
-    const cpRows: [string, number][] = ([["LINE", cLine], ["โทรกลับ", cCall]] as [string, number][]).filter((r) => r[1] > 0);
-    fill("c-contact", ass.length ? donut(cpRows, { pal: [C.sky, C.sun], size: 150, top: pctOf(cLine, ass.length) + "%", sub: "เลือก LINE" }) + legend(cpRows, [C.sky, C.sun]) : empty());
+    const cpRows: [string, number][] = ([["LINE", cLine], [t(lang, "โทรกลับ", "Call back"), cCall]] as [string, number][]).filter((r) => r[1] > 0);
+    fill("c-contact", ass.length ? donut(cpRows, { pal: [C.sky, C.sun], size: 150, top: pctOf(cLine, ass.length) + "%", sub: t(lang, "เลือก LINE", "chose LINE") }) + legend(cpRows, [C.sky, C.sun]) : empty());
 
     const buckets = [[20, 30], [30, 40], [40, 50], [50, 60], [60, 70], [70, 80], [80, 90], [90, 100]];
     const hrows: [string, number][] = buckets.map((b) => [b[0] + "–" + b[1], scores.filter((s) => s >= b[0] && s < (b[1] === 100 ? 101 : b[1])).length] as [string, number]);
     fill("c-hist", scores.length ? vbars(hrows, scores.length) : empty());
-    const cH = document.getElementById("cap-hist"); if (cH) cH.innerHTML = scores.length ? scores.length + " เคสที่ให้คะแนน · % = สัดส่วนของ " + scores.length + " · เฉลี่ย " + (avg as number).toFixed(1) + " · มัธยฐาน " + med : "ไม่มีคะแนนในช่วงนี้";
+    const cH = document.getElementById("cap-hist"); if (cH) cH.innerHTML = scores.length ? scores.length + " " + t(lang, "เคสที่ให้คะแนน · % = สัดส่วนของ", "scored cases · % = share of") + " " + scores.length + " · " + t(lang, "เฉลี่ย", "avg") + " " + (avg as number).toFixed(1) + " · " + t(lang, "มัธยฐาน", "median") + " " + med : t(lang, "ไม่มีคะแนนในช่วงนี้", "No scores in this range");
     const topB = hrows.reduce((m, r) => (r[1] > m[1] ? r : m), ["", 0] as [string, number]);
-    const iH = document.getElementById("i-hist"); if (iH) iH.innerHTML = scores.length ? "คะแนนกระจุกที่ช่วง <b>" + topB[0] + " (" + topB[1] + " เคส, " + pctOf(topB[1], scores.length) + "%)</b> — เหมาะกับบริการช่วยจัดเอกสารให้แน่นขึ้น" : "—";
+    const iH = document.getElementById("i-hist"); if (iH) iH.innerHTML = scores.length ? t(lang, "คะแนนกระจุกที่ช่วง", "Scores cluster in") + " <b>" + topB[0] + " (" + topB[1] + " " + cases + ", " + pctOf(topB[1], scores.length) + "%)</b> " + t(lang, "— เหมาะกับบริการช่วยจัดเอกสารให้แน่นขึ้น", "— a fit for document-strengthening services") : "—";
 
     const tieMap = new Map<string, number>(); ass.forEach((a) => (a.ties || []).forEach((k) => tieMap.set(k, (tieMap.get(k) || 0) + 1)));
-    const tieRows: Row[] = [...tieMap.entries()].map(([k, v]) => [TIE[k] || k, v] as Row).sort((a, b) => b[1] - a[1]);
+    const tieRows: Row[] = [...tieMap.entries()].map(([k, v]) => [TIEa[k] || k, v] as Row).sort((a, b) => b[1] - a[1]);
     fill("c-ties", tieRows.length ? hbars(tieRows.map((r, i) => [r[0], r[1], TIE_C[i % TIE_C.length]] as Row), { base: ass.length }) : empty());
-    const cT = document.getElementById("cap-ties"); if (cT) cT.innerHTML = "เลือกได้หลายข้อ · % = สัดส่วนของ " + ass.length + " เคสที่ระบุข้อนั้น";
+    const cT = document.getElementById("cap-ties"); if (cT) cT.innerHTML = t(lang, "เลือกได้หลายข้อ · % = สัดส่วนของ", "Multi-select · % = share of") + " " + ass.length + " " + t(lang, "เคสที่ระบุข้อนั้น", "cases naming it");
   }
 
   function setPreset(key: string) {
     document.querySelectorAll(".chip").forEach((c) => (c as HTMLElement).classList.toggle("on", (c as HTMLElement).dataset.k === key));
     const cf = document.getElementById("cf-from") as HTMLInputElement | null; if (cf) cf.value = "";
     const ct = document.getElementById("cf-to") as HTMLInputElement | null; if (ct) ct.value = "";
-    if (key === "all") apply(-Infinity, Infinity, "ทั้งหมด");
-    else apply(NOW - PRESETS[key][0], NOW, "ย้อนหลัง " + PRESETS[key][1]);
+    if (key === "all") apply(-Infinity, Infinity, t(lang, "ทั้งหมด", "All"));
+    else apply(NOW - PRESETS[key][0], NOW, t(lang, "ย้อนหลัง " + PRESETS[key][1], "Last " + PRESETS[key][2]));
   }
 
   // ---- wire listeners (tracked for cleanup) ----
@@ -291,11 +308,11 @@ export function mountDashboard(data: DashboardData): () => void {
   });
   const applyBtn = document.getElementById("cf-apply");
   const applyHandler = () => {
-    const f = (document.getElementById("cf-from") as HTMLInputElement).value, t = (document.getElementById("cf-to") as HTMLInputElement).value;
-    if (!f && !t) { setPreset("all"); return; }
-    const from = f ? Date.parse(f + "T00:00:00Z") : -Infinity, to = t ? Date.parse(t + "T23:59:59Z") : Infinity;
+    const f = (document.getElementById("cf-from") as HTMLInputElement).value, toV = (document.getElementById("cf-to") as HTMLInputElement).value;
+    if (!f && !toV) { setPreset("all"); return; }
+    const from = f ? Date.parse(f + "T00:00:00Z") : -Infinity, to = toV ? Date.parse(toV + "T23:59:59Z") : Infinity;
     document.querySelectorAll(".chip").forEach((c) => c.classList.remove("on"));
-    apply(from, to, (f || "เริ่มต้น") + " → " + (t || "ปัจจุบัน"));
+    apply(from, to, (f || t(lang, "เริ่มต้น", "start")) + " → " + (toV || t(lang, "ปัจจุบัน", "now")));
   };
   if (applyBtn) applyBtn.addEventListener("click", applyHandler);
 

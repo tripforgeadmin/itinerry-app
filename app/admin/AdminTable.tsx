@@ -2,17 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { STATUS_OPTIONS, STATUS_LABEL, STATUS_COLOR, isOverdue, type StatusValue } from "@/lib/status";
+import { STATUS_OPTIONS, STATUS_COLOR, statusLabel, isOverdue, type StatusValue } from "@/lib/status";
 import { staleBadge, DEFAULT_STAGE_HOURS } from "@/lib/sla";
+import { label } from "@/lib/answer-labels";
+import { t, dateLocale, type Lang } from "@/lib/i18n";
 import { displayName } from "@/lib/account-name";
 import { formatPhone } from "@/lib/dialCodes";
 import { applyConditions, newConditionId, type FilterCondition } from "@/lib/admin-filters";
 import FilterBar from "./FilterBar";
 
-const VISA_LABEL: Record<string, string> = {
-  tourist: "ท่องเที่ยว", visitor: "เยี่ยมเยียน", business: "ธุรกิจ", student: "นักเรียน",
-};
 const INTENT_SHORT: Record<string, string> = { explore: "ศึกษา", ready: "พร้อม", execute: "เร่งด่วน" };
+const INTENT_SHORT_EN: Record<string, string> = { explore: "Explore", ready: "Ready", execute: "Urgent" };
+const intentShort = (v: string, lang: Lang) => (lang === "en" ? INTENT_SHORT_EN[v] : INTENT_SHORT[v]) ?? v;
 const INTENT_RANK: Record<string, number> = { explore: 0, ready: 1, execute: 2 };
 const STATUS_RANK: Record<string, number> = Object.fromEntries(STATUS_OPTIONS.map((o, i) => [o.value, i]));
 
@@ -55,9 +56,11 @@ type SortEntry = { key: SortKey; dir: "asc" | "desc" };
 export default function AdminTable({
   rows,
   slaStageHours = DEFAULT_STAGE_HOURS,
+  lang = "th",
 }: {
   rows: Row[];
   slaStageHours?: Record<string, number>;
+  lang?: Lang;
 }) {
   const router = useRouter();
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -192,19 +195,19 @@ export default function AdminTable({
 
   const columns: { key: SortKey | null; label: string; align?: "center" }[] = [
     { key: "ticket", label: "Ticket ID" },
-    { key: "date", label: "Submitted Date" },
-    { key: "due", label: "Due Date" },
-    { key: "name", label: "ชื่อเล่น" },
+    { key: "date", label: t(lang, "วันที่ส่ง", "Submitted") },
+    { key: "due", label: t(lang, "กำหนด", "Due Date") },
+    { key: "name", label: t(lang, "ชื่อเล่น", "Nickname") },
     { key: "line", label: "LINE" },
-    { key: "visa", label: "วีซ่า" },
-    { key: "dest", label: "ปลายทาง" },
-    { key: "intent", label: "ความต้องการ" },
-    { key: "days", label: "เหลือ" },
-    { key: "phone", label: "โทร" },
-    { key: "contact", label: "ติดต่อ" },
-    { key: "friend", label: "เพื่อน", align: "center" },
-    { key: "status", label: "สถานะ" },
-    { key: null, label: "ผลประเมิน", align: "center" },
+    { key: "visa", label: t(lang, "วีซ่า", "Visa") },
+    { key: "dest", label: t(lang, "ปลายทาง", "Destination") },
+    { key: "intent", label: t(lang, "ความต้องการ", "Intent") },
+    { key: "days", label: t(lang, "เหลือ", "Days left") },
+    { key: "phone", label: t(lang, "โทร", "Phone") },
+    { key: "contact", label: t(lang, "ติดต่อ", "Contact") },
+    { key: "friend", label: t(lang, "เพื่อน", "Friend"), align: "center" },
+    { key: "status", label: t(lang, "สถานะ", "Status") },
+    { key: null, label: t(lang, "ผลประเมิน", "Report"), align: "center" },
   ];
 
   return (
@@ -215,14 +218,14 @@ export default function AdminTable({
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="ค้นหา: Ticket ID, ชื่อเล่น, LINE, เบอร์โทร…"
+          placeholder={t(lang, "ค้นหา: Ticket ID, ชื่อเล่น, LINE, เบอร์โทร…", "Search: Ticket ID, nickname, LINE, phone…")}
           className="w-full rounded-xl border-2 border-gray-200 bg-white py-3 pl-10 pr-9 text-sm text-gray-800 placeholder:text-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
         />
         {search && (
           <button
             onClick={() => setSearch("")}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500"
-            aria-label="ล้างการค้นหา"
+            aria-label={t(lang, "ล้างการค้นหา", "Clear search")}
           >
             ✕
           </button>
@@ -236,7 +239,7 @@ export default function AdminTable({
             activeStatusValue === null ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-600"
           }`}
         >
-          ทั้งหมด ({searchFiltered.length})
+          {t(lang, "ทั้งหมด", "All")} ({searchFiltered.length})
         </button>
         {STATUS_OPTIONS.map((opt) => (
           <button
@@ -246,7 +249,7 @@ export default function AdminTable({
               activeStatusValue === opt.value ? "" : "opacity-50"
             }`}
           >
-            {opt.label} ({searchFiltered.filter((s) => s.status === opt.value).length})
+            {statusLabel(opt.value, lang)} ({searchFiltered.filter((s) => s.status === opt.value).length})
           </button>
         ))}
       </div>
@@ -255,9 +258,10 @@ export default function AdminTable({
         onAdd={addCondition}
         onRemove={removeCondition}
         onApplySaved={applySavedFilter}
+        lang={lang}
       />
 
-      <p className="mb-2 text-[11px] text-gray-400">คลิกหัวคอลัมน์เพื่อเรียง · Shift-คลิกเพื่อเรียงหลายชั้น</p>
+      <p className="mb-2 text-[11px] text-gray-400">{t(lang, "คลิกหัวคอลัมน์เพื่อเรียง · Shift-คลิกเพื่อเรียงหลายชั้น", "Click a header to sort · Shift-click for multi-sort")}</p>
 
       <div
         className="w-full overflow-x-auto overflow-y-auto rounded-xl border border-gray-100"
@@ -296,14 +300,14 @@ export default function AdminTable({
                 >
                   <td className="px-4 py-3 whitespace-nowrap font-mono text-xs font-medium text-gray-700">{s.ticket_id ?? "—"}</td>
                   <td className={`px-4 py-3 whitespace-nowrap ${overdue ? "text-red-700 font-semibold" : "text-gray-500"}`}>
-                    {new Date(s.created_at).toLocaleDateString("th-TH", {
+                    {new Date(s.created_at).toLocaleDateString(dateLocale(lang), {
                       timeZone: "Asia/Bangkok",
                       day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
                     })}
                   </td>
                   <td className={`px-4 py-3 whitespace-nowrap ${overdue ? "text-red-700 font-semibold" : "text-gray-500"}`}>
                     {s.due_date
-                      ? new Date(s.due_date).toLocaleDateString("th-TH", {
+                      ? new Date(s.due_date).toLocaleDateString(dateLocale(lang), {
                           timeZone: "Asia/Bangkok",
                           day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit",
                         })
@@ -313,19 +317,19 @@ export default function AdminTable({
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{acc?.line_display_name ?? "—"}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium">
-                      {trip ? (VISA_LABEL[trip.visa_type] ?? trip.visa_type) : "—"}
+                      {trip ? label("visa_type", trip.visa_type, lang) : "—"}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-600 uppercase whitespace-nowrap">{trip?.destination ?? "—"}</td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{s.intent ? INTENT_SHORT[s.intent] ?? s.intent : "—"}</td>
+                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{s.intent ? intentShort(s.intent, lang) : "—"}</td>
                   <td className={`px-4 py-3 whitespace-nowrap ${
                     days == null ? "text-gray-300" : days < 30 ? "text-red-600 font-semibold" : days < 45 ? "text-amber-600" : "text-gray-500"
                   }`}>
-                    {days == null ? "—" : `${days} วัน`}
+                    {days == null ? "—" : `${days} ${t(lang, "วัน", "d")}`}
                   </td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{acc?.phone ? formatPhone(acc.phone_country_code ?? "+66", acc.phone) : "—"}</td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                    {s.contact_preference === "line" ? "💬 LINE" : s.contact_preference === "call" ? "📞 โทร" : s.contact_preference}
+                    {s.contact_preference === "line" ? "💬 LINE" : s.contact_preference === "call" ? t(lang, "📞 โทร", "📞 Call") : s.contact_preference}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {acc?.is_friend === true ? "✅" : acc?.is_friend === false ? "❌" : "—"}
@@ -333,14 +337,14 @@ export default function AdminTable({
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
                       <span className={`px-2 py-1 rounded-lg text-xs font-medium ${STATUS_COLOR[s.status as StatusValue] ?? ""}`}>
-                        {STATUS_LABEL[s.status as StatusValue] ?? s.status}
+                        {statusLabel(s.status, lang)}
                       </span>
                       {(() => {
-                        const stale = staleBadge(s.status, s.status_entered_at, slaStageHours);
+                        const stale = staleBadge(s.status, s.status_entered_at, slaStageHours, lang);
                         return stale ? (
                           <span
                             className="px-2 py-1 rounded-lg text-xs font-medium bg-amber-100 text-amber-700"
-                            title="ค้างในสถานะนี้เกิน SLA ที่ตั้งไว้"
+                            title={t(lang, "ค้างในสถานะนี้เกิน SLA ที่ตั้งไว้", "Idle in this status past the SLA")}
                           >
                             ⏳ {stale}
                           </span>
@@ -356,12 +360,12 @@ export default function AdminTable({
                         rel="noopener"
                         onClick={(e) => e.stopPropagation()}
                         className="inline-block rounded-lg border border-gray-200 px-2 py-1 text-sm hover:border-blue-400"
-                        title="พิมพ์รายงานสุขภาพวีซ่า (ฉบับลูกค้า)"
+                        title={t(lang, "พิมพ์รายงานสุขภาพวีซ่า (ฉบับลูกค้า)", "Print the visa health-check report (customer copy)")}
                       >
                         🖨️
                       </a>
                     ) : (
-                      <span className="cursor-default text-sm opacity-25" title="ยังไม่พร้อม — ต้องประเมิน + กรอกจุดแข็ง/จุดเสริมก่อน">
+                      <span className="cursor-default text-sm opacity-25" title={t(lang, "ยังไม่พร้อม — ต้องประเมิน + กรอกจุดแข็ง/จุดเสริมก่อน", "Not ready — evaluate + fill strengths/improvements first")}>
                         🖨️
                       </span>
                     )}
@@ -371,13 +375,13 @@ export default function AdminTable({
             })}
           </tbody>
         </table>
-        {total === 0 && <div className="text-center py-12 text-gray-400">ยังไม่มี submission</div>}
+        {total === 0 && <div className="text-center py-12 text-gray-400">{t(lang, "ยังไม่มี submission", "No submissions yet")}</div>}
       </div>
 
       {/* pagination */}
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
         <div className="flex items-center gap-1">
-          <span>แสดง</span>
+          <span>{t(lang, "แสดง", "Show")}</span>
           {PAGE_SIZES.map((ps) => (
             <button
               key={ps}
@@ -386,13 +390,13 @@ export default function AdminTable({
                 pageSize === ps ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
-              {ps === "all" ? "ทั้งหมด" : ps}
+              {ps === "all" ? t(lang, "ทั้งหมด", "All") : ps}
             </button>
           ))}
         </div>
 
         <span className="text-gray-400">
-          {total === 0 ? "0" : `${(current - 1) * size + 1}–${Math.min(current * size, total)}`} จาก {total}
+          {total === 0 ? "0" : `${(current - 1) * size + 1}–${Math.min(current * size, total)}`} {t(lang, "จาก", "of")} {total}
         </span>
 
         {pageSize !== "all" && pageCount > 1 && (
@@ -404,7 +408,7 @@ export default function AdminTable({
             >
               ‹
             </button>
-            <span className="px-2">หน้า {current}/{pageCount}</span>
+            <span className="px-2">{t(lang, "หน้า", "Page")} {current}/{pageCount}</span>
             <button
               onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
               disabled={current >= pageCount}

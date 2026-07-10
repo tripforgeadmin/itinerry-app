@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { FilterCondition } from "@/lib/admin-filters";
+import { t, type Lang } from "@/lib/i18n";
 
 type SavedFilter = {
   id: string;
@@ -13,9 +14,11 @@ type SavedFilter = {
 export default function SavedFiltersMenu({
   refreshKey,
   onApply,
+  lang = "th",
 }: {
   refreshKey: number;
   onApply: (conditions: FilterCondition[]) => void;
+  lang?: Lang;
 }) {
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState<SavedFilter[]>([]);
@@ -66,20 +69,20 @@ export default function SavedFiltersMenu({
         onClick={() => setOpen((v) => !v)}
         className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200"
       >
-        ⭐ ตัวกรองที่บันทึก
+        ⭐ {t(lang, "ตัวกรองที่บันทึก", "Saved filters")}
       </button>
       {open && (
         <div className="absolute left-0 top-full mt-1 z-20 bg-white rounded-xl shadow-lg border border-gray-100 py-1 min-w-[240px] max-h-80 overflow-auto">
-          {loading && <p className="px-3 py-2 text-xs text-gray-400">กำลังโหลด…</p>}
+          {loading && <p className="px-3 py-2 text-xs text-gray-400">{t(lang, "กำลังโหลด…", "Loading…")}</p>}
           {!loading && filters.length === 0 && (
-            <p className="px-3 py-2 text-xs text-gray-400">ยังไม่มีตัวกรองที่บันทึกไว้</p>
+            <p className="px-3 py-2 text-xs text-gray-400">{t(lang, "ยังไม่มีตัวกรองที่บันทึกไว้", "No saved filters yet")}</p>
           )}
           {filters.map((f) => (
             <div key={f.id} className="flex items-center gap-1 px-2 py-1.5 hover:bg-gray-50 group">
               <button
                 onClick={() => toggleFavorite(f.id, !f.is_favorite)}
                 className="shrink-0 text-sm"
-                aria-label="ปักหมุด"
+                aria-label={t(lang, "ปักหมุด", "Pin")}
               >
                 {f.is_favorite ? "⭐" : "☆"}
               </button>
@@ -95,7 +98,7 @@ export default function SavedFiltersMenu({
               <button
                 onClick={() => remove(f.id)}
                 className="shrink-0 text-xs text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 px-1"
-                aria-label="ลบตัวกรอง"
+                aria-label={t(lang, "ลบตัวกรอง", "Delete filter")}
               >
                 🗑
               </button>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { STATUS_OPTIONS, type StatusValue } from "@/lib/status";
-import { SOURCE_OPTIONS, newConditionId, type FilterCondition, type FilterField } from "@/lib/admin-filters";
+import { STATUS_OPTIONS, statusLabel, type StatusValue } from "@/lib/status";
+import { sourceOptions, fieldLabel, newConditionId, type FilterCondition, type FilterField } from "@/lib/admin-filters";
+import { t, type Lang } from "@/lib/i18n";
 
 // Presentation-only grouping for the popover's status checklist — NOT the same concept
 // as lib/status.ts's isClosed()/CLOSED_STATUSES (which drives SLA-clock-stops-here logic
@@ -11,13 +12,10 @@ import { SOURCE_OPTIONS, newConditionId, type FilterCondition, type FilterField 
 const OPEN_STATUSES: StatusValue[] = ["pending_review", "evaluated", "contacted", "pending_decision"];
 const CLOSED_STATUSES_UI: StatusValue[] = ["win", "lost", "out_of_scope", "human_error"];
 
-const FIELDS: { field: FilterField; label: string }[] = [
-  { field: "status", label: "สถานะ" },
-  { field: "source", label: "แหล่งที่มา" },
-  { field: "date", label: "วันที่ส่ง" },
-];
+const FIELDS: FilterField[] = ["status", "source", "date"];
 
-export default function AddFilterPopover({ onAdd }: { onAdd: (c: FilterCondition) => void }) {
+export default function AddFilterPopover({ onAdd, lang = "th" }: { onAdd: (c: FilterCondition) => void; lang?: Lang }) {
+  const sourceOpts = sourceOptions(lang);
   const [open, setOpen] = useState(false);
   const [field, setField] = useState<FilterField | null>(null);
   const [statusValue, setStatusValue] = useState<StatusValue[]>([]);
@@ -66,7 +64,7 @@ export default function AddFilterPopover({ onAdd }: { onAdd: (c: FilterCondition
         onClick={() => setOpen((v) => !v)}
         className="px-3 py-1.5 rounded-lg text-xs font-medium border border-dashed border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600"
       >
-        ＋ เพิ่มตัวกรอง
+        ＋ {t(lang, "เพิ่มตัวกรอง", "Add filter")}
       </button>
       {open && (
         <div className="absolute left-0 top-full mt-1 z-20 bg-white rounded-xl shadow-lg border border-gray-100 p-3 min-w-[260px]">
@@ -74,11 +72,11 @@ export default function AddFilterPopover({ onAdd }: { onAdd: (c: FilterCondition
             <div className="flex flex-col gap-1">
               {FIELDS.map((f) => (
                 <button
-                  key={f.field}
-                  onClick={() => setField(f.field)}
+                  key={f}
+                  onClick={() => setField(f)}
                   className="text-left px-2 py-1.5 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50"
                 >
-                  {f.label}
+                  {fieldLabel(f, lang)}
                 </button>
               ))}
             </div>
@@ -88,7 +86,7 @@ export default function AddFilterPopover({ onAdd }: { onAdd: (c: FilterCondition
                 onClick={() => setField(null)}
                 className="text-[11px] text-gray-400 hover:text-gray-600 mb-2"
               >
-                ← กลับ
+                ← {t(lang, "กลับ", "Back")}
               </button>
 
               {field === "status" && (
@@ -98,17 +96,17 @@ export default function AddFilterPopover({ onAdd }: { onAdd: (c: FilterCondition
                       onClick={() => setStatusValue(STATUS_OPTIONS.map((o) => o.value))}
                       className="text-blue-500 hover:text-blue-700"
                     >
-                      เลือกทั้งหมด
+                      {t(lang, "เลือกทั้งหมด", "Select all")}
                     </button>
                     <span className="text-gray-300">·</span>
                     <button onClick={() => setStatusValue([])} className="text-blue-500 hover:text-blue-700">
-                      ล้างทั้งหมด
+                      {t(lang, "ล้างทั้งหมด", "Clear all")}
                     </button>
                   </div>
                   <div className="flex flex-col gap-2 max-h-56 overflow-auto">
                     {[
-                      { title: "เปิดอยู่", group: OPEN_STATUSES },
-                      { title: "ปิดแล้ว", group: CLOSED_STATUSES_UI },
+                      { title: t(lang, "เปิดอยู่", "Open"), group: OPEN_STATUSES },
+                      { title: t(lang, "ปิดแล้ว", "Closed"), group: CLOSED_STATUSES_UI },
                     ].map(({ title, group }) => (
                       <div key={title}>
                         <div className="flex items-center justify-between px-1">
@@ -119,7 +117,7 @@ export default function AddFilterPopover({ onAdd }: { onAdd: (c: FilterCondition
                             }
                             className="text-[10px] text-blue-500 hover:text-blue-700"
                           >
-                            เลือกกลุ่มนี้
+                            {t(lang, "เลือกกลุ่มนี้", "Select group")}
                           </button>
                         </div>
                         {group.map((value) => {
@@ -135,7 +133,7 @@ export default function AddFilterPopover({ onAdd }: { onAdd: (c: FilterCondition
                                   )
                                 }
                               />
-                              <span className={`px-1.5 py-0.5 rounded ${opt.color}`}>{opt.label}</span>
+                              <span className={`px-1.5 py-0.5 rounded ${opt.color}`}>{statusLabel(opt.value, lang)}</span>
                             </label>
                           );
                         })}
@@ -147,7 +145,7 @@ export default function AddFilterPopover({ onAdd }: { onAdd: (c: FilterCondition
 
               {field === "source" && (
                 <div className="flex flex-col gap-1 max-h-56 overflow-auto">
-                  {SOURCE_OPTIONS.map((opt) => (
+                  {sourceOpts.map((opt) => (
                     <label key={opt.value} className="flex items-center gap-2 px-1 py-1 text-xs text-gray-700">
                       <input
                         type="checkbox"
@@ -167,7 +165,7 @@ export default function AddFilterPopover({ onAdd }: { onAdd: (c: FilterCondition
               {field === "date" && (
                 <div className="flex flex-col gap-2">
                   <label className="text-[11px] text-gray-400">
-                    ตั้งแต่
+                    {t(lang, "ตั้งแต่", "From")}
                     <input
                       type="date"
                       value={dateFrom}
@@ -176,7 +174,7 @@ export default function AddFilterPopover({ onAdd }: { onAdd: (c: FilterCondition
                     />
                   </label>
                   <label className="text-[11px] text-gray-400">
-                    ถึง
+                    {t(lang, "ถึง", "To")}
                     <input
                       type="date"
                       value={dateTo}
@@ -192,7 +190,7 @@ export default function AddFilterPopover({ onAdd }: { onAdd: (c: FilterCondition
                 disabled={!canCommit}
                 className="mt-3 w-full rounded-lg bg-blue-600 text-white text-xs font-medium py-1.5 disabled:opacity-40"
               >
-                เพิ่ม
+                {t(lang, "เพิ่ม", "Add")}
               </button>
             </div>
           )}

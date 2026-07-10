@@ -1,11 +1,15 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import AdminTable from "./AdminTable";
+import AdminLangToggle from "./AdminLangToggle";
 import { SLA_STAGE_HOURS_KEY, parseStageHours } from "@/lib/sla";
+import { getAdminLang } from "@/lib/admin-lang";
+import { t } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
+  const lang = await getAdminLang();
   const [{ data, error }, { data: slaCfg }] = await Promise.all([
     supabase
       .from("user_assessment")
@@ -61,14 +65,15 @@ export default async function AdminPage() {
           <div className="flex items-center gap-4">
             <Link href="/admin/dashboard" className="text-sm font-medium text-blue-600 hover:text-blue-800">📊 Dashboard</Link>
             <Link href="/admin/sla" className="text-sm font-medium text-blue-600 hover:text-blue-800">⏱️ SLA</Link>
-            <Link href="/admin/lost-reasons" className="text-sm font-medium text-blue-600 hover:text-blue-800">🏷️ เหตุผลปิดดีล</Link>
-            <Link href="/admin/holidays" className="text-sm font-medium text-blue-600 hover:text-blue-800">📅 วันหยุด</Link>
-            <span className="text-sm text-gray-500">{submissions?.length ?? 0} รายการ</span>
+            <Link href="/admin/lost-reasons" className="text-sm font-medium text-blue-600 hover:text-blue-800">🏷️ {t(lang, "เหตุผลปิดดีล", "Lost reasons")}</Link>
+            <Link href="/admin/holidays" className="text-sm font-medium text-blue-600 hover:text-blue-800">📅 {t(lang, "วันหยุด", "Holidays")}</Link>
+            <span className="text-sm text-gray-500">{submissions?.length ?? 0} {t(lang, "รายการ", "items")}</span>
+            <AdminLangToggle lang={lang} />
           </div>
         </div>
         <div className="bg-white rounded-2xl shadow-sm p-4">
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <AdminTable rows={(submissions ?? []) as any[]} slaStageHours={slaStageHours} />
+          <AdminTable rows={(submissions ?? []) as any[]} slaStageHours={slaStageHours} lang={lang} />
         </div>
       </div>
     </main>

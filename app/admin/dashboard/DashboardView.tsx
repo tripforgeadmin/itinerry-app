@@ -2,7 +2,9 @@
 
 import { useEffect } from "react";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
+import AdminLangToggle from "../AdminLangToggle";
 import { mountDashboard } from "./engine";
+import { t, dateLocale, type Lang } from "@/lib/i18n";
 import type { DashboardData } from "@/lib/dashboard-data";
 
 // The mockup's CSS, verbatim, with 'Prompt' → 'Plus Jakarta Sans','Noto Sans Thai' (the app's
@@ -116,106 +118,107 @@ function Kpi({ id, icon, bg, label }: { id: string; icon: string; bg: string; la
   );
 }
 
-const CHIPS: [string, string][] = [["all", "ทั้งหมด"], ["60", "60 วัน"], ["30", "30 วัน"], ["15", "15 วัน"], ["7", "7 วัน"], ["3", "3 วัน"], ["24h", "24 ชม."]];
+const CHIPS: [string, string, string][] = [["all", "ทั้งหมด", "All"], ["60", "60 วัน", "60d"], ["30", "30 วัน", "30d"], ["15", "15 วัน", "15d"], ["7", "7 วัน", "7d"], ["3", "3 วัน", "3d"], ["24h", "24 ชม.", "24h"]];
 
-export default function DashboardView({ data }: { data: DashboardData }) {
-  useEffect(() => mountDashboard(data), [data]);
+export default function DashboardView({ data, lang = "th" }: { data: DashboardData; lang?: Lang }) {
+  useEffect(() => mountDashboard(data, lang), [data, lang]);
 
-  const asOf = new Date(data.now).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+  const asOf = new Date(data.now).toLocaleString(dateLocale(lang), { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="dash">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <header>
         <div className="hd">
-          <a href="/admin" style={{ fontSize: 13, color: "#2E5573", textDecoration: "none", fontWeight: 600 }}>← กลับ</a>
+          <a href="/admin" style={{ fontSize: 13, color: "#2E5573", textDecoration: "none", fontWeight: 600 }}>← {t(lang, "กลับ", "Back")}</a>
           <ItinerryLogo size="sm" />
-          <h1>แดชบอร์ดวิเคราะห์ผู้ใช้</h1>
-          <span className="pill">ข้อมูล ณ {asOf} น.</span>
+          <h1>{t(lang, "แดชบอร์ดวิเคราะห์ผู้ใช้", "User analytics dashboard")}</h1>
+          <span className="pill">{t(lang, "ข้อมูล ณ", "As of")} {asOf}{t(lang, " น.", "")}</span>
+          <AdminLangToggle lang={lang} />
         </div>
         <div className="filters">
-          <span className="f-lbl">ย้อนหลัง:</span>
-          {CHIPS.map(([k, label]) => (
-            <button key={k} type="button" className={`chip${k === "all" ? " on" : ""}`} data-k={k}>{label}</button>
+          <span className="f-lbl">{t(lang, "ย้อนหลัง:", "Range:")}</span>
+          {CHIPS.map(([k, th, en]) => (
+            <button key={k} type="button" className={`chip${k === "all" ? " on" : ""}`} data-k={k}>{lang === "en" ? en : th}</button>
           ))}
           <div className="cf">
-            <span>ช่วงเวลา</span>
+            <span>{t(lang, "ช่วงเวลา", "Custom")}</span>
             <input type="date" id="cf-from" />
             <span>→</span>
             <input type="date" id="cf-to" />
-            <button id="cf-apply" type="button">ใช้</button>
+            <button id="cf-apply" type="button">{t(lang, "ใช้", "Apply")}</button>
           </div>
         </div>
         <div className="readout" id="readout" />
         <nav className="sub">
-          <a href="#overview">ภาพรวม</a>
-          <a href="#funnel">Funnel &amp; ปิดดีล</a>
-          <a href="#acq">ช่องทาง &amp; เติบโต</a>
-          <a href="#demand">ดีมานด์</a>
-          <a href="#profile">โปรไฟล์</a>
+          <a href="#overview">{t(lang, "ภาพรวม", "Overview")}</a>
+          <a href="#funnel">Funnel &amp; {t(lang, "ปิดดีล", "Closing")}</a>
+          <a href="#acq">{t(lang, "ช่องทาง & เติบโต", "Channels & Growth")}</a>
+          <a href="#demand">{t(lang, "ดีมานด์", "Demand")}</a>
+          <a href="#profile">{t(lang, "โปรไฟล์", "Profile")}</a>
         </nav>
       </header>
 
       <div className="wrap">
         <div className="hero" id="overview">
-          <div className="sec-h"><h2>ภาพรวม</h2></div>
-          <div className="sub">แดชบอร์ดวิเคราะห์ผู้ใช้และเคสประเมินวีซ่า — เลือกช่วงเวลาด้านบนเพื่อกรองทุกกราฟ</div>
+          <div className="sec-h"><h2>{t(lang, "ภาพรวม", "Overview")}</h2></div>
+          <div className="sub">{t(lang, "แดชบอร์ดวิเคราะห์ผู้ใช้และเคสประเมินวีซ่า — เลือกช่วงเวลาด้านบนเพื่อกรองทุกกราฟ", "Analytics for users and visa-assessment cases — pick a range above to filter every chart.")}</div>
         </div>
 
         <div className="kpis">
-          <Kpi id="k-users" icon="👥" bg="#D6EFFA" label="ผู้ใช้ใหม่" />
-          <Kpi id="k-friends" icon="💚" bg="#D4F1E4" label="เพื่อน LINE" />
-          <Kpi id="k-assess" icon="📝" bg="#F0F8FD" label="เคสประเมินใหม่" />
-          <Kpi id="k-score" icon="⭐" bg="#FFF3D6" label="คะแนนเฉลี่ย" />
-          <Kpi id="k-pass" icon="✅" bg="#D4F1E4" label="อัตราผ่านเกณฑ์" />
-          <Kpi id="k-won" icon="🤝" bg="#D6EFFA" label="ปิดดีลได้" />
+          <Kpi id="k-users" icon="👥" bg="#D6EFFA" label={t(lang, "ผู้ใช้ใหม่", "New users")} />
+          <Kpi id="k-friends" icon="💚" bg="#D4F1E4" label={t(lang, "เพื่อน LINE", "LINE friends")} />
+          <Kpi id="k-assess" icon="📝" bg="#F0F8FD" label={t(lang, "เคสประเมินใหม่", "New cases")} />
+          <Kpi id="k-score" icon="⭐" bg="#FFF3D6" label={t(lang, "คะแนนเฉลี่ย", "Avg. score")} />
+          <Kpi id="k-pass" icon="✅" bg="#D4F1E4" label={t(lang, "อัตราผ่านเกณฑ์", "Pass rate")} />
+          <Kpi id="k-won" icon="🤝" bg="#D6EFFA" label={t(lang, "ปิดดีลได้", "Deals won")} />
         </div>
 
         <section id="funnel">
-          <div className="sec-h"><h2>Funnel &amp; การปิดดีล</h2><span>เส้นทางจากผู้สนใจ → ลูกค้า</span></div>
+          <div className="sec-h"><h2>Funnel &amp; {t(lang, "การปิดดีล", "Closing")}</h2><span>{t(lang, "เส้นทางจากผู้สนใจ → ลูกค้า", "From lead → customer")}</span></div>
           <div className="grid g2">
-            <div className="card"><h3>กรวยการปิดดีล (Conversion Funnel)</h3><div id="c-funnel" /><div className="insight" id="i-funnel" /></div>
-            <div className="card"><h3>สถานะเคสใน Pipeline</h3><div id="c-status" /><div className="insight" id="i-lost" /></div>
+            <div className="card"><h3>{t(lang, "กรวยการปิดดีล (Conversion Funnel)", "Conversion Funnel")}</h3><div id="c-funnel" /><div className="insight" id="i-funnel" /></div>
+            <div className="card"><h3>{t(lang, "สถานะเคสใน Pipeline", "Case status in the pipeline")}</h3><div id="c-status" /><div className="insight" id="i-lost" /></div>
           </div>
           <div className="grid" style={{ marginTop: 16 }}>
-            <div className="card"><h3>เส้นทางการไหลของสถานะ (Sankey)</h3><p className="cap" id="cap-sankey" /><div id="c-sankey" /><div className="insight" id="i-sankey" /></div>
+            <div className="card"><h3>{t(lang, "เส้นทางการไหลของสถานะ (Sankey)", "State flow path (Sankey)")}</h3><p className="cap" id="cap-sankey" /><div id="c-sankey" /><div className="insight" id="i-sankey" /></div>
           </div>
         </section>
 
         <section id="acq">
-          <div className="sec-h"><h2>ช่องทาง &amp; การเติบโต</h2><span>ผู้ใช้มาจากไหน โตเร็วแค่ไหน</span></div>
+          <div className="sec-h"><h2>{t(lang, "ช่องทาง & การเติบโต", "Channels & Growth")}</h2><span>{t(lang, "ผู้ใช้มาจากไหน โตเร็วแค่ไหน", "Where users come from, how fast it grows")}</span></div>
           <div className="grid g2">
             <div className="card">
-              <h3>ผู้ใช้ใหม่รายวัน &amp; สะสม</h3>
+              <h3>{t(lang, "ผู้ใช้ใหม่รายวัน & สะสม", "New users daily & cumulative")}</h3>
               <div id="c-line" />
               <div className="pillrow">
-                <div className="mini"><div className="m-v" id="m-peak">–</div><div className="m-l" id="m-peak-l">วันพีค</div></div>
-                <div className="mini"><div className="m-v" id="m-avg">–</div><div className="m-l">เฉลี่ย/วัน</div></div>
-                <div className="mini"><div className="m-v" id="m-friend">–</div><div className="m-l">เป็นเพื่อน LINE</div></div>
+                <div className="mini"><div className="m-v" id="m-peak">–</div><div className="m-l" id="m-peak-l">{t(lang, "วันพีค", "Peak day")}</div></div>
+                <div className="mini"><div className="m-v" id="m-avg">–</div><div className="m-l">{t(lang, "เฉลี่ย/วัน", "Avg/day")}</div></div>
+                <div className="mini"><div className="m-v" id="m-friend">–</div><div className="m-l">{t(lang, "เป็นเพื่อน LINE", "Are LINE friends")}</div></div>
               </div>
             </div>
-            <div className="card"><h3>ช่องทางที่รู้จัก itinerry</h3><div id="c-source" className="dn-wrap" /><div className="insight" id="i-source" /></div>
+            <div className="card"><h3>{t(lang, "ช่องทางที่รู้จัก itinerry", "How they found itinerry")}</h3><div id="c-source" className="dn-wrap" /><div className="insight" id="i-source" /></div>
           </div>
         </section>
 
         <section id="demand">
-          <div className="sec-h"><h2>ปลายทาง &amp; ประเภทวีซ่า</h2><span>คนอยากไปไหน วีซ่าประเภทใด</span></div>
+          <div className="sec-h"><h2>{t(lang, "ปลายทาง & ประเภทวีซ่า", "Destinations & visa types")}</h2><span>{t(lang, "คนอยากไปไหน วีซ่าประเภทใด", "Where they want to go, which visa")}</span></div>
           <div className="grid g2">
-            <div className="card"><h3>ปลายทางยอดนิยม</h3><p className="cap" id="cap-dest" /><div id="c-dest" /></div>
-            <div className="card"><h3>ประเภทวีซ่า</h3><div id="c-visa" className="dn-wrap" /><div className="insight" id="i-visa" /></div>
+            <div className="card"><h3>{t(lang, "ปลายทางยอดนิยม", "Popular destinations")}</h3><p className="cap" id="cap-dest" /><div id="c-dest" /></div>
+            <div className="card"><h3>{t(lang, "ประเภทวีซ่า", "Visa types")}</h3><div id="c-visa" className="dn-wrap" /><div className="insight" id="i-visa" /></div>
           </div>
         </section>
 
         <section id="profile">
-          <div className="sec-h"><h2>โปรไฟล์ผู้ใช้ &amp; คะแนน</h2><span>ใครคือคนที่เข้ามา</span></div>
+          <div className="sec-h"><h2>{t(lang, "โปรไฟล์ผู้ใช้ & คะแนน", "User profiles & ratings")}</h2><span>{t(lang, "ใครคือคนที่เข้ามา", "Who is coming in")}</span></div>
           <div className="grid g3">
-            <div className="card"><h3>อาชีพ</h3><div id="c-occ" /></div>
-            <div className="card"><h3>ความพร้อม/ความตั้งใจ</h3><div id="c-intent" /><div className="insight" id="i-intent" /></div>
-            <div className="card"><h3>ช่องทางติดต่อที่เลือก</h3><div id="c-contact" className="dn-wrap" /></div>
+            <div className="card"><h3>{t(lang, "อาชีพ", "Occupation")}</h3><div id="c-occ" /></div>
+            <div className="card"><h3>{t(lang, "ความพร้อม/ความตั้งใจ", "Readiness / intent")}</h3><div id="c-intent" /><div className="insight" id="i-intent" /></div>
+            <div className="card"><h3>{t(lang, "ช่องทางติดต่อที่เลือก", "Preferred contact")}</h3><div id="c-contact" className="dn-wrap" /></div>
           </div>
           <div className="grid g2" style={{ marginTop: 16 }}>
-            <div className="card"><h3>การกระจายคะแนนประเมิน</h3><p className="cap" id="cap-hist" /><div id="c-hist" /><div className="insight" id="i-hist" /></div>
-            <div className="card"><h3>ความผูกพันกับไทย (จุดแข็งวีซ่า)</h3><p className="cap" id="cap-ties" /><div id="c-ties" /></div>
+            <div className="card"><h3>{t(lang, "การกระจายคะแนนประเมิน", "Score distribution")}</h3><p className="cap" id="cap-hist" /><div id="c-hist" /><div className="insight" id="i-hist" /></div>
+            <div className="card"><h3>{t(lang, "ความผูกพันกับไทย (จุดแข็งวีซ่า)", "Ties to Thailand (visa strengths)")}</h3><p className="cap" id="cap-ties" /><div id="c-ties" /></div>
           </div>
         </section>
       </div>

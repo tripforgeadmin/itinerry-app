@@ -1,3 +1,5 @@
+import type { Lang } from "@/lib/i18n";
+
 export type StatusValue =
   | "pending_review"
   | "evaluated"
@@ -42,6 +44,24 @@ export const STATUS_COLOR = Object.fromEntries(
   STATUS_OPTIONS.map((s) => [s.value, s.color])
 ) as Record<StatusValue, string>;
 
+// English labels for the admin TH/EN toggle (win/lost already read as English).
+export const STATUS_LABEL_EN: Record<StatusValue, string> = {
+  pending_review: "Pending review",
+  evaluated: "Evaluated",
+  contacted: "Contacted",
+  pending_decision: "Pending decision",
+  win: "Closed Won",
+  lost: "Closed Lost",
+  out_of_scope: "Out of scope",
+  human_error: "Staff error",
+};
+
+/** Status label by language (defaults to Thai). */
+export function statusLabel(value: string, lang: Lang = "th"): string {
+  if (lang === "en") return STATUS_LABEL_EN[value as StatusValue] ?? STATUS_LABEL[value as StatusValue] ?? value;
+  return STATUS_LABEL[value as StatusValue] ?? value;
+}
+
 export const VALID_STATUSES: string[] = STATUS_OPTIONS.map((s) => s.value);
 
 // pending_review is automatic (set on submit) and evaluated is only reachable
@@ -56,11 +76,11 @@ export const MANUAL_STATUS_OPTIONS = STATUS_OPTIONS.filter(
 // the evaluation is either still in progress or it's done. Used by
 // app/result/ResultView.tsx and app/result/ResultList.tsx. Admin UI keeps using
 // STATUS_LABEL/STATUS_COLOR (the full vocabulary) — do not swap them.
-export function customerStatus(status: string): { label: string; color: string } {
+export function customerStatus(status: string, lang: Lang = "th"): { label: string; color: string } {
   if (status === "pending_review") {
-    return { label: "รอประเมิน", color: "bg-accent-tint text-accent" };
+    return { label: lang === "en" ? "Pending review" : "รอประเมิน", color: "bg-accent-tint text-accent" };
   }
-  return { label: "ประเมินแล้ว", color: "bg-success-bg text-success-deep" };
+  return { label: lang === "en" ? "Evaluated" : "ประเมินแล้ว", color: "bg-success-bg text-success-deep" };
 }
 
 // The customer-facing promise (lib/line-messaging.ts's assessmentReceivedMessage) is

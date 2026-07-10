@@ -8,6 +8,8 @@
 // PURE MODULE — no supabase import, so the client AdminTable can import staleBadge().
 // Server readers do the app_config query themselves and pass the value to parseStageHours.
 
+import type { Lang } from "@/lib/i18n";
+
 export const SLA_STAGE_HOURS_KEY = "sla_stage_hours";
 
 // Keyed by StatusValue; only the three active mid-pipeline statuses.
@@ -47,7 +49,8 @@ const HOUR_MS = 60 * 60 * 1000;
 export function staleBadge(
   status: string,
   enteredAt: string | null | undefined,
-  thresholds: Record<string, number>
+  thresholds: Record<string, number>,
+  lang: Lang = "th"
 ): string | null {
   const limit = thresholds[status];
   if (!limit || limit <= 0 || !enteredAt) return null;
@@ -56,5 +59,9 @@ export function staleBadge(
   const ageMs = Date.now() - enteredMs;
   if (ageMs <= limit * HOUR_MS) return null;
   const hours = Math.floor(ageMs / HOUR_MS);
-  return hours >= 48 ? `ค้าง ${Math.floor(hours / 24)} วัน` : `ค้าง ${hours} ชม.`;
+  if (hours >= 48) {
+    const d = Math.floor(hours / 24);
+    return lang === "en" ? `idle ${d}d` : `ค้าง ${d} วัน`;
+  }
+  return lang === "en" ? `idle ${hours}h` : `ค้าง ${hours} ชม.`;
 }

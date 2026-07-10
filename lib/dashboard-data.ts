@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { fetchLostReasonLabels } from "@/lib/lost-reasons";
+import type { Lang } from "@/lib/i18n";
 
 // The analytics dashboard (app/admin/dashboard) is a port of a self-contained mockup whose
 // chart engine computes everything from three arrays. These are those arrays, sourced live:
@@ -48,7 +49,7 @@ function one<T>(v: T | T[] | null | undefined): T | null {
   return (Array.isArray(v) ? v[0] : v) ?? null;
 }
 
-export async function fetchDashboardData(): Promise<DashboardData> {
+export async function fetchDashboardData(lang: Lang = "th"): Promise<DashboardData> {
   const [accRes, assRes, transRes, lostLabels] = await Promise.all([
     supabase.from("account").select("created_at, source, is_friend"),
     supabase
@@ -57,7 +58,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
         "id, created_at, status, occupation, intent, contact_preference, result_sent_at, lost_reason_l1, won_service_type, ties_thailand, trip:trip_id(destination, visa_type), visa_evaluation(score, pass)"
       ),
     supabase.from("status_history").select("assessment_id, changed_at, from_status, to_status"),
-    fetchLostReasonLabels(),
+    fetchLostReasonLabels(lang),
   ]);
 
   const acc: DashAcc[] = (accRes.data ?? []).map((a) => ({

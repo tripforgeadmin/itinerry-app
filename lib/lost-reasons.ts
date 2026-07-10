@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import type { Lang } from "@/lib/i18n";
 
 /** A row of the admin-managed 2-level loss-reason taxonomy (lost_reason_option). */
 export interface LostReasonRow {
@@ -42,11 +43,16 @@ export async function fetchLostReasonTree(activeOnly = true): Promise<LostReason
   return toTree(data as LostReasonRow[]);
 }
 
-/** key → Thai label, for displaying a stored lost_reason (includes inactive rows so historical
- * closes still render). */
-export async function fetchLostReasonLabels(): Promise<Record<string, string>> {
-  const { data } = await supabase.from("lost_reason_option").select("key, label_th");
-  return Object.fromEntries(((data ?? []) as { key: string; label_th: string }[]).map((r) => [r.key, r.label_th]));
+/** key → label in the active language (EN falls back to Thai when label_en is empty). Includes
+ * inactive rows so historical closes still render. */
+export async function fetchLostReasonLabels(lang: Lang = "th"): Promise<Record<string, string>> {
+  const { data } = await supabase.from("lost_reason_option").select("key, label_th, label_en");
+  return Object.fromEntries(
+    ((data ?? []) as { key: string; label_th: string; label_en: string | null }[]).map((r) => [
+      r.key,
+      lang === "en" ? r.label_en || r.label_th : r.label_th,
+    ])
+  );
 }
 
 /** Validate that (l1, l2) is a real, ACTIVE category→sub-reason pair before closing as lost. */

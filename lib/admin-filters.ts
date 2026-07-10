@@ -1,5 +1,6 @@
 import type { StatusValue } from "./status";
-import { LABELS } from "./answer-labels";
+import { LABELS, label } from "./answer-labels";
+import type { Lang } from "@/lib/i18n";
 
 export type FilterField = "status" | "source" | "date";
 export type FilterOperator = "is_any_of" | "is_between";
@@ -9,7 +10,12 @@ export type FilterCondition =
   | { id: string; field: "source"; operator: "is_any_of"; value: string[] }
   | { id: string; field: "date"; operator: "is_between"; value: [string | null, string | null] }; // [fromISO date, toISO date], either end open
 
-export const SOURCE_OPTIONS = Object.entries(LABELS.source).map(([value, label]) => ({ value, label }));
+export const SOURCE_OPTIONS = Object.entries(LABELS.source).map(([value, lab]) => ({ value, label: lab }));
+
+/** Source filter options in the active language. */
+export function sourceOptions(lang: Lang = "th") {
+  return Object.keys(LABELS.source).map((value) => ({ value, label: label("source", value, lang) }));
+}
 
 type MatchRow = { status: string; created_at: string; account: { source: string | null } | null };
 
@@ -40,6 +46,7 @@ export function newConditionId(): string {
   return Math.random().toString(36).slice(2);
 }
 
-export function fieldLabel(field: FilterField): string {
+export function fieldLabel(field: FilterField, lang: Lang = "th"): string {
+  if (lang === "en") return field === "status" ? "Status" : field === "source" ? "Source" : "Submitted date";
   return field === "status" ? "สถานะ" : field === "source" ? "แหล่งที่มา" : "วันที่ส่ง";
 }
