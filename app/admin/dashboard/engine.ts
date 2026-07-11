@@ -147,10 +147,18 @@ function lineChart(data: [string, number][]): string {
   return '<svg viewBox="0 0 ' + w + " " + h + '" width="100%" class="lc">' + grid + '<path d="' + area + '" fill="' + C.sky + '" opacity="0.10"/>' + bars + '<polyline points="' + pts.join(" ") + '" fill="none" stroke="' + C.skyd + '" stroke-width="2.5"/>' + dots + xl + "</svg>";
 }
 function skHeight(cols: string[][]): number { const mx = Math.max(...cols.map((c) => c.length), 1); return Math.max(320, 120 + mx * 70); }
+// Every status the funnel chart knows how to place in a column. Historical status_history
+// rows can reference a status value that's since been retired from the live vocabulary
+// (e.g. a status that got removed) — such edges are dropped rather than looked up in `meta`,
+// which has no entry for them and would throw.
+const KNOWN_STAGES = new Set(SK_COLS.flat());
+
 function sankey(trans: { f: string | null; t: string }[], skl: Record<string, string>, lang: Lang): string {
   const em = new Map<string, number>();
   trans.forEach((x) => { const k = x.f + ">" + x.t; em.set(k, (em.get(k) || 0) + 1); });
-  const edges = [...em.entries()].map(([k, n]) => { const p = k.split(">"); return { f: p[0], t: p[1], n, sy: 0, ty: 0 }; });
+  const edges = [...em.entries()]
+    .map(([k, n]) => { const p = k.split(">"); return { f: p[0], t: p[1], n, sy: 0, ty: 0 }; })
+    .filter((e) => KNOWN_STAGES.has(e.f) && KNOWN_STAGES.has(e.t));
   if (!edges.length) return empty(t(lang, "ไม่มีการเปลี่ยนสถานะในช่วงนี้", "No status changes in this range"));
   const CASES = t(lang, "เคส", "cases"), OF_LEADS = t(lang, "% ของ leads", "% of leads");
   const present = new Set<string>(); edges.forEach((e) => { present.add(e.f); present.add(e.t); });
