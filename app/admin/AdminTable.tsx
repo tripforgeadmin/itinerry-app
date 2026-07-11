@@ -42,9 +42,9 @@ type Row = {
   printable: boolean;
 };
 
-type SortKey =
+export type SortKey =
   | "ticket" | "date" | "due" | "name" | "line" | "visa" | "dest" | "intent" | "days" | "phone" | "contact" | "friend" | "status";
-type SortEntry = { key: SortKey; dir: "asc" | "desc" };
+export type SortEntry = { key: SortKey; dir: "asc" | "desc" };
 
 export default function AdminTable({
   rows,
@@ -203,6 +203,10 @@ export default function AdminTable({
     { key: null, label: t(lang, "ผลประเมิน", "Report"), align: "center" },
   ];
 
+  const sortFields: { key: SortKey; label: string }[] = columns
+    .filter((c): c is { key: SortKey; label: string; align?: "center" } => c.key !== null)
+    .map((c) => ({ key: c.key, label: c.label }));
+
   return (
     <div className="w-full">
       <div className="relative mb-4">
@@ -251,6 +255,9 @@ export default function AdminTable({
         onAdd={addCondition}
         onRemove={removeCondition}
         onApplySaved={applySavedFilter}
+        sort={sort}
+        sortFields={sortFields}
+        onSortChange={setSort}
         lang={lang}
       />
 

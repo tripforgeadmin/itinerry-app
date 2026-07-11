@@ -5,8 +5,10 @@ import { statusLabel } from "@/lib/status";
 import { t, dateLocale, type Lang } from "@/lib/i18n";
 import { fieldLabel, categoricalOptions, type FilterCondition } from "@/lib/admin-filters";
 import AddFilterPopover from "./AddFilterPopover";
+import SortPopover from "./SortPopover";
 import SaveFilterModal from "./SaveFilterModal";
 import SavedFiltersMenu from "./SavedFiltersMenu";
+import type { SortKey, SortEntry } from "./AdminTable";
 
 function fmtDateShort(iso: string, lang: Lang): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -44,12 +46,18 @@ export default function FilterBar({
   onAdd,
   onRemove,
   onApplySaved,
+  sort,
+  sortFields,
+  onSortChange,
   lang = "th",
 }: {
   conditions: FilterCondition[];
   onAdd: (c: FilterCondition) => void;
   onRemove: (id: string) => void;
   onApplySaved: (conditions: FilterCondition[]) => void;
+  sort: SortEntry[];
+  sortFields: { key: SortKey; label: string }[];
+  onSortChange: (next: SortEntry[]) => void;
   lang?: Lang;
 }) {
   const [saveOpen, setSaveOpen] = useState(false);
@@ -88,6 +96,7 @@ export default function FilterBar({
       ))}
 
       <AddFilterPopover onAdd={onAdd} lang={lang} />
+      <SortPopover sort={sort} fields={sortFields} onChange={onSortChange} lang={lang} />
 
       {conditions.length > 0 && (
         <button
