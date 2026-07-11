@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { statusLabel } from "@/lib/status";
-import { label } from "@/lib/answer-labels";
 import { t, dateLocale, type Lang } from "@/lib/i18n";
-import { fieldLabel, type FilterCondition } from "@/lib/admin-filters";
+import { fieldLabel, categoricalOptions, type FilterCondition } from "@/lib/admin-filters";
 import AddFilterPopover from "./AddFilterPopover";
 import SaveFilterModal from "./SaveFilterModal";
 import SavedFiltersMenu from "./SavedFiltersMenu";
@@ -15,13 +14,29 @@ function fmtDateShort(iso: string, lang: Lang): string {
 }
 
 function conditionSummary(c: FilterCondition, lang: Lang): string {
-  if (c.field === "status") return c.value.map((v) => statusLabel(v, lang)).join(", ");
-  if (c.field === "source") return c.value.map((v) => label("source", v, lang)).join(", ");
-  const [from, to] = c.value;
-  if (from && to) return `${fmtDateShort(from, lang)} – ${fmtDateShort(to, lang)}`;
-  if (from) return `${t(lang, "ตั้งแต่", "from")} ${fmtDateShort(from, lang)}`;
-  if (to) return `${t(lang, "ถึง", "to")} ${fmtDateShort(to, lang)}`;
-  return "—";
+  switch (c.field) {
+    case "status":
+      return c.value.map((v) => statusLabel(v, lang)).join(", ");
+    case "date":
+    case "due_date": {
+      const [from, to] = c.value;
+      if (from && to) return `${fmtDateShort(from, lang)} – ${fmtDateShort(to, lang)}`;
+      if (from) return `${t(lang, "ตั้งแต่", "from")} ${fmtDateShort(from, lang)}`;
+      if (to) return `${t(lang, "ถึง", "to")} ${fmtDateShort(to, lang)}`;
+      return "—";
+    }
+    case "ticket_id":
+    case "name":
+    case "line":
+    case "phone":
+    case "destination":
+      return `"${c.value}"`;
+    default: {
+      // remaining fields are all categorical (source/visa_type/intent/contact_preference/is_friend/printable/days_left)
+      const opts = categoricalOptions(c.field, lang);
+      return c.value.map((v) => opts.find((o) => o.value === v)?.label ?? v).join(", ");
+    }
+  }
 }
 
 export default function FilterBar({

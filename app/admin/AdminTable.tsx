@@ -8,7 +8,7 @@ import { label } from "@/lib/answer-labels";
 import { t, dateLocale, type Lang } from "@/lib/i18n";
 import { displayName } from "@/lib/account-name";
 import { formatPhone } from "@/lib/dialCodes";
-import { applyConditions, newConditionId, type FilterCondition } from "@/lib/admin-filters";
+import { applyConditions, newConditionId, daysToTravel, daysLeftBucket, type FilterCondition } from "@/lib/admin-filters";
 import FilterBar from "./FilterBar";
 
 const INTENT_SHORT: Record<string, string> = { explore: "ศึกษา", ready: "พร้อม", execute: "เร่งด่วน" };
@@ -41,13 +41,6 @@ type Row = {
   trip: Trip | null;
   printable: boolean;
 };
-
-/** Days between today and the trip's arrival (or study start). null when no date on file. */
-function daysToTravel(trip: Trip | null, todayIso: string): number | null {
-  const iso = (trip?.travel_arrival ?? trip?.study_start)?.slice(0, 10);
-  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
-  return Math.round((Date.parse(`${iso}T00:00:00Z`) - Date.parse(`${todayIso}T00:00:00Z`)) / 86_400_000);
-}
 
 type SortKey =
   | "ticket" | "date" | "due" | "name" | "line" | "visa" | "dest" | "intent" | "days" | "phone" | "contact" | "friend" | "status";
@@ -146,7 +139,7 @@ export default function AdminTable({
     return v;
   }, [todayIso]);
 
-  const filtered = applyConditions(searchFiltered, conditions);
+  const filtered = applyConditions(searchFiltered, conditions, todayIso);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -323,7 +316,10 @@ export default function AdminTable({
                   <td className="px-4 py-3 text-gray-600 uppercase whitespace-nowrap">{trip?.destination ?? "—"}</td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{s.intent ? intentShort(s.intent, lang) : "—"}</td>
                   <td className={`px-4 py-3 whitespace-nowrap ${
-                    days == null ? "text-gray-300" : days < 30 ? "text-red-600 font-semibold" : days < 45 ? "text-amber-600" : "text-gray-500"
+                    daysLeftBucket(days) === "urgent" ? "text-red-600 font-semibold"
+                      : daysLeftBucket(days) === "soon" ? "text-amber-600"
+                      : daysLeftBucket(days) === "plenty" ? "text-gray-500"
+                      : "text-gray-300"
                   }`}>
                     {days == null ? "—" : `${days} ${t(lang, "วัน", "d")}`}
                   </td>
