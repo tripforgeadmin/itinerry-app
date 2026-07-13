@@ -14,7 +14,7 @@ export default async function AdminPage() {
     supabase
       .from("user_assessment")
       .select(
-        "id, ticket_id, created_at, due_date, status, contact_preference, intent, savings_balance, result_sent_at, status_history(changed_at), account:account_id(nickname, full_name, first_name, last_name, line_display_name, phone, phone_country_code, is_friend, source), trip:trip_id(visa_type, destination, travel_arrival, study_start), visa_evaluation(pass, strengths, improvements)"
+        "id, ticket_id, created_at, due_date, status, contact_preference, intent, savings_balance, result_sent_at, entry_source, status_history(changed_at), account:account_id(nickname, full_name, first_name, last_name, line_display_name, phone, phone_country_code, is_friend, source), trip:trip_id(visa_type, destination, travel_arrival, study_start), visa_evaluation(pass, strengths, improvements)"
       )
       .order("created_at", { ascending: false }),
     supabase.from("app_config").select("value").eq("key", SLA_STAGE_HOURS_KEY).maybeSingle(),
@@ -46,6 +46,7 @@ export default async function AdminPage() {
       contact_preference: r.contact_preference,
       intent: r.intent,
       result_sent_at: r.result_sent_at,
+      entry_source: r.entry_source,
       status_entered_at: lastChanged ?? r.created_at,
       account,
       trip,
@@ -67,6 +68,7 @@ export default async function AdminPage() {
             <Link href="/admin/sla" className="text-sm font-medium text-blue-600 hover:text-blue-800">⏱️ SLA</Link>
             <Link href="/admin/lost-reasons" className="text-sm font-medium text-blue-600 hover:text-blue-800">🏷️ {t(lang, "เหตุผลปิดดีล", "Lost reasons")}</Link>
             <Link href="/admin/holidays" className="text-sm font-medium text-blue-600 hover:text-blue-800">📅 {t(lang, "วันหยุด", "Holidays")}</Link>
+            <Link href="/admin/manual-case" className="text-sm font-medium text-blue-600 hover:text-blue-800">✍️ {t(lang, "เพิ่มเคสด้วยตนเอง", "New manual case")}</Link>
             <span className="text-sm text-gray-500">{submissions?.length ?? 0} {t(lang, "รายการ", "items")}</span>
             <AdminLangToggle lang={lang} />
           </div>

@@ -1,0 +1,203 @@
+import { NextRequest, NextResponse, after } from "next/server";
+import { runAssessment } from "@/lib/assessment";
+import { supabase } from "@/lib/supabase";
+import { generateTicketId } from "@/lib/ticket";
+import { normalizePhone } from "@/lib/dialCodes";
+import { bangkokDateTimeToUtc } from "@/lib/holidays";
+import { SLA_HOURS } from "@/lib/status";
+import { verifyAdminSession } from "@/app/api/admin/login/route";
+
+// Mirrors app/api/submit/route.ts's insert logic (account -> user_trip -> user_assessment,
+// same `answers` key vocabulary, same helpers/branch-answer packing, same due-date/SLA and
+// ticket_id generation, same post-insert auto rule-engine evaluation) but:
+//   - authenticates as an admin (no customer LINE session exists for a phone-first lead)
+//   - always a fresh account insert (line_user_id is null — nothing to conflict/upsert on)
+//   - tags the row entry_source="manual" + manual_entry_staff
+//   - skips the email/PDF/LINE-push side effects entirely (OPS already knows about this
+//     lead; those side effects exist to notify people the customer flow doesn't reach)
+
+function toNull(v: string | undefined): string | null {
+  return v && v !== "" ? v : null;
+}
+function toDate(v: string | undefined): string | null {
+  return v && v !== "" ? v : null;
+}
+function toArray(v: string | undefined): string[] {
+  if (!v || v === "") return [];
+  return v.split(",").map((s) => s.trim()).filter(Boolean);
+}
+function toJson(v: string | undefined): unknown | null {
+  if (!v || v === "") return null;
+  try {
+    const parsed = JSON.parse(v);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+const REQUIRED_KEYS = ["q3", "q5", "q6", "q8", "q9", "q24", "q30", "q32", "q35", "q36"];
+
+export async function POST(request: NextRequest) {
+  const token = request.cookies.get("admin_session")?.value;
+  if (!token || !(await verifyAdminSession(token))) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const staffName = typeof body.staffName === "string" ? body.staffName.trim().slice(0, 120) : "";
+  const answers = (body.answers ?? {}) as Record<string, string>;
+
+  if (!staffName) {
+    return NextResponse.json({ ok: false, error: "staffName required" }, { status: 400 });
+  }
+  const missing = REQUIRED_KEYS.filter((k) => !answers[k] || answers[k] === "");
+  if (missing.length > 0) {
+    return NextResponse.json({ ok: false, error: `missing required fields: ${missing.join(", ")}` }, { status: 400 });
+  }
+  if (answers.q30 === "yes" && !toJson(answers.q31_entries)) {
+    return NextResponse.json({ ok: false, error: "visa refusal details required" }, { status: 400 });
+  }
+  if (answers.q32 === "yes" && !toJson(answers.q33_entries)) {
+    return NextResponse.json({ ok: false, error: "overstay details required" }, { status: 400 });
+  }
+  if (answers.q9 !== "student" && (!answers.q34 || answers.q34 === "")) {
+    return NextResponse.json({ ok: false, error: "savings balance required" }, { status: 400 });
+  }
+
+  // ---- sparse categorical branch answers, keyed by question id (identical to /api/submit) ----
+  const branchAnswers: Record<string, string | string[]> = {};
+  const branchMap: Record<string, string> = {
+    q13: "visitor_arrival",
+    q14: "visitor_host_status",
+    q15: "visitor_relationship",
+    q16: "visitor_host_documents",
+    q17: "business_arrival",
+    q18: "business_return",
+    q19: "business_invitation_letter",
+    q22: "student_acceptance_letter",
+    q23: "student_expense_sponsor",
+    q25: "employee_work_letter",
+    q26: "freelance_income_proof",
+    q27: "freelance_tax_history",
+    q28: "business_registration",
+    q29: "dependent_expense_sponsor",
+  };
+  const multiSelectBranchKeys = new Set(["q12", "q16", "q26"]);
+
+  if (answers.q12 && answers.q12 !== "") {
+    branchAnswers["previous_visas"] = toArray(answers.q12);
+  }
+  for (const [qKey, semanticKey] of Object.entries(branchMap)) {
+    const val = answers[qKey];
+    if (val && val !== "") {
+      branchAnswers[semanticKey] = multiSelectBranchKeys.has(qKey) ? toArray(val) : val;
+    }
+  }
+
+  const nickname = toNull(answers.q3) ?? "";
+
+  // ===== 1) account — always a fresh insert, no LINE identity yet =====
+  const { data: account, error: accountError } = await supabase
+    .from("account")
+    .insert({
+      line_user_id:       null,
+      line_display_name:  null,
+      line_picture_url:   null,
+      is_friend:          null,
+      nickname:           nickname,
+      phone:              normalizePhone(answers.q5 ?? ""),
+      phone_country_code: toNull(answers.q5_cc) ?? "+66",
+      email:              toNull(answers.q6),
+      nationality:        answers.q4 === "thai" ? "thai" : "other",
+      nationality_other:  answers.q4 === "other" ? toNull(answers.q4_other) : null,
+      source:             ["facebook","instagram","tiktok","google","referral","other"].includes(answers.q7) ? answers.q7 : "other",
+      source_other:       answers.q7 === "other" ? toNull(answers.q7_other) : null,
+      consented_at:       new Date().toISOString(),
+      updated_at:         new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+  if (accountError || !account) {
+    console.error("manual-case account insert error:", accountError);
+    return NextResponse.json({ ok: false, error: accountError?.message ?? "account failed" }, { status: 500 });
+  }
+
+  // ===== 2) user_trip =====
+  const { data: trip, error: tripError } = await supabase
+    .from("user_trip")
+    .insert({
+      account_id:     account.id,
+      destination:    answers.q8 ?? "",
+      visa_type:      answers.q9 ?? "",
+      travel_arrival: toDate(answers.q10 ?? answers.q13 ?? answers.q17),
+      travel_return:  toDate(answers.q11 ?? answers.q39 ?? answers.q18),
+      study_start:    toDate(answers.q21),
+    })
+    .select("id")
+    .single();
+  if (tripError || !trip) {
+    console.error("manual-case trip insert error:", tripError);
+    return NextResponse.json({ ok: false, error: tripError?.message ?? "trip failed" }, { status: 500 });
+  }
+
+  // ---- callback slot + SLA due date (identical to /api/submit) ----
+  const isCall = answers.q36 === "call";
+  const validSlot = /^\d{1,2}:\d{2}$/.test(answers.q37 ?? "") && /^\d{4}-\d{2}-\d{2}$/.test(answers.q37_date ?? "");
+  const rawCb = isCall && validSlot ? bangkokDateTimeToUtc(answers.q37_date, answers.q37) : null;
+  const callbackDatetime = rawCb && !isNaN(rawCb.getTime()) ? rawCb : null;
+  const dueDate = isCall && callbackDatetime ? callbackDatetime : new Date(Date.now() + SLA_HOURS * 60 * 60 * 1000);
+
+  // ===== 3) user_assessment =====
+  const ticketId = await generateTicketId(answers.q8 ?? "");
+  const { data: assessment, error: assessError } = await supabase.from("user_assessment").insert({
+    trip_id:              trip.id,
+    account_id:           account.id,
+    ticket_id:            ticketId,
+    occupation:           answers.q24 ?? "",
+    intent:               toNull(answers.q38),
+    visa_refused:         answers.q30 === "yes",
+    visa_refused_details: answers.q30 === "yes" ? toNull(answers.q31) : null,
+    visa_refused_entries: answers.q30 === "yes" ? toJson(answers.q31_entries) : null,
+    overstayed:           answers.q32 === "yes",
+    overstay_details:     answers.q32 === "yes" ? toNull(answers.q33) : null,
+    overstay_entries:     answers.q32 === "yes" ? toJson(answers.q33_entries) : null,
+    savings_balance:      answers.q34 ?? "",
+    ties_thailand:        toArray(answers.q35),
+    contact_preference:   answers.q36 ?? "",
+    callback_time:        callbackDatetime ? `${answers.q37_date} ${answers.q37}` : null,
+    callback_datetime:    callbackDatetime ? callbackDatetime.toISOString() : null,
+    due_date:             dueDate.toISOString(),
+    branch_answers:       branchAnswers,
+    entry_source:         "manual",
+    manual_entry_staff:   staffName,
+  }).select("id").single();
+  if (assessError || !assessment) {
+    console.error("manual-case assessment insert error:", assessError);
+    return NextResponse.json({ ok: false, error: assessError?.message ?? "assessment failed" }, { status: 500 });
+  }
+
+  // Auto rule-engine evaluation — same as /api/submit, still valuable for a manually
+  // entered case. No email/PDF/LINE-push here — OPS already knows about this lead.
+  const assessmentId = assessment.id;
+  after(async () => {
+    try {
+      const { score, result, evaluatedBy } = runAssessment(answers);
+      const { error } = await supabase.from("visa_evaluation").upsert(
+        {
+          assessment_id: assessmentId,
+          score,
+          result,
+          evaluated_by: evaluatedBy,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "assessment_id" },
+      );
+      if (error) console.error("manual-case auto-assessment upsert error:", error);
+    } catch (err) {
+      console.error("manual-case auto-assessment error:", err);
+    }
+  });
+
+  return NextResponse.json({ ok: true, ticketId, id: assessmentId });
+}

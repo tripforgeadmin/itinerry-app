@@ -36,6 +36,7 @@ type Row = {
   contact_preference: string;
   intent: string | null;
   result_sent_at: string | null;
+  entry_source: string | null;
   status_entered_at: string | null;
   account: Account | null;
   trip: Trip | null;
@@ -342,6 +343,14 @@ export default function AdminTable({
                       <span className={`px-2 py-1 rounded-lg text-xs font-medium ${STATUS_COLOR[s.status as StatusValue] ?? ""}`}>
                         {statusLabel(s.status, lang)}
                       </span>
+                      {s.entry_source === "manual" && (
+                        <span
+                          className="px-2 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-500"
+                          title={t(lang, "เคสที่แอดมินกรอกให้ลูกค้าทางโทรศัพท์", "Case entered manually by staff over the phone")}
+                        >
+                          ✍️ {t(lang, "กรอกเอง", "Manual")}
+                        </span>
+                      )}
                       {(() => {
                         const stale = staleBadge(s.status, s.status_entered_at, slaStageHours, lang);
                         return stale ? (
