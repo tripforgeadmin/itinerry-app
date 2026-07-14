@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import UtmCleanup from "@/components/UtmCleanup";
 import "./globals.css";
 
 const GA_ID = "G-VH3J8T8BL1";
@@ -34,6 +35,7 @@ export default function RootLayout({
   return (
     <html lang="th" className="h-full">
       <body className="min-h-full flex flex-col">
+        <UtmCleanup />
         <noscript>
           <iframe
             src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
