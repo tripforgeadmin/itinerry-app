@@ -9,7 +9,7 @@ import { t, type Lang } from "@/lib/i18n";
 // onto its "จุดแข็งของคุณ" / "ที่เราจะช่วยเสริม" columns, so these caps keep that
 // layout unbreakable. Enforced here AND in /api/admin/evaluate.
 const MAX_ITEMS = 5;
-const MAX_ITEM_LEN = 150;
+const MAX_ITEM_LEN = 250;
 
 function ItemListCard({
   title,

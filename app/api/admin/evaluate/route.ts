@@ -33,12 +33,12 @@ export async function POST(request: NextRequest) {
   }
 
   // จุดแข็ง / ที่เราจะช่วยเสริม — itemized lines that map 1:1 onto the customer healthcheck
-  // PDF, so the caps here (5 items × 150 chars) are layout guarantees, not arbitrary limits.
+  // PDF, so the caps here (5 items × 250 chars) are layout guarantees, not arbitrary limits.
   const toItems = (v: unknown): string[] | null => {
     if (v === undefined || v === null) return [];
     if (!Array.isArray(v) || v.some((x) => typeof x !== "string")) return null;
     const items = (v as string[]).map((x) => x.trim()).filter(Boolean);
-    if (items.length > 5 || items.some((x) => x.length > 150)) return null;
+    if (items.length > 5 || items.some((x) => x.length > 250)) return null;
     return items;
   };
   const strengthItems = toItems(strengths);
