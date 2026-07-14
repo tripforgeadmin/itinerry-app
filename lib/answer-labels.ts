@@ -9,7 +9,8 @@ import type { Lang } from "@/lib/i18n";
 export const LABELS: Record<string, Record<string, string>> = {
   visa_type: { tourist: "ท่องเที่ยว", visitor: "เยี่ยมเยียน", business: "ธุรกิจ", student: "นักเรียน" },
   occupation: { employee: "พนักงานประจำ", government: "ข้าราชการ", freelance: "Freelance", business_owner: "เจ้าของธุรกิจ", retired: "เกษียณ", homemaker: "แม่บ้าน", student_occ: "นักเรียน/นักศึกษา" },
-  savings_balance: { under50k: "< 50,000 บาท", "50k_150k": "50,000–150,000 บาท", "150k_300k": "150,000–300,000 บาท", over300k: "> 300,000 บาท" },
+  // over300k is legacy — kept only so rows answered before the 300k-500k/500k-1m split still display correctly.
+  savings_balance: { under50k: "< 50,000 บาท", "50k_150k": "50,000–150,000 บาท", "150k_300k": "150,000–300,000 บาท", "300k_500k": "300,000–500,000 บาท", "500k_1m": "500,000–1,000,000 บาท", over300k: "> 300,000 บาท" },
   source: { facebook: "Facebook", instagram: "Instagram", tiktok: "TikTok", google: "Google", referral: "เพื่อนแนะนำ", other: "อื่นๆ" },
   nationality: { thai: "ไทย", other: "อื่นๆ" },
   contact_preference: { line: "LINE OA", call: "โทรกลับ" },
@@ -32,7 +33,7 @@ export const LABELS: Record<string, Record<string, string>> = {
 export const LABELS_EN: Record<string, Record<string, string>> = {
   visa_type: { tourist: "Tourist", visitor: "Visitor", business: "Business", student: "Student" },
   occupation: { employee: "Employee", government: "Government", business_owner: "Business owner", retired: "Retired", homemaker: "Homemaker", student_occ: "Student" },
-  savings_balance: { under50k: "< 50,000 THB", "50k_150k": "50,000–150,000 THB", "150k_300k": "150,000–300,000 THB", over300k: "> 300,000 THB" },
+  savings_balance: { under50k: "< 50,000 THB", "50k_150k": "50,000–150,000 THB", "150k_300k": "150,000–300,000 THB", "300k_500k": "300,000–500,000 THB", "500k_1m": "500,000–1,000,000 THB", over300k: "> 300,000 THB" },
   source: { referral: "Referral", other: "Other" },
   nationality: { thai: "Thai", other: "Other" },
   contact_preference: { call: "Call back" },
@@ -51,12 +52,13 @@ export const LABELS_EN: Record<string, Record<string, string>> = {
   dependent_expense_sponsor: { parents: "Parents", spouse: "Spouse", self_savings: "Self (savings)", employer: "Employer", other: "Other" },
 };
 
+// spouse_children is legacy — kept only so rows answered before the spouse/children split still display correctly.
 export const TIES_LABELS: Record<string, string> = {
-  job: "งานประจำ/ธุรกิจ", property: "บ้าน/คอนโด/ที่ดิน", spouse_children: "คู่สมรส/บุตร",
+  job: "งานประจำ/ธุรกิจ", property: "บ้าน/คอนโด/ที่ดิน", spouse: "คู่สมรส", children: "บุตร", spouse_children: "คู่สมรส/บุตร",
   dependents: "พ่อแม่/ผู้ดูแล", investments: "เงินลงทุน/ทรัพย์สิน", none: "ไม่มี",
 };
 export const TIES_LABELS_EN: Record<string, string> = {
-  job: "Job/business", property: "Home/condo/land", spouse_children: "Spouse/children",
+  job: "Job/business", property: "Home/condo/land", spouse: "Spouse", children: "Children", spouse_children: "Spouse/children",
   dependents: "Parents/dependents", investments: "Investments/assets", none: "None",
 };
 

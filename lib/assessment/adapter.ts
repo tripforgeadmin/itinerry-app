@@ -39,8 +39,11 @@ const OCC: Record<string, string> = {
 };
 
 // ── savings (q34) → engine band token ─────────────────────────────────────────
+// 300k_500k/500k_1m both land in the same top ">300K" band as legacy over300k — the engine
+// has no scoring granularity above 300k, so splitting the answer options doesn't need a new tier.
 const SAV: Record<string, string> = {
-  under50k: "<50K", "50k_150k": "50-150K", "150k_300k": "150-300K", over300k: ">300K",
+  under50k: "<50K", "50k_150k": "50-150K", "150k_300k": "150-300K",
+  "300k_500k": ">300K", "500k_1m": ">300K", over300k: ">300K",
 };
 
 // ── who pays: q29 (travel expenses) → then q23 (study expenses) → else self ────
@@ -72,8 +75,11 @@ function histToken(q12: string | undefined): string {
 }
 
 // ── ties to Thailand (q35, multi) → engine anchor tokens ──────────────────────
+// spouse/children both map to the same "spouse" strong-anchor token — they were previously
+// one combined option (spouse_children, kept for legacy rows) and score identically.
 const TIE: Record<string, string> = {
-  job: "job", property: "home", spouse_children: "spouse", dependents: "parents", investments: "investment",
+  job: "job", property: "home", spouse: "spouse", children: "spouse", spouse_children: "spouse",
+  dependents: "parents", investments: "investment",
 };
 function tieTokens(q35: string | undefined): string[] {
   return arr(q35).map((v) => TIE[v]).filter(Boolean);

@@ -28,7 +28,7 @@ const INT_C = [C.skyl, C.sky, C.mintt];
 const VT: Record<string, string> = { tourist: "ท่องเที่ยว", visitor: "เยี่ยม/Visitor", business: "ธุรกิจ", student: "นักเรียน", other: "อื่นๆ" };
 const VT_ORDER = ["tourist", "visitor", "business", "student", "other"];
 const VT_C = [C.sky, C.sun, C.navy, C.mintt, C.mute];
-const TIE: Record<string, string> = { dependents: "มีคนในอุปการะ", job: "มีงานประจำ", property: "มีทรัพย์สิน/บ้าน", spouse_children: "คู่สมรส/บุตร", investments: "มีการลงทุน", none: "ไม่มี" };
+const TIE: Record<string, string> = { dependents: "มีคนในอุปการะ", job: "มีงานประจำ", property: "มีทรัพย์สิน/บ้าน", spouse: "คู่สมรส", children: "บุตร", spouse_children: "คู่สมรส/บุตร", investments: "มีการลงทุน", none: "ไม่มี" };
 const TIE_C = [C.mintt, C.sky, C.skyd, C.navys, C.navy, C.mute];
 const SKL: Record<string, string> = { pending_review: "รอตรวจ", evaluated: "ประเมินผล", contacted: "ติดต่อ", pending_decision: "รอตัดสินใจ", lost: "แพ้ดีล", win: "ปิดดีล", human_error: "ข้อมูลผิดพลาด" };
 const SKC: Record<string, string> = { pending_review: "#8FBFDE", evaluated: "#2B86B5", contacted: "#44A8DB", pending_decision: "#FFD166", lost: "#9DB4C4", win: "#1A7A4A", human_error: "#5E7A91" };
@@ -40,7 +40,7 @@ const STL_EN: Record<string, string> = { contacted: "Contacted", lost: "Lost", h
 const OCC_EN: Record<string, string> = { employee: "Employee", freelance: "Freelance", homemaker: "Homemaker", business_owner: "Business owner", government: "Government", retired: "Retired", student_occ: "Student" };
 const INT_EN: Record<string, string> = { explore: "Exploring", execute: "Intent to go", ready: "Ready to apply" };
 const VT_EN: Record<string, string> = { tourist: "Tourist", visitor: "Visitor", business: "Business", student: "Student", other: "Other" };
-const TIE_EN: Record<string, string> = { dependents: "Dependents", job: "Has a job", property: "Property/home", spouse_children: "Spouse/children", investments: "Investments", none: "None" };
+const TIE_EN: Record<string, string> = { dependents: "Dependents", job: "Has a job", property: "Property/home", spouse: "Spouse", children: "Children", spouse_children: "Spouse/children", investments: "Investments", none: "None" };
 const SKL_EN: Record<string, string> = { pending_review: "Pending", evaluated: "Evaluated", contacted: "Contacted", pending_decision: "Pending decision", lost: "Lost", win: "Won", human_error: "Data error" };
 
 // Full ISO→[flag, Thai, English] map so any real destination resolves (mockup hardcoded ~17).

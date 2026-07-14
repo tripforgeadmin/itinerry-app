@@ -18,7 +18,6 @@ import FreelanceSection from "./sections/FreelanceSection";
 import BusinessOwnerSection from "./sections/BusinessOwnerSection";
 import DependentSection from "./sections/DependentSection";
 import CoreQualificationSection from "./sections/CoreQualificationSection";
-import ContactPreferenceSection from "./sections/ContactPreferenceSection";
 import IntentSection from "./sections/IntentSection";
 import StaffMetaSection from "./sections/StaffMetaSection";
 
@@ -78,8 +77,6 @@ export default function ManualCaseForm({ lang = "th" }: { lang?: Lang }) {
     if (answers.q32 === "yes" && !answers.q33_entries) missing.push(t(lang, "รายละเอียด Overstay", "Overstay details"));
     if (answers.q9 !== "student" && !answers.q34) missing.push(t(lang, "ยอดเงินในบัญชี", "Savings balance"));
     if (!answers.q35) missing.push(t(lang, "ความผูกพันกับไทย", "Ties to Thailand"));
-    if (!answers.q36) missing.push(t(lang, "ช่องทางติดต่อ", "Contact preference"));
-    if (answers.q36 === "call" && (!answers.q37_date || !answers.q37)) missing.push(t(lang, "เวลานัดโทรกลับ", "Callback time"));
     if (!answers.q38) missing.push(t(lang, "ความต้องการ", "Intent"));
     if (!staffName.trim()) missing.push(t(lang, "ชื่อเจ้าหน้าที่", "Staff name"));
     return missing;
@@ -129,7 +126,6 @@ export default function ManualCaseForm({ lang = "th" }: { lang?: Lang }) {
         <DependentSection answers={answers} setAnswer={setAnswer} lang={lang} />
       )}
       <CoreQualificationSection answers={answers} setAnswer={setAnswer} lang={lang} />
-      <ContactPreferenceSection answers={answers} setAnswer={setAnswer} lang={lang} />
       <IntentSection answers={answers} setAnswer={setAnswer} lang={lang} />
       <StaffMetaSection staffName={staffName} setStaffName={setStaffName} lang={lang} />
 

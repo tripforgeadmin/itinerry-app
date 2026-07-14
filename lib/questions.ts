@@ -268,6 +268,7 @@ export const QUESTIONS: Question[] = [
       { value: "korea", label: "S. Korea", emoji: "🇰🇷" },
       { value: "china", label: "China", emoji: "🇨🇳" },
       { value: "dubai", label: "Dubai / UAE", emoji: "🇦🇪" },
+      { value: "other", label: "อื่นๆ", labelEn: "Other" },
     ],
   },
 
@@ -638,7 +639,8 @@ export const QUESTIONS: Question[] = [
       { value: "under50k", label: "น้อยกว่า 50,000 บาท", labelEn: "< 50K THB", emoji: "💸" },
       { value: "50k_150k", label: "50,000–150,000 บาท", labelEn: "50–150K THB", emoji: "💰" },
       { value: "150k_300k", label: "150,000–300,000 บาท", labelEn: "150–300K THB", emoji: "💰" },
-      { value: "over300k", label: "มากกว่า 300,000 บาท", labelEn: "> 300K THB", emoji: "💎" },
+      { value: "300k_500k", label: "300,000–500,000 บาท", labelEn: "300–500K THB", emoji: "💎" },
+      { value: "500k_1m", label: "500,000–1,000,000 บาท", labelEn: "500K–1M THB", emoji: "💎" },
     ],
   },
   {
@@ -655,7 +657,8 @@ export const QUESTIONS: Question[] = [
     options: [
       { value: "job", label: "งานประจำหรือธุรกิจในไทย", labelEn: "Job or business in Thailand", emoji: "💼" },
       { value: "property", label: "บ้าน/คอนโด/ที่ดินในไทย", labelEn: "Own property in Thailand", emoji: "🏠" },
-      { value: "spouse_children", label: "คู่สมรสหรือบุตรอยู่ในไทย", labelEn: "Spouse or children in Thailand", emoji: "👨‍👩‍👧" },
+      { value: "spouse", label: "คู่สมรสอยู่ในไทย", labelEn: "Spouse in Thailand", emoji: "💍" },
+      { value: "children", label: "บุตรอยู่ในไทย", labelEn: "Children in Thailand", emoji: "👨‍👩‍👧" },
       { value: "dependents", label: "พ่อแม่หรือผู้ที่ต้องดูแลในไทย", labelEn: "Dependents in Thailand", emoji: "👴" },
       { value: "investments", label: "เงินลงทุนหรือทรัพย์สินอื่น", labelEn: "Investments or other assets", emoji: "📈" },
       { value: "none", label: "ไม่มีข้อใดข้างต้น", labelEn: "None of the above", emoji: "➖" },

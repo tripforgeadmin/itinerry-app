@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/Button";
 import { QuestionShell } from "@/components/screens/QuestionShell";
 import type { ScreenProps } from "@/components/screens/types";
 
-// ties value → obligation cut-out illustration.
+// ties value → obligation cut-out illustration. spouse/children share the one existing
+// illustration (no separate art yet); spouse_children is legacy (pre-split answers).
 const IMG: Record<string, string> = {
   job: "/mascot/itin-obligation-job-cut.png",
   property: "/mascot/itin-obligation-house-cut.png",
+  spouse: "/mascot/itin-obligation-wife-child-cut.png",
+  children: "/mascot/itin-obligation-wife-child-cut.png",
   spouse_children: "/mascot/itin-obligation-wife-child-cut.png",
   dependents: "/mascot/itin-obligation-elder-cut.png",
   investments: "/mascot/itin-obligation-other-asset-cut.png",
