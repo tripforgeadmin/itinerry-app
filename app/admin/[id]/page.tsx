@@ -6,6 +6,7 @@ import ContactEditor from "./ContactEditor";
 import AssessmentResultForm from "./AssessmentResultForm";
 import SendResultFlow from "./SendResultFlow";
 import CopyLineIdButton from "./CopyLineIdButton";
+import LinkLineButton from "./LinkLineButton";
 import MessageLogPanel from "./MessageLogPanel";
 import TicketWorkspace from "./TicketWorkspace";
 import AdminLangToggle from "../AdminLangToggle";
@@ -14,7 +15,8 @@ import path from "node:path";
 import { healthcheckFromDbRow, defaultLangFor } from "@/lib/healthcheck-data";
 import { assessmentResultMessage } from "@/lib/line-messaging";
 import { statusLabel, isClosed } from "@/lib/status";
-import { LABELS, LABELS_EN, label, tieLabel, pastVisaLabel, refusedText, overstayText } from "@/lib/answer-labels";
+import { label } from "@/lib/answer-labels";
+import CaseDataEditor from "./CaseDataEditor";
 import { BAND_COLOR, URGENCY_COLOR, stateWord, historyWord, bandWord, urgencyWord, cellActionEn, consistencyFlagEn } from "@/lib/assessment-vocab";
 import { displayName } from "@/lib/account-name";
 import { fetchLostReasonTree, fetchLostReasonLabels } from "@/lib/lost-reasons";
@@ -218,9 +220,6 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const account = one(s.account);
   const trip = one(s.trip);
   const evaluation = one(s.visa_evaluation);
-  const b = (s.branch_answers ?? {}) as Record<string, string | string[]>;
-  const visaType = trip.visa_type as string;
-  const occ = s.occupation as string;
   const name = displayName(account);
   const isAnonymized = account.full_name === "[ลบแล้ว]" || account.nickname === "[ลบแล้ว]";
   const other = t(lang, "อื่นๆ", "Other");
@@ -282,6 +281,15 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
       <h1 className="text-lg font-bold text-gray-800">{name}</h1>
       {typeof s.ticket_id === "string" && s.ticket_id && (
         <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700">{s.ticket_id}</span>
+      )}
+      {s.entry_source === "manual" && (
+        <span
+          className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500"
+          title={typeof s.manual_entry_staff === "string" ? `${t(lang, "กรอกโดย", "Entered by")}: ${s.manual_entry_staff}` : undefined}
+        >
+          ✍️ {t(lang, "กรอกเอง", "Manual")}
+          {typeof s.manual_entry_staff === "string" && s.manual_entry_staff ? ` · ${s.manual_entry_staff}` : ""}
+        </span>
       )}
       <StatusUpdater id={s.id as string} currentStatus={s.status as string} inline reasons={reasons} todayIso={todayIso} closeInfo={closeInfo} lang={lang} />
       <span className="ml-auto whitespace-nowrap text-xs text-gray-400">
@@ -391,6 +399,11 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
           <span className="text-gray-800 text-sm font-medium flex-1 break-all">{(account.line_user_id as string) ?? "—"}</span>
           <CopyLineIdButton userId={(account.line_user_id as string) ?? null} lang={lang} />
         </div>
+        {!account.line_user_id && (
+          <div className="py-2">
+            <LinkLineButton accountId={account.id as string} lang={lang} />
+          </div>
+        )}
         <Row lang={lang} title={t(lang, "เป็นเพื่อน OA", "OA friend")} value={account.is_friend} />
         <Row lang={lang} title={t(lang, "รูปโปรไฟล์", "Profile picture")} value={account.line_picture_url ? t(lang, "มี", "Yes") : null} />
       </Section>
@@ -411,51 +424,18 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         consentedDisplay={account.consented_at ? new Date(account.consented_at as string).toLocaleDateString(dateLocale(lang), { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : null}
       />
 
-      <Section title={t(lang, "S2 · ปลายทาง + วีซ่า", "S2 · Destination + visa")}>
-        <Row lang={lang} title={t(lang, "ประเทศปลายทาง", "Destination")} value={(trip.destination as string)?.toUpperCase()} />
-        <Row lang={lang} title={t(lang, "ประเภทวีซ่า", "Visa type")} value={label("visa_type", trip.visa_type, lang)} />
-        {(visaType === "tourist" || visaType === "visitor" || visaType === "business") && (
-          <Row lang={lang} title={t(lang, "วันเดินทาง", "Travel date")} value={trip.travel_arrival} />
-        )}
-        {(visaType === "tourist" || visaType === "business") && (
-          <Row lang={lang} title={t(lang, "วันกลับ", "Return date")} value={trip.travel_return} />
-        )}
-        {visaType === "student" && (
-          <Row lang={lang} title={t(lang, "วันเริ่มเรียน", "Study start")} value={trip.study_start} />
-        )}
-        {(() => {
-          const pv = b.previous_visas ?? b.tourist_previous_visas ?? b.business_previous_visas;
-          return Array.isArray(pv) ? (
-            <Row lang={lang} title={t(lang, "วีซ่าที่เคยได้รับ (5 ปี)", "Past visas (5y)")} value={(pv as string[]).map((v) => pastVisaLabel(v, lang)).join(", ")} />
-          ) : null;
-        })()}
-        {visaType === "visitor" && <Row lang={lang} title={t(lang, "สถานะผู้เชิญ", "Host status")} value={label("visitor_host_status", b.visitor_host_status as string, lang)} />}
-        {visaType === "visitor" && <Row lang={lang} title={t(lang, "ความสัมพันธ์", "Relationship")} value={label("visitor_relationship", b.visitor_relationship as string, lang)} />}
-        {visaType === "visitor" && Array.isArray(b.visitor_host_documents) && (
-          <Row lang={lang} title={t(lang, "เอกสารที่ผู้เชิญมี", "Host's documents")} value={(b.visitor_host_documents as string[]).map((v) => (lang === "en" ? LABELS_EN.visitor_host_documents?.[v] : undefined) ?? LABELS.visitor_host_documents[v] ?? v).join(", ")} />
-        )}
-        {visaType === "business" && <Row lang={lang} title="Invitation Letter" value={label("business_invitation_letter", b.business_invitation_letter as string, lang)} />}
-        {visaType === "student" && <Row lang={lang} title="Acceptance Letter" value={label("student_acceptance_letter", b.student_acceptance_letter as string, lang)} />}
-        {visaType === "student" && <Row lang={lang} title={t(lang, "ผู้รับผิดชอบค่าเรียน", "Tuition sponsor")} value={label("student_expense_sponsor", b.student_expense_sponsor as string, lang)} />}
-      </Section>
-
-      <Section title={t(lang, "S3–S4 · อาชีพ", "S3–S4 · Occupation")}>
-        <Row lang={lang} title={t(lang, "อาชีพ", "Occupation")} value={label("occupation", occ, lang)} />
-        {(occ === "employee" || occ === "government") && <Row lang={lang} title={t(lang, "หนังสือรับรองงาน", "Work certificate")} value={label("employee_work_letter", b.employee_work_letter as string, lang)} />}
-        {occ === "freelance" && <Row lang={lang} title={t(lang, "เอกสารพิสูจน์รายได้", "Income proof")} value={label("freelance_income_proof", b.freelance_income_proof as string, lang)} />}
-        {occ === "freelance" && <Row lang={lang} title={t(lang, "เอกสารภาษี 3 ปี", "3-year tax docs")} value={label("freelance_tax_history", b.freelance_tax_history as string, lang)} />}
-        {occ === "business_owner" && <Row lang={lang} title={t(lang, "หนังสือรับรองบริษัท", "Business registration")} value={label("business_registration", b.business_registration as string, lang)} />}
-        {(occ === "retired" || occ === "homemaker" || occ === "student_occ") && (
-          <Row lang={lang} title={t(lang, "ผู้รับผิดชอบค่าเดินทาง", "Travel-cost sponsor")} value={label("dependent_expense_sponsor", b.dependent_expense_sponsor as string, lang)} />
-        )}
-      </Section>
-
-      <Section title={t(lang, "S5 · คัดกรองหลัก", "S5 · Main screening")}>
-        <Row lang={lang} title={t(lang, "ถูกปฏิเสธวีซ่า", "Visa refusal")} value={refusedText(s, lang)} />
-        <Row lang={lang} title="Overstay" value={overstayText(s, lang)} />
-        <Row lang={lang} title={t(lang, "เงินในบัญชี", "Savings balance")} value={label("savings_balance", s.savings_balance, lang)} />
-        <Row lang={lang} title={t(lang, "ความผูกพันกับไทย", "Ties to Thailand")} value={(s.ties_thailand as string[])?.map((v) => tieLabel(v, lang)).join(", ")} />
-      </Section>
+      <CaseDataEditor
+        assessmentId={s.id as string}
+        lang={lang}
+        trip={{
+          destination: (trip.destination as string) ?? null,
+          visa_type: (trip.visa_type as string) ?? null,
+          travel_arrival: (trip.travel_arrival as string) ?? null,
+          travel_return: (trip.travel_return as string) ?? null,
+          study_start: (trip.study_start as string) ?? null,
+        }}
+        s={s}
+      />
     </>
   );
 

@@ -6,6 +6,7 @@ import { normalizePhone } from "@/lib/dialCodes";
 import { bangkokDateTimeToUtc } from "@/lib/holidays";
 import { SLA_HOURS } from "@/lib/status";
 import { verifyAdminSession } from "@/app/api/admin/login/route";
+import { toNull, toJson, tripFieldsFromAnswers, coreAssessmentFieldsFromAnswers, branchAnswersFromAnswers } from "@/lib/manual-case-mapping";
 
 // Mirrors app/api/submit/route.ts's insert logic (account -> user_trip -> user_assessment,
 // same `answers` key vocabulary, same helpers/branch-answer packing, same due-date/SLA and
@@ -15,28 +16,10 @@ import { verifyAdminSession } from "@/app/api/admin/login/route";
 //   - tags the row entry_source="manual" + manual_entry_staff
 //   - skips the email/PDF/LINE-push side effects entirely (OPS already knows about this
 //     lead; those side effects exist to notify people the customer flow doesn't reach)
+// The trip/assessment/branch-answers mapping is shared with app/api/admin/edit-case/route.ts
+// via lib/manual-case-mapping.ts so create and edit never drift apart.
 
-function toNull(v: string | undefined): string | null {
-  return v && v !== "" ? v : null;
-}
-function toDate(v: string | undefined): string | null {
-  return v && v !== "" ? v : null;
-}
-function toArray(v: string | undefined): string[] {
-  if (!v || v === "") return [];
-  return v.split(",").map((s) => s.trim()).filter(Boolean);
-}
-function toJson(v: string | undefined): unknown | null {
-  if (!v || v === "") return null;
-  try {
-    const parsed = JSON.parse(v);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-const REQUIRED_KEYS = ["q3", "q5", "q6", "q8", "q9", "q24", "q30", "q32", "q35", "q36"];
+const REQUIRED_KEYS = ["q3", "q5", "q6", "q8", "q9", "q24", "q30", "q32", "q35"];
 
 export async function POST(request: NextRequest) {
   const token = request.cookies.get("admin_session")?.value;
@@ -65,36 +48,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "savings balance required" }, { status: 400 });
   }
 
-  // ---- sparse categorical branch answers, keyed by question id (identical to /api/submit) ----
-  const branchAnswers: Record<string, string | string[]> = {};
-  const branchMap: Record<string, string> = {
-    q13: "visitor_arrival",
-    q14: "visitor_host_status",
-    q15: "visitor_relationship",
-    q16: "visitor_host_documents",
-    q17: "business_arrival",
-    q18: "business_return",
-    q19: "business_invitation_letter",
-    q22: "student_acceptance_letter",
-    q23: "student_expense_sponsor",
-    q25: "employee_work_letter",
-    q26: "freelance_income_proof",
-    q27: "freelance_tax_history",
-    q28: "business_registration",
-    q29: "dependent_expense_sponsor",
-  };
-  const multiSelectBranchKeys = new Set(["q12", "q16", "q26"]);
-
-  if (answers.q12 && answers.q12 !== "") {
-    branchAnswers["previous_visas"] = toArray(answers.q12);
-  }
-  for (const [qKey, semanticKey] of Object.entries(branchMap)) {
-    const val = answers[qKey];
-    if (val && val !== "") {
-      branchAnswers[semanticKey] = multiSelectBranchKeys.has(qKey) ? toArray(val) : val;
-    }
-  }
-
+  const branchAnswers = branchAnswersFromAnswers(answers);
   const nickname = toNull(answers.q3) ?? "";
 
   // ===== 1) account — always a fresh insert, no LINE identity yet =====
@@ -127,12 +81,8 @@ export async function POST(request: NextRequest) {
   const { data: trip, error: tripError } = await supabase
     .from("user_trip")
     .insert({
-      account_id:     account.id,
-      destination:    answers.q8 ?? "",
-      visa_type:      answers.q9 ?? "",
-      travel_arrival: toDate(answers.q10 ?? answers.q13 ?? answers.q17),
-      travel_return:  toDate(answers.q11 ?? answers.q39 ?? answers.q18),
-      study_start:    toDate(answers.q21),
+      account_id: account.id,
+      ...tripFieldsFromAnswers(answers),
     })
     .select("id")
     .single();
@@ -154,16 +104,8 @@ export async function POST(request: NextRequest) {
     trip_id:              trip.id,
     account_id:           account.id,
     ticket_id:            ticketId,
-    occupation:           answers.q24 ?? "",
+    ...coreAssessmentFieldsFromAnswers(answers),
     intent:               toNull(answers.q38),
-    visa_refused:         answers.q30 === "yes",
-    visa_refused_details: answers.q30 === "yes" ? toNull(answers.q31) : null,
-    visa_refused_entries: answers.q30 === "yes" ? toJson(answers.q31_entries) : null,
-    overstayed:           answers.q32 === "yes",
-    overstay_details:     answers.q32 === "yes" ? toNull(answers.q33) : null,
-    overstay_entries:     answers.q32 === "yes" ? toJson(answers.q33_entries) : null,
-    savings_balance:      answers.q34 ?? "",
-    ties_thailand:        toArray(answers.q35),
     contact_preference:   answers.q36 ?? "",
     callback_time:        callbackDatetime ? `${answers.q37_date} ${answers.q37}` : null,
     callback_datetime:    callbackDatetime ? callbackDatetime.toISOString() : null,
