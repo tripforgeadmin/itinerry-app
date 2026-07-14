@@ -23,7 +23,7 @@ export const STATUS_OPTIONS: StatusOption[] = [
   { value: "pending_decision", label: "รอตัดสินใจ", color: "bg-orange-100 text-orange-700" },
   { value: "win", label: "Closed Won", color: "bg-green-100 text-green-700" },
   { value: "lost", label: "Closed Lost", color: "bg-red-100 text-red-700" },
-  { value: "human_error", label: "ผิดพลาดจากเจ้าหน้าที่", color: "bg-pink-100 text-pink-700" },
+  { value: "human_error", label: "ผิดพลาด", color: "bg-pink-100 text-pink-700" },
 ];
 
 // The two Salesforce-style closing statuses. A close stamps close_date + (for lost) a reason;
@@ -50,7 +50,7 @@ export const STATUS_LABEL_EN: Record<StatusValue, string> = {
   pending_decision: "Pending decision",
   win: "Closed Won",
   lost: "Closed Lost",
-  human_error: "Staff error",
+  human_error: "Error",
 };
 
 /** Status label by language (defaults to Thai). */
