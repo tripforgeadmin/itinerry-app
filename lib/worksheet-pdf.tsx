@@ -146,12 +146,8 @@ const s = StyleSheet.create({
   flagText: { color: "#92400e", fontSize: 9 },
   fillBox: { borderWidth: 1, borderColor: LINE, borderRadius: 6, padding: 10, marginTop: 6 },
   fillLabel: { fontSize: 9, fontWeight: 700, color: NAVY, marginBottom: 3 },
-  input: { height: 17, borderWidth: 0.75, borderColor: "#cbd5e1", borderRadius: 3, marginBottom: 4, fontSize: 9, padding: 2 },
-  inputML: { height: 58, borderWidth: 0.75, borderColor: "#cbd5e1", borderRadius: 3, fontSize: 9, padding: 2 },
-  filledLine: { backgroundColor: "#f8fafc", borderRadius: 3, marginBottom: 4, paddingVertical: 2.5, paddingHorizontal: 4, fontSize: 9 },
   notesFilled: { backgroundColor: "#f8fafc", borderRadius: 3, padding: 6, fontSize: 9 },
   fillArea: { height: 88, borderWidth: 0.75, borderColor: "#cbd5e1", borderRadius: 3, fontSize: 9, padding: 4 },
-  filledArea: { minHeight: 88, backgroundColor: "#f8fafc", borderRadius: 3, padding: 6, fontSize: 9, lineHeight: 1.5 },
   checkbox: { width: 11, height: 11, borderWidth: 0.75, borderColor: "#64748b", marginRight: 4 },
   checkRow: { flexDirection: "row", alignItems: "center", marginRight: 18 },
   footerLeft: { position: "absolute", bottom: 24, left: 36, fontSize: 7.5, color: MUTED },
@@ -192,6 +188,13 @@ function Worksheet({ d }: { d: WorksheetData }) {
   const pending = d.statusLabel === "รอประเมิน";
   const strengths = m?.strengths ?? [];
   const improvements = m?.improvements ?? [];
+  // Existing evaluator content, shown read-only above the always-editable note box (AcroForm
+  // fields can't prefill Thai, so the box stays blank and fillable for outsource revisions).
+  const existingRef = [
+    strengths.length ? `จุดแข็งของลูกค้า:\n${strengths.map((x) => `• ${x}`).join("\n")}` : "",
+    improvements.length ? `ที่เราจะช่วยเสริม:\n${improvements.map((x) => `• ${x}`).join("\n")}` : "",
+    m?.notes ? `ความเห็นเพิ่มเติม:\n${m.notes}` : "",
+  ].filter(Boolean).join("\n\n");
 
   return (
     <Document title={`${d.ticketId} — ใบงานประเมินวีซ่า`} author="itinerry (internal)">
@@ -346,7 +349,10 @@ function Worksheet({ d }: { d: WorksheetData }) {
           </>
         )}
 
-        {/* evaluator fill section — real AcroForm fields, mirrors the admin form 1:1 */}
+        {/* evaluator fill section — one always-editable note field (+ pass checkboxes) so an
+            outsource can revise the assessment straight in the PDF, even after the case is
+            closed. Existing content shows read-only above; the box stays blank & fillable
+            because pdfkit's AcroForm appearance can't encode Thai prefilled values. */}
         <View style={s.fillBox} wrap={false}>
           <Text style={[s.fillLabel, { fontSize: 10.5 }]}>ส่วนผู้ประเมินกรอก</Text>
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, marginTop: 2 }}>
@@ -359,39 +365,14 @@ function Worksheet({ d }: { d: WorksheetData }) {
               <Text>ไม่ผ่านเกณฑ์</Text>
             </View>
           </View>
-          {/* One long fillable box per side. Recorded values print as regular Text (embedded
-              Sarabun) — pdfkit's AcroForm appearance can't encode Thai, so prefilled values
-              in a TextInput would render as garbage glyphs; only EMPTY boxes are fields. */}
-          <View style={{ flexDirection: "row" }}>
-            <View style={{ flex: 1, marginRight: 10 }}>
-              <Text style={s.fillLabel}>จุดแข็งของลูกค้า (ลง PDF ลูกค้า)</Text>
-              {strengths.length ? (
-                <Text style={s.filledArea}>{strengths.map((x) => `• ${x}`).join("\n")}</Text>
-              ) : (
-                <TextInput name="strengths" multiline style={s.fillArea} />
-              )}
+          {existingRef ? (
+            <View style={{ marginBottom: 8 }}>
+              <Text style={[s.cardSub, { marginBottom: 2 }]}>ข้อมูลเดิม (อ้างอิง — แก้ไขในช่องด้านล่าง)</Text>
+              <Text style={s.notesFilled}>{existingRef}</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.fillLabel}>ที่เราจะช่วยเสริม (ลง PDF ลูกค้า)</Text>
-              {improvements.length ? (
-                <Text style={s.filledArea}>{improvements.map((x) => `• ${x}`).join("\n")}</Text>
-              ) : (
-                <TextInput name="improvements" multiline style={s.fillArea} />
-              )}
-            </View>
-          </View>
-          <Text style={[s.fillLabel, { marginTop: 6 }]}>ความเห็นเพิ่มเติม (แสดงในรายงานลูกค้า)</Text>
-          {m?.notes ? (
-            <Text style={s.notesFilled}>{m.notes}</Text>
-          ) : (
-            <TextInput name="notes" multiline style={s.inputML} />
-          )}
-          <View style={{ flexDirection: "row", marginTop: 8, alignItems: "center" }}>
-            <Text style={{ color: MUTED, marginRight: 4 }}>ผู้ประเมิน:</Text>
-            <TextInput name="evaluator" style={[s.input, { width: 150, marginBottom: 0, marginRight: 14 }]} />
-            <Text style={{ color: MUTED, marginRight: 4 }}>วันที่/เวลา:</Text>
-            <TextInput name="evaluated_at" style={[s.input, { width: 130, marginBottom: 0 }]} />
-          </View>
+          ) : null}
+          <Text style={s.fillLabel}>ผลประเมิน</Text>
+          <TextInput name="evaluator_notes" multiline style={[s.fillArea, { height: 130 }]} />
         </View>
 
         {/* footer — direct fixed absolute Texts (a fixed wrapper View silently drops them) */}
