@@ -4,7 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { STATUS_COLOR, MANUAL_STATUS_OPTIONS, REOPEN_TARGET, statusLabel, isClosed, type StatusValue } from "@/lib/status";
 import type { LostReasonCategory } from "@/lib/lost-reasons";
+import { sortedCountries } from "@/lib/countries";
 import { t, type Lang } from "@/lib/i18n";
+
+const COVERAGE_GAP_KEY = "coverage_gap"; // เหตุผลย่อย "ไม่รองรับประเภทวีซ่า/ประเทศ" — the only case asking for country/visa type
 
 type CloseInfo = {
   close_date: string | null;
@@ -12,6 +15,8 @@ type CloseInfo = {
   lost_reason_l2: string | null;
   close_notes: string | null;
   won_service_type: string | null;
+  lost_destination_country: string | null;
+  lost_visa_type: string | null;
 };
 
 export default function StatusUpdater({
@@ -44,6 +49,9 @@ export default function StatusUpdater({
   const [l2, setL2] = useState(closeInfo?.lost_reason_l2 ?? "");
   const [notes, setNotes] = useState(closeInfo?.close_notes ?? "");
   const [serviceType, setServiceType] = useState<"full" | "diy">(closeInfo?.won_service_type === "diy" ? "diy" : "full");
+  const [destCountry, setDestCountry] = useState(closeInfo?.lost_destination_country ?? "");
+  const [visaType, setVisaType] = useState(closeInfo?.lost_visa_type ?? "");
+  const countries = sortedCountries(lang === "en" ? "en" : "th");
 
   const currentClosed = isClosed(status);
   const hasPendingChange = pendingStatus !== null && pendingStatus !== status;
@@ -90,6 +98,8 @@ export default function StatusUpdater({
       closeDate,
       lostReasonL1: closeModal === "lost" ? l1 : undefined,
       lostReasonL2: closeModal === "lost" ? l2 : undefined,
+      lostDestinationCountry: closeModal === "lost" && l2 === COVERAGE_GAP_KEY ? destCountry : undefined,
+      lostVisaType: closeModal === "lost" && l2 === COVERAGE_GAP_KEY ? visaType : undefined,
       closeNotes: notes,
       wonServiceType: closeModal === "win" ? serviceType : undefined,
     });
@@ -178,11 +188,41 @@ export default function StatusUpdater({
                 </div>
                 <div>
                   <label className="text-xs text-gray-400">{t(lang, "เหตุผลย่อย", "Sub-reason")} *</label>
-                  <select value={l2} onChange={(e) => setL2(e.target.value)} disabled={!l1} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm disabled:bg-gray-50">
+                  <select
+                    value={l2}
+                    onChange={(e) => {
+                      setL2(e.target.value);
+                      if (e.target.value !== COVERAGE_GAP_KEY) { setDestCountry(""); setVisaType(""); }
+                    }}
+                    disabled={!l1}
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm disabled:bg-gray-50"
+                  >
                     <option value="">{t(lang, "— เลือก —", "— Select —")}</option>
                     {reasons.find((c) => c.key === l1)?.children.map((s) => <option key={s.key} value={s.key}>{reasonLabel(s)}</option>)}
                   </select>
                 </div>
+
+                {l2 === COVERAGE_GAP_KEY && (
+                  <>
+                    <div>
+                      <label className="text-xs text-gray-400">{t(lang, "ประเทศปลายทาง", "Destination country")}</label>
+                      <select value={destCountry} onChange={(e) => setDestCountry(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                        <option value="">{t(lang, "— เลือก —", "— Select —")}</option>
+                        {countries.map((c) => <option key={c.code} value={c.code}>{lang === "en" ? c.en : c.th}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400">{t(lang, "ประเภทวีซ่า", "Visa type")}</label>
+                      <input
+                        type="text"
+                        value={visaType}
+                        onChange={(e) => setVisaType(e.target.value)}
+                        placeholder={t(lang, "เช่น ท่องเที่ยว, ธุรกิจ", "e.g. Tourist, Business")}
+                        className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

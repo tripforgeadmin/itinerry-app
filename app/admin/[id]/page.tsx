@@ -21,6 +21,7 @@ import CaseDataEditor from "./CaseDataEditor";
 import { BAND_COLOR, URGENCY_COLOR, stateWord, historyWord, bandWord, urgencyWord, cellActionEn, consistencyFlagEn } from "@/lib/assessment-vocab";
 import { displayName } from "@/lib/account-name";
 import { fetchLostReasonTree, fetchLostReasonLabels } from "@/lib/lost-reasons";
+import { COUNTRIES } from "@/lib/countries";
 import { bangkokNow } from "@/lib/holidays";
 import { getAdminLang } from "@/lib/admin-lang";
 import { t, dateLocale, type Lang } from "@/lib/i18n";
@@ -240,7 +241,12 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
     lost_reason_l2: (s.lost_reason_l2 as string | null) ?? null,
     close_notes: (s.close_notes as string | null) ?? null,
     won_service_type: (s.won_service_type as string | null) ?? null,
+    lost_destination_country: (s.lost_destination_country as string | null) ?? null,
+    lost_visa_type: (s.lost_visa_type as string | null) ?? null,
   };
+  const lostDestCountryLabel = closeInfo.lost_destination_country
+    ? COUNTRIES.find((c) => c.code === closeInfo.lost_destination_country)?.[lang === "en" ? "en" : "th"] ?? closeInfo.lost_destination_country
+    : null;
 
   // Send-result card (healthcheck image + message, 2-step confirm) — lives in the LEFT column.
   const hcTh = healthcheckFromDbRow(s, "th");
@@ -328,6 +334,12 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
                 .map((k) => reasonLabels[k as string] ?? k)
                 .join(" · ")}
             />
+          )}
+          {s.status === "lost" && closeInfo.lost_reason_l2 === "coverage_gap" && (
+            <>
+              <Row lang={lang} title={t(lang, "ประเทศปลายทาง", "Destination country")} value={lostDestCountryLabel} />
+              <Row lang={lang} title={t(lang, "ประเภทวีซ่า", "Visa type")} value={closeInfo.lost_visa_type} />
+            </>
           )}
           <Row lang={lang} title={t(lang, "โน้ต", "Notes")} value={closeInfo.close_notes} />
         </Section>

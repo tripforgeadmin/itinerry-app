@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  const { id, status, closeDate, lostReasonL1, lostReasonL2, closeNotes, wonServiceType } = await request.json();
+  const { id, status, closeDate, lostReasonL1, lostReasonL2, closeNotes, wonServiceType, lostDestinationCountry, lostVisaType } = await request.json();
   if (!id || !VALID_STATUSES.includes(status)) {
     return NextResponse.json({ ok: false, error: "invalid input" }, { status: 400 });
   }
@@ -35,12 +35,15 @@ export async function POST(request: NextRequest) {
     if (!lostReasonL1 || !lostReasonL2 || !(await isValidLostReasonPair(lostReasonL1, lostReasonL2))) {
       return NextResponse.json({ ok: false, error: "invalid or missing lost reason" }, { status: 400 });
     }
+    const isCoverageGap = lostReasonL2 === "coverage_gap";
     Object.assign(update, {
       close_date: closeIso,
       lost_reason_l1: lostReasonL1,
       lost_reason_l2: lostReasonL2,
       close_notes: notes,
       won_service_type: null,
+      lost_destination_country: isCoverageGap && typeof lostDestinationCountry === "string" && lostDestinationCountry ? lostDestinationCountry : null,
+      lost_visa_type: isCoverageGap && typeof lostVisaType === "string" && lostVisaType.trim() ? lostVisaType.trim() : null,
     });
     const labels = await fetchLostReasonLabels();
     historyNote = `${labels[lostReasonL1] ?? lostReasonL1} · ${labels[lostReasonL2] ?? lostReasonL2}`;
@@ -52,6 +55,8 @@ export async function POST(request: NextRequest) {
       close_notes: notes,
       lost_reason_l1: null,
       lost_reason_l2: null,
+      lost_destination_country: null,
+      lost_visa_type: null,
     });
     historyNote = serviceType === "diy" ? "DIY" : "Full service";
   } else if (reopening) {
@@ -61,6 +66,8 @@ export async function POST(request: NextRequest) {
       lost_reason_l2: null,
       close_notes: null,
       won_service_type: null,
+      lost_destination_country: null,
+      lost_visa_type: null,
     });
     historyNote = "เปิดเคสใหม่";
   }
