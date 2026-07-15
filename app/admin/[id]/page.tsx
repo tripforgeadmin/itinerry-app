@@ -7,6 +7,7 @@ import AssessmentResultForm from "./AssessmentResultForm";
 import SendResultFlow from "./SendResultFlow";
 import CopyLineIdButton from "./CopyLineIdButton";
 import LinkLineButton from "./LinkLineButton";
+import CollapsibleSection from "./CollapsibleSection";
 import MessageLogPanel from "./MessageLogPanel";
 import TicketWorkspace from "./TicketWorkspace";
 import AdminLangToggle from "../AdminLangToggle";
@@ -392,7 +393,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
 
       <AutoAssessment evaluation={evaluation} lang={lang} />
 
-      <Section title="LINE">
+      <CollapsibleSection title="LINE">
         <Row lang={lang} title="Display Name" value={account.line_display_name} />
         <div className="flex gap-3 py-2 border-b border-gray-50 items-center">
           <span className="text-gray-400 text-sm w-48 shrink-0">User ID</span>
@@ -406,7 +407,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         )}
         <Row lang={lang} title={t(lang, "เป็นเพื่อน OA", "OA friend")} value={account.is_friend} />
         <Row lang={lang} title={t(lang, "รูปโปรไฟล์", "Profile picture")} value={account.line_picture_url ? t(lang, "มี", "Yes") : null} />
-      </Section>
+      </CollapsibleSection>
 
       <ContactEditor
         accountId={account.id as string}
