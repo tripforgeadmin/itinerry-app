@@ -1,6 +1,7 @@
 import { COUNTRIES } from "./countries";
 import { bangkokNow } from "./holidays";
 import { displayName, type NameFields } from "./account-name";
+import { stateWord, historyWord, bandWord } from "./assessment-vocab";
 
 /**
  * Data + copy for the customer-facing "ผลตรวจสุขภาพวีซ่า" (Visa Health Check) card.
@@ -11,10 +12,13 @@ import { displayName, type NameFields } from "./account-name";
  * flawlessly. Printing uses the browser dialog; the LINE image (send flow) is produced
  * client-side from the same DOM and uploaded.
  *
- * Tone contract (owner decision): NO verdict, score, band, pricing, or internal decision
- * labels on the card — it's shareable and persistent. The verdict lives in the admin's
- * chat message that accompanies it. Countdown copy adapts to the days-left window,
- * computed fresh at render time (not from the stale submit-time engine run).
+ * Tone contract (owner decision, amended): still NO numeric score, pass/fail band, pricing,
+ * or color-coded verdict on the card — it's shareable and persistent, and a blunt colored
+ * rating out of context reads harshly without an admin there to explain it. The four
+ * assessment-factor *words* (ties/funding/travel-history/approval-chance) are shown as
+ * plain neutral text, uncolored — the number and the g/y/r coloring stay admin-only.
+ * Countdown copy adapts to the days-left window, computed fresh at render time (not from
+ * the stale submit-time engine run).
  */
 
 export interface HealthcheckData {
@@ -28,6 +32,11 @@ export interface HealthcheckData {
   slot3Value: string;
   travelLabel: string; // "ต.ค. 2569 · อีก ~3 เดือน"
   daysLeft: number | null;
+  // Assessment-factor words only (no score, no band, no color) — see the tone contract above.
+  tiesWord: string;
+  fundingWord: string;
+  travelHistoryWord: string;
+  approvalWord: string;
   strengths: string[];
   improvements: string[];
   notes: string;
@@ -185,6 +194,15 @@ export function healthcheckFromDbRow(row: Dict, langOverride?: "th" | "en"): Hea
     travelLabel = `${monthLabel} · ${rel}`;
   }
 
+  // Assessment factors — same auto-value/override-value precedence as the admin's AutoAssessment
+  // panel (app/admin/[id]/page.tsx), but only the word renders here; no score, band, or color.
+  const result = (ev.result ?? {}) as Dict;
+  const colors = (result._colors ?? {}) as Dict;
+  const tiesColor = (ev.override_ties as string | null) ?? (colors.ties as string) ?? "";
+  const fundingColor = (ev.override_funding as string | null) ?? (result.pillar_funding as string) ?? "";
+  const riskColor = (ev.override_risk as string | null) ?? (result.pillar_risk as string) ?? "";
+  const bandVal = (ev.override_band as string | null) ?? (result.approvability_band as string | undefined) ?? "";
+
   return {
     ticketId: (row.ticket_id as string) || "—",
     lang,
@@ -196,6 +214,10 @@ export function healthcheckFromDbRow(row: Dict, langOverride?: "th" | "en"): Hea
     slot3Value,
     travelLabel,
     daysLeft,
+    tiesWord: tiesColor ? stateWord(tiesColor, lang) : "—",
+    fundingWord: fundingColor ? stateWord(fundingColor, lang) : "—",
+    travelHistoryWord: riskColor ? historyWord(riskColor, lang) : "—",
+    approvalWord: bandVal ? bandWord(bandVal, lang) : "—",
     strengths: Array.isArray(ev.strengths) ? (ev.strengths as string[]) : [],
     improvements: Array.isArray(ev.improvements) ? (ev.improvements as string[]) : [],
     notes: ((ev.notes as string) ?? "").trim(),

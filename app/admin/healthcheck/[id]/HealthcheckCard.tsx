@@ -17,6 +17,7 @@ const MUTED = "#5c7a93";
 export default function HealthcheckCard({ data: d, flagSrc }: { data: HealthcheckData; flagSrc: string | null }) {
   const lang = d.lang;
   const cd = countdownCopy(lang, d.daysLeft);
+  const hasAssessment = d.tiesWord !== "—" || d.fundingWord !== "—" || d.travelHistoryWord !== "—" || d.approvalWord !== "—";
   const evalBadge = d.evaluatedAt
     ? new Date(d.evaluatedAt).toLocaleString(lang === "th" ? "th-TH" : "en-GB", {
         timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
@@ -63,6 +64,12 @@ export default function HealthcheckCard({ data: d, flagSrc }: { data: Healthchec
                 {flagSrc && <img src={flagSrc} width={30} height={20} alt="" style={{ borderRadius: 4, marginRight: 10 }} />}
                 {d.destName} · {d.visaLabel}
               </div>
+              <div style={{ display: "flex", alignItems: "center", backgroundColor: "#ffffff", borderRadius: 999, padding: "10px 22px", fontSize: 21, fontWeight: 600, color: NAVY }}>
+                🤝 {d.slot3Value}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", backgroundColor: "#ffffff", borderRadius: 999, padding: "10px 22px", fontSize: 21, fontWeight: 600, color: NAVY }}>
+                🗓️ {d.travelLabel}
+              </div>
             </div>
           </div>
           <img src="/mascot/itin_thai-passport-cut.png" width={210} height={210} alt="" style={{ marginLeft: 16, objectFit: "contain" }} />
@@ -71,21 +78,23 @@ export default function HealthcheckCard({ data: d, flagSrc }: { data: Healthchec
 
       {/* body */}
       <div style={{ display: "flex", flexDirection: "column", padding: "30px 52px 0" }}>
-        {/* travel info card */}
-        <div style={{ display: "flex", flexDirection: "column", border: "2px solid #e3eef6", borderRadius: 24, padding: "26px 30px 4px" }}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: NAVY, marginBottom: 20 }}>
-            📘 {t(lang, "ข้อมูลการเดินทางของคุณ", "Your trip at a glance")}
+        {/* assessment factors — words only, no score/band/color (see tone contract in healthcheck-data.ts) */}
+        {hasAssessment && (
+          <div style={{ display: "flex", flexDirection: "column", border: "2px solid #e3eef6", borderRadius: 24, padding: "26px 30px 4px" }}>
+            <div style={{ fontSize: 24, fontWeight: 700, color: NAVY, marginBottom: 20 }}>
+              📊 {t(lang, "ผลประเมิน", "Assessment")}
+            </div>
+            <div style={{ display: "flex", flexWrap: "nowrap", gap: 12 }}>
+              <Cell icon="🏠" label={t(lang, "ความผูกพันในไทย", "Ties in Thailand")} value={d.tiesWord} />
+              <Cell icon="💰" label={t(lang, "การเงิน", "Funding")} value={d.fundingWord} />
+              <Cell icon="🧳" label={t(lang, "ประวัติการเดินทาง", "Travel history")} value={d.travelHistoryWord} />
+              <Cell icon="📈" label={t(lang, "โอกาสผ่าน", "Approval chance")} value={d.approvalWord} />
+            </div>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between" }}>
-            <Cell icon="📍" label={t(lang, "ปลายทาง", "Destination")} value={d.destName} />
-            <Cell icon="🛂" label={t(lang, "ประเภทวีซ่า", "Visa type")} value={d.visaLabel} />
-            <Cell icon="🤝" label={d.slot3Label} value={d.slot3Value} />
-            <Cell icon="🗓️" label={t(lang, "กำหนดเดินทาง", "Planned travel")} value={d.travelLabel} />
-          </div>
-        </div>
+        )}
 
         {/* countdown */}
-        <div style={{ display: "flex", alignItems: "center", backgroundColor: "#f2f9fe", borderRadius: 24, padding: "24px 30px", marginTop: 22 }}>
+        <div style={{ display: "flex", alignItems: "center", backgroundColor: "#f2f9fe", borderRadius: 24, padding: "24px 30px", marginTop: hasAssessment ? 22 : 0 }}>
           {d.daysLeft !== null && d.daysLeft >= 0 && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingRight: 30, marginRight: 30, borderRight: "2px solid #d9ebf7" }}>
               <div style={{ fontSize: 62, fontWeight: 700, color: ACCENT, lineHeight: 1 }}>{d.daysLeft}</div>
@@ -135,7 +144,7 @@ export default function HealthcheckCard({ data: d, flagSrc }: { data: Healthchec
             <div style={{ fontSize: 22, fontWeight: 700, color: NAVY, marginBottom: 8 }}>
               💬 {t(lang, "ความเห็นเพิ่มเติม", "A note from our team")}
             </div>
-            <div style={{ fontSize: 20, color: "#33475b", lineHeight: 1.5 }}>{d.notes}</div>
+            <div style={{ fontSize: 20, color: "#33475b", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{d.notes}</div>
           </div>
         )}
 
@@ -153,28 +162,24 @@ export default function HealthcheckCard({ data: d, flagSrc }: { data: Healthchec
         </div>
       </div>
 
-      {/* footer CTA */}
-      <div style={{ display: "flex", alignItems: "center", backgroundColor: ACCENT, padding: "30px 52px", marginTop: 26 }}>
+      {/* footer CTA — follow on itinerry social (Instagram @itinerry.visa + Facebook itinerry) */}
+      <div style={{ display: "flex", alignItems: "center", backgroundColor: ACCENT, padding: "34px 52px", marginTop: 26 }}>
         <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
           <div style={{ fontSize: 40, fontWeight: 700, color: "#ffffff" }}>
             {t(lang, "คุยต่อกับผู้เชี่ยวชาญใน itinerry", "Talk to an itinerry expert")}
           </div>
           <div style={{ display: "flex", alignItems: "center", fontSize: 21, color: "#eaf6fd", marginTop: 8 }}>
-            {t(lang, "ทักไลน์แล้วคุยต่อได้เลย ทีมช่วยดูให้ทีละขั้น", "Message us on LINE to keep going — we'll walk you through it")}
+            {t(lang, "ติดตามเราทางโซเชียล ทีมช่วยดูให้ทีละขั้น", "Follow us on social — we'll walk you through it")}
             <span style={{ display: "flex", backgroundColor: "#fed984", color: "#5d4200", borderRadius: 999, padding: "5px 16px", fontSize: 18, fontWeight: 700, marginLeft: 14 }}>
               {t(lang, "ประเมินเชิงลึก ฟรี", "Free in-depth review")}
             </span>
           </div>
-          <div style={{ display: "flex", marginTop: 16 }}>
-            <span style={{ display: "flex", alignItems: "center", backgroundColor: "#ffffff", borderRadius: 999, padding: "10px 24px", fontSize: 23, fontWeight: 700, color: "#06C755" }}>
-              LINE OA @itinerry
-            </span>
-          </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <img src="/line/qrcode-default.png" width={196} height={221} alt="LINE QR" style={{ borderRadius: 20 }} />
-          <div style={{ fontSize: 17, color: "#ffffff", marginTop: 6 }}>
-            {t(lang, "สแกนเพื่อแอดไลน์", "Scan to add us on LINE")}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+          <div style={{ fontSize: 17, color: "#eaf6fd", marginBottom: 10 }}>{t(lang, "ติดตามเรา", "Follow us")}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <SocialPill glyph={<InstagramGlyph />} handle="@itinerry.visa" />
+            <SocialPill glyph={<FacebookGlyph />} handle="itinerry" />
           </div>
         </div>
       </div>
@@ -191,14 +196,39 @@ export default function HealthcheckCard({ data: d, flagSrc }: { data: Healthchec
 
 function Cell({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", width: "47%", marginBottom: 26 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: 16, backgroundColor: HERO_BG, fontSize: 26, marginRight: 16, flexShrink: 0 }}>
-        {icon}
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-        <div style={{ fontSize: 19, color: MUTED }}>{label}</div>
-        <div style={{ fontSize: 25, fontWeight: 700, color: NAVY, lineHeight: 1.3 }}>{value}</div>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, textAlign: "center", marginBottom: 22 }}>
+      <div style={{ fontSize: 24, marginBottom: 4 }}>{icon}</div>
+      <div style={{ fontSize: 16, color: MUTED, lineHeight: 1.3 }}>{label}</div>
+      <div style={{ fontSize: 21, fontWeight: 700, color: NAVY, lineHeight: 1.3 }}>{value}</div>
     </div>
+  );
+}
+
+/** White social chip (icon + handle) matching the old LINE-button look. Inline-SVG glyphs so
+ *  the DOM→PNG export (html-to-image) renders them crisply with no external asset fetch. */
+function SocialPill({ glyph, handle }: { glyph: React.ReactNode; handle: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", backgroundColor: "#ffffff", borderRadius: 999, padding: "9px 22px 9px 14px", minWidth: 210 }}>
+      <div style={{ display: "flex", alignItems: "center", marginRight: 10 }}>{glyph}</div>
+      <span style={{ fontSize: 21, fontWeight: 700, color: NAVY }}>{handle}</span>
+    </div>
+  );
+}
+
+function InstagramGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" width={26} height={26} fill="none" stroke="#d6318c" strokeWidth={2}>
+      <rect x="2.2" y="2.2" width="19.6" height="19.6" rx="5.5" />
+      <circle cx="12" cy="12" r="4.6" />
+      <circle cx="17.6" cy="6.4" r="1.35" fill="#d6318c" stroke="none" />
+    </svg>
+  );
+}
+
+function FacebookGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" width={26} height={26} fill="#1877f2">
+      <path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z" />
+    </svg>
   );
 }
