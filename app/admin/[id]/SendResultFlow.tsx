@@ -7,7 +7,7 @@ import type { HealthcheckData } from "@/lib/healthcheck-data";
 import HealthcheckCard from "@/app/admin/healthcheck/[id]/HealthcheckCard";
 import { t, dateLocale, type Lang } from "@/lib/i18n";
 
-const MAX_MESSAGE = 500;
+const MAX_MESSAGE = 2000;
 
 /**
  * "ส่งผลประเมินให้ลูกค้า" — appears once the case is marked evaluated. Opens a modal with
@@ -170,7 +170,7 @@ export default function SendResultFlow({
               <textarea
                 value={message}
                 onChange={(e) => { setMessage(e.target.value.slice(0, MAX_MESSAGE)); setMessageEdited(true); }}
-                rows={4}
+                rows={8}
                 className="w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-200"
               />
               <div className="flex items-center">

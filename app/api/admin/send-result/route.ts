@@ -10,7 +10,7 @@ import { pushMessageLogged } from "@/lib/message-log";
  * evaluated → contacted automatically.
  */
 
-const MAX_MESSAGE = 500;
+const MAX_MESSAGE = 2000;
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024; // Vercel request budget; LINE allows 10MB
 const MAX_PREVIEW_BYTES = 1 * 1024 * 1024; // LINE previewImageUrl hard limit
 
