@@ -23,6 +23,14 @@ function isLineBrowser(): boolean {
   return /Line\//i.test(navigator.userAgent);
 }
 
+// The LIFF deep-link ("เปิดใน LINE app") only makes sense on mobile — desktop has no LINE
+// app to hand off to. Desktop users skip straight to the real login button below, which goes
+// through LINE's standard OAuth page (QR-scan to authenticate, then the redirect lands back
+// in this same desktop tab) rather than moving the whole session to mobile.
+function isMobileDevice(): boolean {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
 export default function AuthPage() {
   const [loading, setLoading] = useState<null | "continue" | "new">(null);
   const [showOpenInLine, setShowOpenInLine] = useState(false);
@@ -31,7 +39,7 @@ export default function AuthPage() {
   const typed = useTypewriter(TAGLINES);
 
   useEffect(() => {
-    if (!isLineBrowser()) setShowOpenInLine(true);
+    if (!isLineBrowser() && isMobileDevice()) setShowOpenInLine(true);
     try {
       const s = JSON.parse(localStorage.getItem("itinerry-visa-form-v3") || "null")?.state;
       setResume(!!s && (Object.keys(s.answers || {}).length > 0 || (s.history?.length ?? 0) > 1));
