@@ -18,8 +18,8 @@ const C = {
 const CAT = [C.sky, C.navy, C.sun, C.skyd, "#4FB98A", "#7FA8C4", "#F0B84E", "#A7D8ED"];
 const SRC: Record<string, string> = { facebook: "Facebook", instagram: "Instagram", tiktok: "TikTok", google: "Google", referral: "เพื่อนแนะนำ", other: "อื่นๆ" };
 const SRC_ORDER = ["facebook", "instagram", "tiktok", "google", "referral", "other"];
-const STL: Record<string, string> = { contacted: "ติดต่อแล้ว", lost: "แพ้ดีล", human_error: "ข้อมูลผิดพลาด", pending_decision: "รอตัดสินใจ", pending_review: "รอตรวจ", win: "ปิดดีล", evaluated: "ประเมินแล้ว" };
-const STC: Record<string, string> = { contacted: C.sky, win: C.mintt, lost: C.mute, human_error: C.navys, pending_decision: C.sun, pending_review: C.skyl, evaluated: "#8B7FD6" };
+const STL: Record<string, string> = { contacted: "ติดต่อแล้ว", follow_up: "Follow up", lost: "แพ้ดีล", human_error: "ข้อมูลผิดพลาด", pending_decision: "รอตัดสินใจ", pending_review: "รอตรวจ", win: "ปิดดีล", evaluated: "ประเมินแล้ว" };
+const STC: Record<string, string> = { contacted: C.sky, follow_up: "#14B8A6", win: C.mintt, lost: C.mute, human_error: C.navys, pending_decision: C.sun, pending_review: C.skyl, evaluated: "#8B7FD6" };
 const OCC: Record<string, string> = { employee: "พนักงานบริษัท", freelance: "ฟรีแลนซ์", homemaker: "แม่บ้าน/พ่อบ้าน", business_owner: "เจ้าของธุรกิจ", government: "ราชการ/รัฐวิสาหกิจ", retired: "เกษียณ", student_occ: "นักเรียน/นักศึกษา" };
 const OCC_C = [C.sky, C.skyd, C.navys, C.navy, C.mute, "#7FA8C4", "#A7D8ED"];
 const INT: Record<string, string> = { explore: "กำลังสำรวจ", execute: "ตั้งใจไป", ready: "พร้อมยื่นแล้ว" };
@@ -30,18 +30,18 @@ const VT_ORDER = ["tourist", "visitor", "business", "student", "other"];
 const VT_C = [C.sky, C.sun, C.navy, C.mintt, C.mute];
 const TIE: Record<string, string> = { dependents: "มีคนในอุปการะ", job: "มีงานประจำ", property: "มีทรัพย์สิน/บ้าน", spouse: "คู่สมรส", children: "บุตร", spouse_children: "คู่สมรส/บุตร", investments: "มีการลงทุน", none: "ไม่มี" };
 const TIE_C = [C.mintt, C.sky, C.skyd, C.navys, C.navy, C.mute];
-const SKL: Record<string, string> = { pending_review: "รอตรวจ", evaluated: "ประเมินผล", contacted: "ติดต่อ", pending_decision: "รอตัดสินใจ", lost: "แพ้ดีล", win: "ปิดดีล", human_error: "ข้อมูลผิดพลาด" };
-const SKC: Record<string, string> = { pending_review: "#8FBFDE", evaluated: "#2B86B5", contacted: "#44A8DB", pending_decision: "#FFD166", lost: "#9DB4C4", win: "#1A7A4A", human_error: "#5E7A91" };
-const SK_COLS = [["pending_review"], ["evaluated"], ["contacted"], ["pending_decision", "lost"], ["win", "human_error"]];
+const SKL: Record<string, string> = { pending_review: "รอตรวจ", evaluated: "ประเมินผล", contacted: "ติดต่อ", follow_up: "Follow up", pending_decision: "รอตัดสินใจ", lost: "แพ้ดีล", win: "ปิดดีล", human_error: "ข้อมูลผิดพลาด" };
+const SKC: Record<string, string> = { pending_review: "#8FBFDE", evaluated: "#2B86B5", contacted: "#44A8DB", follow_up: "#14B8A6", pending_decision: "#FFD166", lost: "#9DB4C4", win: "#1A7A4A", human_error: "#5E7A91" };
+const SK_COLS = [["pending_review"], ["evaluated"], ["contacted"], ["follow_up"], ["pending_decision", "lost"], ["win", "human_error"]];
 
 // English label overrides for the TH/EN toggle.
 const SRC_EN: Record<string, string> = { facebook: "Facebook", instagram: "Instagram", tiktok: "TikTok", google: "Google", referral: "Referral", other: "Other" };
-const STL_EN: Record<string, string> = { contacted: "Contacted", lost: "Lost", human_error: "Data error", pending_decision: "Pending decision", pending_review: "Pending", win: "Won", evaluated: "Evaluated" };
+const STL_EN: Record<string, string> = { contacted: "Contacted", follow_up: "Follow up", lost: "Lost", human_error: "Data error", pending_decision: "Pending decision", pending_review: "Pending", win: "Won", evaluated: "Evaluated" };
 const OCC_EN: Record<string, string> = { employee: "Employee", freelance: "Freelance", homemaker: "Homemaker", business_owner: "Business owner", government: "Government", retired: "Retired", student_occ: "Student" };
 const INT_EN: Record<string, string> = { explore: "Exploring", execute: "Intent to go", ready: "Ready to apply" };
 const VT_EN: Record<string, string> = { tourist: "Tourist", visitor: "Visitor", business: "Business", student: "Student", other: "Other" };
 const TIE_EN: Record<string, string> = { dependents: "Dependents", job: "Has a job", property: "Property/home", spouse: "Spouse", children: "Children", spouse_children: "Spouse/children", investments: "Investments", none: "None" };
-const SKL_EN: Record<string, string> = { pending_review: "Pending", evaluated: "Evaluated", contacted: "Contacted", pending_decision: "Pending decision", lost: "Lost", win: "Won", human_error: "Data error" };
+const SKL_EN: Record<string, string> = { pending_review: "Pending", evaluated: "Evaluated", contacted: "Contacted", follow_up: "Follow up", pending_decision: "Pending decision", lost: "Lost", win: "Won", human_error: "Data error" };
 
 // Full ISO→[flag, Thai, English] map so any real destination resolves (mockup hardcoded ~17).
 const CTRY: Record<string, [string, string, string]> = {};
@@ -227,7 +227,7 @@ export function mountDashboard(data: DashboardData, lang: Lang = "th"): () => vo
     const med = median(scores);
     const passDec = ass.filter((a) => a.pass != null), passT = passDec.filter((a) => a.pass === true).length;
     const won = ass.filter((a) => a.st === "win").length;
-    const contacted = ass.filter((a) => ["contacted", "pending_decision", "win", "lost"].includes(a.st)).length;
+    const contacted = ass.filter((a) => ["contacted", "follow_up", "pending_decision", "win", "lost"].includes(a.st)).length;
     const tcs = ass.filter((a) => a.tc != null).map((a) => a.tc as number); const avgtc = tcs.length ? tcs.reduce((s, x) => s + x, 0) / tcs.length : null;
     const ofTotal = t(lang, "ของทั้งหมด", "of total"), cases = t(lang, "เคส", "cases");
     setKpi("k-users", acc.length, "= " + pctOf(acc.length, USERS_ALL) + "% " + ofTotal + " " + USERS_ALL);

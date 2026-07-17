@@ -98,6 +98,22 @@ export function assessmentFollowUpMessage(lang: "th" | "en" = "th", dueDateISO?:
   return { type: "text", text };
 }
 
+/**
+ * Sales follow-up nudge auto-sent by the follow-up cron while a case sits in `follow_up`.
+ * attempt 1 = day-3 gentle check-in, attempt 2 = day-5 last nudge. Copy approved by the owner.
+ */
+export function salesFollowUpMessage(attempt: 1 | 2, lang: "th" | "en" = "th") {
+  const text =
+    attempt === 1
+      ? lang === "en"
+        ? "Hi 🙂 The itinerry team is following up on your visa assessment — is there anything else we can help with? If you're ready to start preparing documents or want an in-depth review, just message us back. We'll walk you through it step by step 💙"
+        : "สวัสดีครับ 🙂 ทีม itinerry ติดตามผลการประเมินวีซ่าของคุณนะครับ — มีอะไรให้เราช่วยเพิ่มเติมไหมครับ? ถ้าพร้อมเริ่มเตรียมเอกสาร หรืออยากปรึกษาเชิงลึก ทักกลับมาได้เลย ทีมช่วยดูให้ทีละขั้นครับ 💙"
+      : lang === "en"
+        ? "Hi again from itinerry 🙂 In case you're still considering your visa — we can still help you plan and prepare your documents. If you'd like to continue, just message us back. Happy to help 💙"
+        : "itinerry ทักมาอีกครั้งนะครับ 🙂 เผื่อคุณยังสนใจยื่นวีซ่า เรายังช่วยวางแผนเตรียมเอกสารให้ได้อยู่ครับ ถ้าสะดวกคุยต่อ ทักกลับมาได้เลย ยินดีช่วยเต็มที่ครับ 💙";
+  return { type: "text", text };
+}
+
 export function confirmDeleteMessage() {
   return {
     type: "template",

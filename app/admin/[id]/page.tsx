@@ -22,6 +22,7 @@ import { BAND_COLOR, URGENCY_COLOR, stateWord, historyWord, bandWord, urgencyWor
 import { displayName } from "@/lib/account-name";
 import { fetchLostReasonTree, fetchLostReasonLabels } from "@/lib/lost-reasons";
 import { COUNTRIES } from "@/lib/countries";
+import { followUpReadyToClose } from "@/lib/follow-up";
 import { bangkokNow } from "@/lib/holidays";
 import { getAdminLang } from "@/lib/admin-lang";
 import { t, dateLocale, type Lang } from "@/lib/i18n";
@@ -231,6 +232,11 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
     .slice()
     .sort((h1, h2) => new Date(h2.changed_at).getTime() - new Date(h1.changed_at).getTime());
 
+  // Follow-up cadence: "ready to close" once both auto-nudges are sent + the grace has passed.
+  // Entered follow_up = the latest status_history transition to it (statusHistory is newest-first).
+  const followUpEnteredAt = statusHistory.find((h) => h.to_status === "follow_up")?.changed_at ?? null;
+  const followUpReady = followUpReadyToClose(s.status as string, (s.follow_up_count as number) ?? 0, followUpEnteredAt);
+
   // Sales-close: reason taxonomy (for the close modal + labels) + current close snapshot.
   const reasons = await fetchLostReasonTree(true);
   const reasonLabels = await fetchLostReasonLabels(lang);
@@ -318,6 +324,17 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   // LEFT column — the evaluation workflow (close summary + status history + agent forms + send result)
   const left = (
     <>
+      {followUpReady && (
+        <div className="mb-4 flex items-start gap-3 rounded-2xl border border-red-100 bg-red-50 p-4">
+          <span className="text-xl leading-none">🔔</span>
+          <div className="text-sm text-red-800">
+            <div className="font-bold">{t(lang, "ตามครบ 2 ครั้งแล้ว — ครบกำหนดปิด", "Both follow-ups sent — ready to close")}</div>
+            <div className="mt-0.5 text-red-700">
+              {t(lang, "ระบบส่ง LINE ติดตามครบ 2 ครั้งแล้ว หากลูกค้ายังไม่ตอบกลับ กดปุ่ม Closed Lost ด้านบน (เหตุผล: เงียบหาย/ไม่ตอบ)", "The system has sent both LINE follow-ups. If the customer hasn't replied, use the Closed Lost button above (reason: No response / ghosted).")}
+            </div>
+          </div>
+        </div>
+      )}
       {isClosed(s.status as string) && (
         <Section title={t(lang, "การปิดดีล", "Deal closing")}>
           <Row lang={lang} title={t(lang, "ผลการปิด", "Outcome")} value={s.status === "win" ? "Closed Won ✅" : "Closed Lost ❌"} />

@@ -29,6 +29,12 @@ export async function POST(request: NextRequest) {
   const closeIso = typeof closeDate === "string" && DATE_RE.test(closeDate) ? closeDate : bangkokNow().iso;
 
   const update: Record<string, unknown> = { status };
+  // Any real status transition resets the follow-up cadence: entering follow_up starts fresh
+  // at 0, and leaving it clears the counter (see lib/follow-up.ts + the follow-up cron).
+  if (!current || current.status !== status) {
+    update.follow_up_count = 0;
+    update.follow_up_last_at = null;
+  }
   let historyNote: string | null = null;
 
   if (status === "lost") {

@@ -4,6 +4,7 @@ export type StatusValue =
   | "pending_review"
   | "evaluated"
   | "contacted"
+  | "follow_up"
   | "pending_decision"
   | "win"
   | "lost"
@@ -20,6 +21,7 @@ export const STATUS_OPTIONS: StatusOption[] = [
   { value: "pending_review", label: "รอประเมิน", color: "bg-blue-100 text-blue-700" },
   { value: "evaluated", label: "ประเมินแล้ว", color: "bg-purple-100 text-purple-700" },
   { value: "contacted", label: "ติดต่อแล้ว", color: "bg-yellow-100 text-yellow-700" },
+  { value: "follow_up", label: "Follow up", color: "bg-teal-100 text-teal-700" },
   { value: "pending_decision", label: "รอตัดสินใจ", color: "bg-orange-100 text-orange-700" },
   { value: "win", label: "Closed Won", color: "bg-green-100 text-green-700" },
   { value: "lost", label: "Closed Lost", color: "bg-red-100 text-red-700" },
@@ -47,6 +49,7 @@ export const STATUS_LABEL_EN: Record<StatusValue, string> = {
   pending_review: "Pending review",
   evaluated: "Evaluated",
   contacted: "Contacted",
+  follow_up: "Follow up",
   pending_decision: "Pending decision",
   win: "Closed Won",
   lost: "Closed Lost",

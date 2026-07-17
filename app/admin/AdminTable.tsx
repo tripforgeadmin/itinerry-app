@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { STATUS_OPTIONS, STATUS_COLOR, statusLabel, isOverdue, type StatusValue } from "@/lib/status";
 import { staleBadge, DEFAULT_STAGE_HOURS } from "@/lib/sla";
+import { followUpCloseBadge } from "@/lib/follow-up";
 import { label } from "@/lib/answer-labels";
 import { t, dateLocale, type Lang } from "@/lib/i18n";
 import { displayName } from "@/lib/account-name";
@@ -38,6 +39,7 @@ type Row = {
   result_sent_at: string | null;
   entry_source: string | null;
   status_entered_at: string | null;
+  follow_up_count: number | null;
   account: Account | null;
   trip: Trip | null;
   printable: boolean;
@@ -352,6 +354,17 @@ export default function AdminTable({
                         </span>
                       )}
                       {(() => {
+                        const closeReady = followUpCloseBadge(s.status, s.follow_up_count ?? 0, s.status_entered_at, lang);
+                        if (closeReady) {
+                          return (
+                            <span
+                              className="px-2 py-1 rounded-lg text-xs font-medium bg-red-100 text-red-700"
+                              title={t(lang, "ตามครบ 2 ครั้งแล้ว — พิจารณาปิด Closed Lost", "Both follow-ups sent — consider closing as Closed Lost")}
+                            >
+                              🔔 {closeReady}
+                            </span>
+                          );
+                        }
                         const stale = staleBadge(s.status, s.status_entered_at, slaStageHours, lang);
                         return stale ? (
                           <span

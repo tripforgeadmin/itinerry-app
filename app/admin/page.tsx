@@ -14,7 +14,7 @@ export default async function AdminPage() {
     supabase
       .from("user_assessment")
       .select(
-        "id, ticket_id, created_at, due_date, status, contact_preference, intent, savings_balance, result_sent_at, entry_source, status_history(changed_at), account:account_id(nickname, full_name, first_name, last_name, line_display_name, phone, phone_country_code, is_friend, source), trip:trip_id(visa_type, destination, travel_arrival, study_start), visa_evaluation(pass, strengths, improvements)"
+        "id, ticket_id, created_at, due_date, status, contact_preference, intent, savings_balance, result_sent_at, entry_source, follow_up_count, status_history(changed_at), account:account_id(nickname, full_name, first_name, last_name, line_display_name, phone, phone_country_code, is_friend, source), trip:trip_id(visa_type, destination, travel_arrival, study_start), visa_evaluation(pass, strengths, improvements)"
       )
       .order("created_at", { ascending: false }),
     supabase.from("app_config").select("value").eq("key", SLA_STAGE_HOURS_KEY).maybeSingle(),
@@ -48,6 +48,7 @@ export default async function AdminPage() {
       result_sent_at: r.result_sent_at,
       entry_source: r.entry_source,
       status_entered_at: lastChanged ?? r.created_at,
+      follow_up_count: r.follow_up_count ?? 0,
       account,
       trip,
       // healthcheck card is built from the evaluator's lists — printable only when both exist

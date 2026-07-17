@@ -17,7 +17,7 @@ import { t, type Lang } from "@/lib/i18n";
 // as lib/status.ts's isClosed()/CLOSED_STATUSES (which drives SLA-clock-stops-here logic
 // and deliberately excludes human_error). Keep these separate so editing one never
 // silently changes the other's behavior.
-const OPEN_STATUSES: StatusValue[] = ["pending_review", "evaluated", "contacted", "pending_decision"];
+const OPEN_STATUSES: StatusValue[] = ["pending_review", "evaluated", "contacted", "follow_up", "pending_decision"];
 const CLOSED_STATUSES_UI: StatusValue[] = ["win", "lost", "human_error"];
 
 const FIELDS: FilterField[] = ["status", "date", "due_date", ...TEXT_FIELDS, ...CATEGORICAL_FIELDS];

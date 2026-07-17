@@ -171,7 +171,7 @@ export default function HealthcheckCard({ data: d, flagSrc }: { data: Healthchec
           <div style={{ display: "flex", alignItems: "center", fontSize: 21, color: "#eaf6fd", marginTop: 8 }}>
             {t(lang, "ติดตามเราทางโซเชียล ทีมช่วยดูให้ทีละขั้น", "Follow us on social — we'll walk you through it")}
             <span style={{ display: "flex", backgroundColor: "#fed984", color: "#5d4200", borderRadius: 999, padding: "5px 16px", fontSize: 18, fontWeight: 700, marginLeft: 14 }}>
-              {t(lang, "ประเมินเชิงลึก ฟรี", "Free in-depth review")}
+              {t(lang, "ประเมินฟรี", "Free review")}
             </span>
           </div>
         </div>

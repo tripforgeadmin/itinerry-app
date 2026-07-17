@@ -12,14 +12,15 @@ import type { Lang } from "@/lib/i18n";
 
 export const SLA_STAGE_HOURS_KEY = "sla_stage_hours";
 
-// Keyed by StatusValue; only the three active mid-pipeline statuses.
+// Keyed by StatusValue; only the active mid-pipeline statuses.
 export const DEFAULT_STAGE_HOURS: Record<string, number> = {
   evaluated: 12,
   contacted: 48,
+  follow_up: 72, // 3 days → first follow-up nudge (team cadence: chase at day 3, again at day 5)
   pending_decision: 168, // 7 days
 };
 
-export const SLA_STAGES = ["evaluated", "contacted", "pending_decision"] as const;
+export const SLA_STAGES = ["evaluated", "contacted", "follow_up", "pending_decision"] as const;
 
 /** Merge a stored JSON value over the defaults — keep only known stages with a finite
  * value >= 0 (0 turns that stage's aging check off). Bad JSON → defaults. */
