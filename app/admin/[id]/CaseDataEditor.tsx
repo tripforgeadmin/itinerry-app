@@ -53,9 +53,12 @@ export interface CaseDataEditorProps {
   lang: Lang;
   trip: EditableTrip;
   s: Record<string, unknown>;
+  // Read-only display only — deliberately NOT part of EditableTrip/tripFieldsFromAnswers, so
+  // saving an S2-S5 edit never touches it (it's only ever set once, at customer submit time).
+  flexibleDates: boolean | null;
 }
 
-export default function CaseDataEditor({ assessmentId, lang, trip, s }: CaseDataEditorProps) {
+export default function CaseDataEditor({ assessmentId, lang, trip, s, flexibleDates }: CaseDataEditorProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -251,6 +254,9 @@ export default function CaseDataEditor({ assessmentId, lang, trip, s }: CaseData
         )}
         {(visaType === "tourist" || visaType === "business") && (
           <ReadRow title={t(lang, "วันกลับ", "Return date")} value={trip.travel_return} />
+        )}
+        {(visaType === "tourist" || visaType === "visitor" || visaType === "business") && flexibleDates && (
+          <ReadRow title={t(lang, "ยืดหยุ่นวันเดินทาง", "Flexible dates")} value={t(lang, "ใช่", "Yes")} />
         )}
         {visaType === "student" && <ReadRow title={t(lang, "วันเริ่มเรียน", "Study start")} value={trip.study_start} />}
         {(() => {

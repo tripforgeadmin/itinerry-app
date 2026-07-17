@@ -226,6 +226,21 @@ export function TravelDatesScreen({
           </div>
         )}
 
+        {/* optional: dates aren't locked in yet */}
+        {!single && (
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl px-1 py-1 text-sm text-muted">
+            <input
+              type="checkbox"
+              checked={answers.flex_dates === "yes"}
+              onChange={(e) => onAnswer("flex_dates", e.target.checked ? "yes" : "")}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-border-mid accent-accent"
+            />
+            <span>
+              {lang === "th" ? "วันที่ยังไม่ล็อกตายตัว สามารถยืดหยุ่นเวลาในการเดินทางได้" : "My travel dates aren't fixed — I can be flexible"}
+            </span>
+          </label>
+        )}
+
         {/* stay duration */}
         {stay !== null && (
           <div className="flex items-center gap-2 rounded-xl bg-accent-bg px-4 py-2.5 text-sm font-semibold text-accent-hover">

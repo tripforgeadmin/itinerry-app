@@ -465,6 +465,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
           study_start: (trip.study_start as string) ?? null,
         }}
         s={s}
+        flexibleDates={(trip.flexible_dates as boolean) ?? null}
       />
     </>
   );

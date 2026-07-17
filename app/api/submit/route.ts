@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
       travel_arrival: toDate(answers.q10 ?? answers.q13 ?? answers.q17),
       travel_return:  toDate(answers.q11 ?? answers.q39 ?? answers.q18),
       study_start:    toDate(answers.q21),
+      flexible_dates: answers.flex_dates === "yes",
     })
     .select("id")
     .single();
