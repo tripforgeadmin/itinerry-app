@@ -7,7 +7,9 @@ import { pushMessageLogged } from "@/lib/message-log";
  * Send the evaluation result to the customer over LINE: the Visa Health Check card as an
  * image (exported client-side from the card DOM — the browser is the only renderer that
  * shapes Thai correctly) followed by the admin's message. On delivery the case advances
- * evaluated → contacted automatically.
+ * evaluated → contacted (red travel-history pillar) or → follow_up (green/yellow) — the
+ * same auto-nudge cadence used everywhere else in the pipeline. The system never closes a
+ * case on its own; this is just where it lands to wait for a human.
  */
 
 const MAX_MESSAGE = 2000;
@@ -15,7 +17,13 @@ const MAX_IMAGE_BYTES = 4 * 1024 * 1024; // Vercel request budget; LINE allows 1
 const MAX_PREVIEW_BYTES = 1 * 1024 * 1024; // LINE previewImageUrl hard limit
 
 type Account = { id: string; line_user_id: string | null; nationality: string | null };
-type Evaluation = { pass: boolean | null; strengths: unknown; improvements: unknown };
+type Evaluation = {
+  pass: boolean | null;
+  strengths: unknown;
+  improvements: unknown;
+  result: { pillar_risk?: string } | null;
+  override_risk: string | null;
+};
 
 function one<T>(v: T | T[] | null): T | null {
   return (Array.isArray(v) ? v[0] : v) ?? null;
@@ -45,7 +53,7 @@ export async function POST(request: NextRequest) {
 
   const { data: row, error: fetchError } = await supabase
     .from("user_assessment")
-    .select("status, result_sent_at, ticket_id, account:account_id(id, line_user_id, nationality), visa_evaluation(pass, strengths, improvements)")
+    .select("status, result_sent_at, ticket_id, account:account_id(id, line_user_id, nationality), visa_evaluation(pass, strengths, improvements, result, override_risk)")
     .eq("id", assessmentId)
     .single();
   if (fetchError || !row) {
@@ -118,17 +126,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, alreadySent: true });
   }
 
-  // advance the funnel: only evaluated → contacted (never regress later stages)
+  // advance the funnel: only evaluated → contacted/follow_up (never regress later stages).
+  // Same override-wins-over-auto precedence as the admin's AutoAssessment panel — a red
+  // travel-history pillar (agent-confirmed or auto) waits in `contacted` for a human call;
+  // green/yellow (or, conservatively, an unreadable pillar) goes to `follow_up` for the
+  // day-3/day-5 auto-nudge cadence.
   if (row.status === "evaluated") {
+    const riskColor = evaluation?.override_risk ?? evaluation?.result?.pillar_risk ?? null;
+    const nextStatus = riskColor === "r" ? "contacted" : "follow_up";
     const { error: statusError } = await supabase
       .from("user_assessment")
-      .update({ status: "contacted" })
+      .update({ status: nextStatus })
       .eq("id", assessmentId)
       .eq("status", "evaluated");
     if (!statusError) {
       const { error: historyError } = await supabase
         .from("status_history")
-        .insert({ assessment_id: assessmentId, from_status: "evaluated", to_status: "contacted" });
+        .insert({ assessment_id: assessmentId, from_status: "evaluated", to_status: nextStatus });
       if (historyError) console.error("status_history insert failed:", historyError);
     }
   }
