@@ -11,6 +11,15 @@ import { t, type Lang } from "@/lib/i18n";
 const MAX_ITEMS = 5;
 const MAX_ITEM_LEN = 250;
 
+// Grows the expanded textarea to fit its full content (up to MAX_ITEM_LEN chars) so the
+// whole item is always visible with no internal scrolling — a fixed row count isn't tall
+// enough for the longer end of the range.
+function autoResize(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+
 function ItemListCard({
   title,
   hint,
@@ -27,6 +36,15 @@ function ItemListCard({
   lang: Lang;
 }) {
   const chip = accent === "green" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700";
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  function toggleExpand(i: number) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  }
   return (
     <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
       <div className="flex items-center justify-between mb-1">
@@ -35,30 +53,61 @@ function ItemListCard({
       </div>
       <p className="text-xs text-gray-400 mb-3">{hint}</p>
       <div className="space-y-2">
-        {items.map((item, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <span className="text-xs text-gray-300 w-4 text-right shrink-0">{i + 1}.</span>
-            <input
-              type="text"
-              value={item}
-              maxLength={MAX_ITEM_LEN}
-              onChange={(e) => onChange(items.map((x, j) => (j === i ? e.target.value : x)))}
-              placeholder={t(lang, "พิมพ์เป็นประโยคสั้น 1 ข้อ…", "One short sentence…")}
-              className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-200"
-            />
-            <span className={`text-[10px] w-9 text-right shrink-0 ${item.length >= MAX_ITEM_LEN ? "text-red-500 font-bold" : "text-gray-300"}`}>
-              {item.length}/{MAX_ITEM_LEN}
-            </span>
-            <button
-              type="button"
-              onClick={() => onChange(items.filter((_, j) => j !== i))}
-              className="text-gray-300 hover:text-red-500 text-sm px-1"
-              aria-label={t(lang, "ลบข้อนี้", "Remove this item")}
-            >
-              ✕
-            </button>
-          </div>
-        ))}
+        {items.map((item, i) => {
+          const isExpanded = expanded.has(i);
+          return (
+            <div key={i} className="flex items-start gap-2">
+              <span className="text-xs text-gray-300 w-4 text-right shrink-0 pt-2">{i + 1}.</span>
+              {isExpanded ? (
+                <textarea
+                  ref={autoResize}
+                  value={item}
+                  maxLength={MAX_ITEM_LEN}
+                  onChange={(e) => {
+                    onChange(items.map((x, j) => (j === i ? e.target.value : x)));
+                    autoResize(e.target);
+                  }}
+                  placeholder={t(lang, "พิมพ์เป็นประโยคสั้น 1 ข้อ…", "One short sentence…")}
+                  rows={3}
+                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-200 resize-y overflow-hidden"
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={item}
+                  maxLength={MAX_ITEM_LEN}
+                  onChange={(e) => onChange(items.map((x, j) => (j === i ? e.target.value : x)))}
+                  placeholder={t(lang, "พิมพ์เป็นประโยคสั้น 1 ข้อ…", "One short sentence…")}
+                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                />
+              )}
+              <div className="flex flex-col items-end gap-1 shrink-0 pt-1">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(i)}
+                    className="text-gray-300 hover:text-blue-500 text-xs px-0.5"
+                    title={isExpanded ? t(lang, "ย่อ", "Collapse") : t(lang, "ขยายดูเต็ม", "Expand")}
+                    aria-label={isExpanded ? t(lang, "ย่อ", "Collapse") : t(lang, "ขยายดูเต็ม", "Expand")}
+                  >
+                    {isExpanded ? "⤡" : "⤢"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onChange(items.filter((_, j) => j !== i))}
+                    className="text-gray-300 hover:text-red-500 text-sm px-0.5"
+                    aria-label={t(lang, "ลบข้อนี้", "Remove this item")}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <span className={`text-[10px] shrink-0 ${item.length >= MAX_ITEM_LEN ? "text-red-500 font-bold" : "text-gray-300"}`}>
+                  {item.length}/{MAX_ITEM_LEN}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
       {items.length < MAX_ITEMS && (
         <button
