@@ -19,7 +19,9 @@ export default function AdminLoginPage() {
       body: JSON.stringify({ password }),
     });
     if (res.ok) {
-      router.push("/admin");
+      // Land on the prioritized "today's tasks" queue, not the raw table — staff should see
+      // what needs action first. The full case table stays at /admin, one click away.
+      router.push("/admin/today");
     } else {
       setError(true);
       setLoading(false);

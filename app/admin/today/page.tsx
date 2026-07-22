@@ -145,8 +145,8 @@ export default async function TodayReportPage() {
     <main className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-2">
-          <Link href="/admin" className="text-gray-400 hover:text-gray-600 text-sm">← {t(lang, "กลับ", "Back")}</Link>
           <h1 className="text-xl font-bold text-gray-800">🗓️ {t(lang, "งานวันนี้", "Today's tasks")}</h1>
+          <Link href="/admin" className="text-blue-600 hover:text-blue-800 text-sm font-medium">📋 {t(lang, "ตารางทั้งหมด", "All cases")}</Link>
           <AdminLangToggle lang={lang} />
         </div>
         <p className="text-sm text-gray-500 mb-6">
