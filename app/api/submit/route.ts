@@ -26,6 +26,27 @@ function toArray(v: string | undefined): string[] {
   return v.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
+/**
+ * Client-supplied campaign attribution (from localStorage, captured on ad-click). Untrusted →
+ * allow-list the six known keys only, coerce to string, cap length (guard against a bloated
+ * payload), empty → null. Returns a fixed-shape object safe to spread into the insert.
+ */
+const ATTRIBUTION_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "referrer"] as const;
+function sanitizeAttribution(raw: unknown): Record<(typeof ATTRIBUTION_KEYS)[number], string | null> {
+  const out = Object.fromEntries(ATTRIBUTION_KEYS.map((k) => [k, null])) as Record<
+    (typeof ATTRIBUTION_KEYS)[number],
+    string | null
+  >;
+  if (raw && typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    for (const key of ATTRIBUTION_KEYS) {
+      const v = obj[key];
+      if (typeof v === "string" && v.trim() !== "") out[key] = v.trim().slice(0, 200);
+    }
+  }
+  return out;
+}
+
 /** Parse a JSON entries string (refused/overstay multi-country); null if absent/invalid. */
 function toJson(v: string | undefined): unknown | null {
   if (!v || v === "") return null;
@@ -50,6 +71,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { answers } = body as { answers: Record<string, string> };
+  const attribution = sanitizeAttribution(body.attribution);
 
   // ---- sparse categorical branch answers, keyed by question id ----
   const branchAnswers: Record<string, string | string[]> = {};
@@ -164,6 +186,7 @@ export async function POST(request: NextRequest) {
     callback_datetime:    callbackDatetime ? callbackDatetime.toISOString() : null,
     due_date:             dueDate.toISOString(),
     branch_answers:       branchAnswers,
+    ...attribution, // utm_source/medium/campaign/term/content + referrer (null when no ad-click)
   }).select("id").single();
   if (assessError || !assessment) {
     console.error("assessment insert error:", assessError);
