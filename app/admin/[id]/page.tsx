@@ -17,6 +17,7 @@ import path from "node:path";
 import { healthcheckFromDbRow, defaultLangFor } from "@/lib/healthcheck-data";
 import { assessmentResultMessage } from "@/lib/line-messaging";
 import { statusLabel, isClosed } from "@/lib/status";
+import { AI_DRAFT_ENABLED } from "@/lib/anthropic";
 import { label } from "@/lib/answer-labels";
 import CaseDataEditor from "./CaseDataEditor";
 import { BAND_COLOR, URGENCY_COLOR, stateWord, historyWord, bandWord, urgencyWord, cellActionEn, consistencyFlagEn } from "@/lib/assessment-vocab";
@@ -412,6 +413,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         initialOverrideRisk={(evaluation.override_risk as "g" | "y" | "r" | null) ?? null}
         initialOverrideBand={(evaluation.override_band as "High" | "Med" | "Low" | null) ?? null}
         hasAutoResult={!!(evaluation.result as Dict)?.approvability_band}
+        aiEnabled={AI_DRAFT_ENABLED}
       />
 
       {sendResult}

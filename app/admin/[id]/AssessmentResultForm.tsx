@@ -176,6 +176,7 @@ export default function AssessmentResultForm({
   initialOverrideRisk,
   initialOverrideBand,
   hasAutoResult,
+  aiEnabled = false,
   lang = "th",
 }: {
   assessmentId: string;
@@ -195,6 +196,10 @@ export default function AssessmentResultForm({
   /** Whether the auto rule-engine result exists for this case — gates the AI-draft button.
    *  Optional (defaults to off) so the form renders safely even if a caller omits it. */
   hasAutoResult?: boolean;
+  /** Whether ANTHROPIC_API_KEY is configured on the server. Defaults to off so the button never
+   *  appears unless a caller has actually confirmed the feature is available — a visible button
+   *  that always errors is worse than no button. */
+  aiEnabled?: boolean;
   lang?: Lang;
 }) {
   const router = useRouter();
@@ -277,19 +282,21 @@ export default function AssessmentResultForm({
 
   return (
     <>
-      <div className="mb-4 flex items-center gap-3">
-        <button
-          onClick={handleDraft}
-          disabled={!hasAutoResult || drafting || saving}
-          title={!hasAutoResult ? t(lang, "เคสนี้ยังไม่มีผลประเมินอัตโนมัติ", "No auto-assessment for this case yet") : ""}
-          className="rounded-lg px-3 py-1.5 text-xs font-bold bg-purple-600 text-white transition-opacity disabled:opacity-40 hover:opacity-90"
-        >
-          {drafting ? t(lang, "กำลังร่าง…", "Drafting…") : t(lang, "✨ ร่างด้วย AI", "✨ Draft with AI")}
-        </button>
-        <span className="text-[11px] text-gray-400">
-          {t(lang, "AI ร่างจุดแข็ง/ที่ช่วยเสริม/ความเห็นให้ — คุณแก้แล้วบันทึกเอง", "AI drafts the fields — you edit and save")}
-        </span>
-      </div>
+      {aiEnabled && (
+        <div className="mb-4 flex items-center gap-3">
+          <button
+            onClick={handleDraft}
+            disabled={!hasAutoResult || drafting || saving}
+            title={!hasAutoResult ? t(lang, "เคสนี้ยังไม่มีผลประเมินอัตโนมัติ", "No auto-assessment for this case yet") : ""}
+            className="rounded-lg px-3 py-1.5 text-xs font-bold bg-purple-600 text-white transition-opacity disabled:opacity-40 hover:opacity-90"
+          >
+            {drafting ? t(lang, "กำลังร่าง…", "Drafting…") : t(lang, "✨ ร่างด้วย AI", "✨ Draft with AI")}
+          </button>
+          <span className="text-[11px] text-gray-400">
+            {t(lang, "AI ร่างจุดแข็ง/ที่ช่วยเสริม/ความเห็นให้ — คุณแก้แล้วบันทึกเอง", "AI drafts the fields — you edit and save")}
+          </span>
+        </div>
+      )}
       <ItemListCard
         title={t(lang, "จุดแข็งของคุณ (ลง PDF ลูกค้า)", "Your strengths (on customer PDF)")}
         hint={t(lang, "ใส่ทีละข้อ — แสดงเป็นรายการติ๊กถูกในรายงานสุขภาพวีซ่าของลูกค้า", "One per line — shown as a checklist in the customer's visa health report")}

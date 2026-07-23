@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type Anthropic from "@anthropic-ai/sdk";
 import { supabase } from "@/lib/supabase";
 import { verifyAdminSession } from "@/app/api/admin/login/route";
-import { anthropic, AI_DRAFT_MODEL } from "@/lib/anthropic";
+import { getAnthropic, AI_DRAFT_MODEL, AI_DRAFT_ENABLED } from "@/lib/anthropic";
 import { buildDraftPrompt } from "@/lib/assessment-draft-prompt";
 import type { EngineResult, EngineCase } from "@/lib/assessment/types";
 
@@ -37,6 +37,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
+  // No key configured: say so plainly instead of letting the SDK fail deep inside the try/catch
+  // below, which would report "ลองใหม่" for a condition retrying can never resolve.
+  if (!AI_DRAFT_ENABLED) {
+    return NextResponse.json(
+      { ok: false, error: "ฟีเจอร์ร่างด้วย AI ยังไม่เปิดใช้งาน (ยังไม่ได้ตั้งค่า ANTHROPIC_API_KEY)" },
+      { status: 503 },
+    );
+  }
+
   const { assessmentId } = await request.json();
   if (!assessmentId || typeof assessmentId !== "string") {
     return NextResponse.json({ ok: false, error: "invalid input" }, { status: 400 });
@@ -62,7 +71,7 @@ export async function POST(request: NextRequest) {
 
   let draft: { strengths: unknown; improvements: unknown; suggestedPass: unknown; notes: unknown };
   try {
-    const response = await anthropic.messages.create({
+    const response = await getAnthropic().messages.create({
       model: AI_DRAFT_MODEL,
       max_tokens: 4000,
       thinking: { type: "adaptive" },
