@@ -18,3 +18,9 @@ create table if not exists public.contact_log (
 );
 
 create index if not exists idx_contact_log_assessment on public.contact_log (assessment_id, created_at desc);
+
+-- RLS on with no policy, matching every other table in this database. The admin routes reach
+-- contact_log only through the service-role key, which bypasses RLS, so this changes nothing for
+-- the app — it just keeps the outreach notes off the PostgREST anon surface that Supabase exposes
+-- for every table by default.
+alter table public.contact_log enable row level security;
