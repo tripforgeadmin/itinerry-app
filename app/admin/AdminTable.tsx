@@ -18,6 +18,13 @@ const intentShort = (v: string, lang: Lang) => (lang === "en" ? INTENT_SHORT_EN[
 const INTENT_RANK: Record<string, number> = { explore: 0, ready: 1, execute: 2 };
 const STATUS_RANK: Record<string, number> = Object.fromEntries(STATUS_OPTIONS.map((o, i) => [o.value, i]));
 
+// Modal-free pipeline moves offered for inline + bulk status change. win/lost are excluded —
+// they need the close form (reason/service type) on the case page; pending_review/evaluated are
+// system-set. Reusing /api/admin/status means reopening a closed case still clears its close data.
+const SIMPLE_TARGETS = STATUS_OPTIONS.filter(
+  (o) => o.value === "contacted" || o.value === "follow_up" || o.value === "pending_decision"
+);
+
 const PAGE_SIZES = [25, 50, 75, 100, "all"] as const;
 type PageSize = (typeof PAGE_SIZES)[number];
 
@@ -65,6 +72,37 @@ export default function AdminTable({
   const [sort, setSort] = useState<SortEntry[]>([{ key: "date", dir: "desc" }]);
   const [pageSize, setPageSize] = useState<PageSize>(25);
   const [page, setPage] = useState(1);
+  // Bulk-select state — ids checked in the table; the bulk bar acts on them.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  // Change status for one or many cases via the existing endpoint (sequential so each
+  // transition records its own status_history row + side effects). Clears selection + refreshes.
+  async function changeStatus(ids: string[], status: StatusValue) {
+    if (ids.length === 0 || bulkBusy) return;
+    setBulkBusy(true);
+    try {
+      for (const id of ids) {
+        await fetch("/api/admin/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, status }),
+        });
+      }
+      setSelected(new Set());
+      router.refresh();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+  function toggleRow(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   // Default page size: a single "รอประเมิน" status filter shows 100 (matches the old
   // one-click pill habit), everything else shows 25.
@@ -163,6 +201,16 @@ export default function AdminTable({
   const pageCount = Math.max(1, Math.ceil(total / size));
   const current = Math.min(page, pageCount);
   const visible = pageSize === "all" ? sorted : sorted.slice((current - 1) * size, current * size);
+  const visibleIds = visible.map((r) => r.id);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
+  function toggleAllVisible() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) visibleIds.forEach((id) => next.delete(id));
+      else visibleIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }
 
   function toggleSort(key: SortKey, additive: boolean) {
     setSort((prev) => {
@@ -264,7 +312,32 @@ export default function AdminTable({
         lang={lang}
       />
 
-      <p className="mb-2 text-[11px] text-gray-400">{t(lang, "คลิกหัวคอลัมน์เพื่อเรียง · Shift-คลิกเพื่อเรียงหลายชั้น", "Click a header to sort · Shift-click for multi-sort")}</p>
+      <p className="mb-2 text-[11px] text-gray-400">{t(lang, "คลิกหัวคอลัมน์เพื่อเรียง · Shift-คลิกเพื่อเรียงหลายชั้น · เลือกหลายเคสเพื่อเปลี่ยนสถานะพร้อมกัน", "Click a header to sort · Shift-click for multi-sort · Select rows to change status in bulk")}</p>
+
+      {selected.size > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl bg-gray-800 px-4 py-2.5 text-white">
+          <span className="text-sm font-bold">{t(lang, `เลือก ${selected.size} เคส`, `${selected.size} selected`)}</span>
+          <span className="text-xs opacity-70">{t(lang, "เปลี่ยนสถานะเป็น →", "Change status to →")}</span>
+          {SIMPLE_TARGETS.map((o) => (
+            <button
+              key={o.value}
+              disabled={bulkBusy}
+              onClick={() => {
+                if (confirm(t(lang, `เปลี่ยน ${selected.size} เคสเป็น "${statusLabel(o.value, lang)}"?`, `Change ${selected.size} cases to "${statusLabel(o.value, lang)}"?`))) {
+                  changeStatus([...selected], o.value);
+                }
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium ${o.color} disabled:opacity-50`}
+            >
+              {statusLabel(o.value, lang)}
+            </button>
+          ))}
+          {bulkBusy && <span className="text-xs">{t(lang, "กำลังบันทึก…", "Saving…")}</span>}
+          <button onClick={() => setSelected(new Set())} disabled={bulkBusy} className="ml-auto text-xs underline opacity-80 hover:opacity-100">
+            {t(lang, "ล้างที่เลือก", "Clear")}
+          </button>
+        </div>
+      )}
 
       <div
         className="w-full overflow-x-auto overflow-y-auto rounded-xl border border-gray-100"
@@ -273,6 +346,15 @@ export default function AdminTable({
         <table className="w-full min-w-[1400px] text-sm">
           <thead className="sticky top-0 z-10 bg-white">
             <tr className="border-b border-gray-100 text-left text-xs text-gray-500 uppercase tracking-wider">
+              <th className="px-3 py-3 bg-white w-8">
+                <input
+                  type="checkbox"
+                  checked={allVisibleSelected}
+                  onChange={toggleAllVisible}
+                  aria-label={t(lang, "เลือกทั้งหน้า", "Select all on page")}
+                  className="cursor-pointer"
+                />
+              </th>
               {columns.map((col, i) => (
                 <th
                   key={i}
@@ -298,9 +380,18 @@ export default function AdminTable({
                   key={s.id}
                   onClick={() => router.push(`/admin/${s.id}`)}
                   className={`border-b border-gray-50 transition-colors cursor-pointer ${
-                    overdue ? "bg-red-100 hover:bg-red-200" : "hover:bg-blue-50"
+                    selected.has(s.id) ? "bg-blue-100 hover:bg-blue-200" : overdue ? "bg-red-100 hover:bg-red-200" : "hover:bg-blue-50"
                   }`}
                 >
+                  <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(s.id)}
+                      onChange={() => toggleRow(s.id)}
+                      aria-label={t(lang, "เลือกเคสนี้", "Select this case")}
+                      className="cursor-pointer"
+                    />
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap font-mono text-xs font-medium text-gray-700">{s.ticket_id ?? "—"}</td>
                   <td className={`px-4 py-3 whitespace-nowrap ${overdue ? "text-red-700 font-semibold" : "text-gray-500"}`}>
                     {new Date(s.created_at).toLocaleDateString(dateLocale(lang), {
@@ -375,6 +466,24 @@ export default function AdminTable({
                           </span>
                         ) : null;
                       })()}
+                      {/* Inline quick-change — move the case through the pipeline without opening it. */}
+                      <select
+                        value=""
+                        disabled={bulkBusy}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          const v = e.target.value as StatusValue;
+                          if (v) changeStatus([s.id], v);
+                        }}
+                        title={t(lang, "เปลี่ยนสถานะ", "Change status")}
+                        className="ml-0.5 rounded border border-gray-200 bg-white px-1 py-0.5 text-[11px] text-gray-400 hover:text-gray-700 disabled:opacity-50"
+                      >
+                        <option value="">⇄</option>
+                        {SIMPLE_TARGETS.filter((o) => o.value !== s.status).map((o) => (
+                          <option key={o.value} value={o.value}>{statusLabel(o.value, lang)}</option>
+                        ))}
+                      </select>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center">

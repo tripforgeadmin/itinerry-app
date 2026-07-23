@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import StatusUpdater from "./StatusUpdater";
 import ContactEditor from "./ContactEditor";
 import AssessmentResultForm from "./AssessmentResultForm";
+import ContactLog, { type ContactLogEntry } from "./ContactLog";
 import SendResultFlow from "./SendResultFlow";
 import CopyLineIdButton from "./CopyLineIdButton";
 import LinkLineButton from "./LinkLineButton";
@@ -16,6 +17,7 @@ import path from "node:path";
 import { healthcheckFromDbRow, defaultLangFor } from "@/lib/healthcheck-data";
 import { assessmentResultMessage } from "@/lib/line-messaging";
 import { statusLabel, isClosed } from "@/lib/status";
+import { AI_DRAFT_ENABLED } from "@/lib/anthropic";
 import { label } from "@/lib/answer-labels";
 import CaseDataEditor from "./CaseDataEditor";
 import { BAND_COLOR, URGENCY_COLOR, stateWord, historyWord, bandWord, urgencyWord, cellActionEn, consistencyFlagEn } from "@/lib/assessment-vocab";
@@ -213,7 +215,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const lang = await getAdminLang();
   const { data: row, error } = await supabase
     .from("user_assessment")
-    .select("*, account:account_id(*), trip:trip_id(*), visa_evaluation(*), status_history(*)")
+    .select("*, account:account_id(*), trip:trip_id(*), visa_evaluation(*), status_history(*), contact_log(*)")
     .eq("id", id)
     .single();
 
@@ -231,6 +233,11 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const statusHistory = ((s.status_history ?? []) as StatusHistoryEntry[])
     .slice()
     .sort((h1, h2) => new Date(h2.changed_at).getTime() - new Date(h1.changed_at).getTime());
+
+  // Contact attempts (append-only, newest-first) — surfaced so staff see what's already been tried.
+  const contactLog = ((s.contact_log ?? []) as ContactLogEntry[])
+    .slice()
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   // Follow-up cadence: "ready to close" once both auto-nudges are sent + the grace has passed.
   // Entered follow_up = the latest status_history transition to it (statusHistory is newest-first).
@@ -405,6 +412,8 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         initialOverrideFunding={(evaluation.override_funding as "g" | "y" | "r" | null) ?? null}
         initialOverrideRisk={(evaluation.override_risk as "g" | "y" | "r" | null) ?? null}
         initialOverrideBand={(evaluation.override_band as "High" | "Med" | "Low" | null) ?? null}
+        hasAutoResult={!!(evaluation.result as Dict)?.approvability_band}
+        aiEnabled={AI_DRAFT_ENABLED}
       />
 
       {sendResult}
@@ -451,8 +460,12 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         contactPreference={(s.contact_preference as string) ?? ""}
         nationalityDisplay={account.nationality === "other" ? `${other}: ${account.nationality_other}` : label("nationality", account.nationality, lang)}
         sourceDisplay={account.source === "other" ? `${other}: ${account.source_other}` : label("source", account.source, lang)}
+        utmDisplay={[s.utm_source, s.utm_medium, s.utm_campaign].filter(Boolean).join(" / ") || null}
+        utmContent={(s.utm_content as string) ?? null}
         consentedDisplay={account.consented_at ? new Date(account.consented_at as string).toLocaleDateString(dateLocale(lang), { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : null}
       />
+
+      <ContactLog assessmentId={s.id as string} entries={contactLog} lang={lang} />
 
       <CaseDataEditor
         assessmentId={s.id as string}

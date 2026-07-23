@@ -54,6 +54,9 @@ export interface ContactEditorProps {
   // read-only extras (already label-resolved server-side)
   nationalityDisplay?: string | null;
   sourceDisplay?: string | null;
+  // real click-derived campaign (utm_*), distinct from sourceDisplay (self-reported q7)
+  utmDisplay?: string | null;
+  utmContent?: string | null;
   consentedDisplay?: string | null;
 }
 
@@ -196,7 +199,9 @@ export default function ContactEditor(props: ContactEditorProps) {
           <ReadRow title={t(lang, "อีเมล", "Email")} value={props.email} />
           <ReadRow title={t(lang, "ติดต่อผ่าน", "Contact via")} value={prefLabel(props.contactPreference, lang)} />
           <ReadRow title={t(lang, "สัญชาติ", "Nationality")} value={props.nationalityDisplay} />
-          <ReadRow title={t(lang, "รู้จักจาก", "Found via")} value={props.sourceDisplay} />
+          <ReadRow title={t(lang, "รู้จักจาก (ลูกค้าตอบ)", "Found via (self-reported)")} value={props.sourceDisplay} />
+          <ReadRow title={t(lang, "แคมเปญจริง (จากลิงก์)", "Campaign (from link)")} value={props.utmDisplay} />
+          <ReadRow title={t(lang, "ครีเอทีฟ/คอนเทนต์", "Ad content")} value={props.utmContent} />
           <ReadRow title={t(lang, "ยินยอม PDPA เมื่อ", "PDPA consent at")} value={props.consentedDisplay} />
         </>
       )}

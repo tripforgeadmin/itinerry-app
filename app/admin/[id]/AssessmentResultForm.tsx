@@ -175,6 +175,8 @@ export default function AssessmentResultForm({
   initialOverrideFunding,
   initialOverrideRisk,
   initialOverrideBand,
+  hasAutoResult,
+  aiEnabled = false,
   lang = "th",
 }: {
   assessmentId: string;
@@ -191,6 +193,13 @@ export default function AssessmentResultForm({
   initialOverrideFunding: "g" | "y" | "r" | null;
   initialOverrideRisk: "g" | "y" | "r" | null;
   initialOverrideBand: "High" | "Med" | "Low" | null;
+  /** Whether the auto rule-engine result exists for this case — gates the AI-draft button.
+   *  Optional (defaults to off) so the form renders safely even if a caller omits it. */
+  hasAutoResult?: boolean;
+  /** Whether ANTHROPIC_API_KEY is configured on the server. Defaults to off so the button never
+   *  appears unless a caller has actually confirmed the feature is available — a visible button
+   *  that always errors is worse than no button. */
+  aiEnabled?: boolean;
   lang?: Lang;
 }) {
   const router = useRouter();
@@ -199,6 +208,39 @@ export default function AssessmentResultForm({
   const [strengths, setStrengths] = useState<string[]>(initialStrengths.length ? initialStrengths : [""]);
   const [improvements, setImprovements] = useState<string[]>(initialImprovements.length ? initialImprovements : [""]);
   const [saving, setSaving] = useState(false);
+  const [drafting, setDrafting] = useState(false);
+  // AI's pass/fail hint — a nudge next to the manual Pass/Fail toggle, never auto-applied.
+  const [suggestedPass, setSuggestedPass] = useState<boolean | null>(null);
+
+  // Draft จุดแข็ง / ที่ช่วยเสริม / ความเห็น with Claude from the (PII-free) engine result. Fills the
+  // fields for the agent to edit — does NOT save. The agent still confirms Pass/Fail and clicks Save.
+  async function handleDraft() {
+    const hasContent =
+      strengths.some((s) => s.trim()) || improvements.some((s) => s.trim()) || notes.trim().length > 0;
+    if (hasContent && !confirm(t(lang, "ทับข้อความที่มีอยู่ด้วยร่างจาก AI?", "Replace the current text with the AI draft?"))) {
+      return;
+    }
+    setDrafting(true);
+    try {
+      const res = await fetch("/api/admin/draft-assessment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assessmentId }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        alert(data?.error ?? t(lang, "ร่างด้วย AI ไม่สำเร็จ", "AI draft failed"));
+        return;
+      }
+      const d = data.draft as { strengths: string[]; improvements: string[]; suggestedPass: boolean | null; notes: string };
+      setStrengths(d.strengths.length ? d.strengths : [""]);
+      setImprovements(d.improvements.length ? d.improvements : [""]);
+      setNotes(d.notes);
+      setSuggestedPass(d.suggestedPass);
+    } finally {
+      setDrafting(false);
+    }
+  }
 
   // g/y/r selects: previously-saved override wins, else fall back to the auto value,
   // else unset. Band's legacy "OVERRIDE" auto value has no honest High/Med/Low mapping
@@ -240,6 +282,21 @@ export default function AssessmentResultForm({
 
   return (
     <>
+      {aiEnabled && (
+        <div className="mb-4 flex items-center gap-3">
+          <button
+            onClick={handleDraft}
+            disabled={!hasAutoResult || drafting || saving}
+            title={!hasAutoResult ? t(lang, "เคสนี้ยังไม่มีผลประเมินอัตโนมัติ", "No auto-assessment for this case yet") : ""}
+            className="rounded-lg px-3 py-1.5 text-xs font-bold bg-purple-600 text-white transition-opacity disabled:opacity-40 hover:opacity-90"
+          >
+            {drafting ? t(lang, "กำลังร่าง…", "Drafting…") : t(lang, "✨ ร่างด้วย AI", "✨ Draft with AI")}
+          </button>
+          <span className="text-[11px] text-gray-400">
+            {t(lang, "AI ร่างจุดแข็ง/ที่ช่วยเสริม/ความเห็นให้ — คุณแก้แล้วบันทึกเอง", "AI drafts the fields — you edit and save")}
+          </span>
+        </div>
+      )}
       <ItemListCard
         title={t(lang, "จุดแข็งของคุณ (ลง PDF ลูกค้า)", "Your strengths (on customer PDF)")}
         hint={t(lang, "ใส่ทีละข้อ — แสดงเป็นรายการติ๊กถูกในรายงานสุขภาพวีซ่าของลูกค้า", "One per line — shown as a checklist in the customer's visa health report")}
@@ -322,6 +379,11 @@ export default function AssessmentResultForm({
           >
             {t(lang, "ไม่ผ่านเกณฑ์", "Fail")}
           </button>
+          {suggestedPass !== null && (
+            <span className="self-center text-[11px] text-purple-600">
+              {t(lang, "AI แนะนำ:", "AI suggests:")} {suggestedPass ? t(lang, "ผ่านเกณฑ์", "Pass") : t(lang, "ไม่ผ่านเกณฑ์", "Fail")}
+            </span>
+          )}
         </div>
         <textarea
           value={notes}

@@ -204,10 +204,18 @@ export default function QuestionnairePage() {
         const staleWriteIn = k.endsWith("_other") && base !== "q8" && freshAnswers[base] !== "other";
         if (isOnCurrentPath(base, path) && isRevealed(base, freshAnswers) && !staleWriteIn) clean[k] = v;
       }
+      // Campaign attribution captured on first ad-click and bridged across LINE login by
+      // UtmCleanup (localStorage). Best-effort — null when the visit had no utm params.
+      let attribution: Record<string, string> | null = null;
+      try {
+        attribution = JSON.parse(localStorage.getItem("itinerry-attribution") || "null");
+      } catch {
+        /* malformed/absent — submit without attribution */
+      }
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: clean }),
+        body: JSON.stringify({ answers: clean, attribution }),
       });
       if (!res.ok) throw new Error("Submit failed");
       // hand the case ticket to /done (survives the store reset there)
