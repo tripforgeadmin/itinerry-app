@@ -119,6 +119,8 @@ export async function POST(request: NextRequest) {
     phone:              normalizePhone(answers.q5 ?? ""), // store the E.164 national number (trunk 0 dropped)
     phone_country_code: toNull(answers.q5_cc) ?? "+66",
     email:              toNull(answers.q6),
+    gender:             toNull(answers.q3_gender),   // male | female | other
+    age_range:          toNull(answers.q3_age),      // under_18 | 18_29 | 30_39 | 40_49 | 50_59 | 60_plus
     nationality:        answers.q4 === "thai" ? "thai" : "other",
     nationality_other:  answers.q4 === "other" ? toNull(answers.q4_other) : null,
     source:             ["facebook","instagram","tiktok","google","referral","other"].includes(answers.q7) ? answers.q7 : "other",

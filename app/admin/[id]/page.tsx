@@ -458,6 +458,8 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         phoneLocal={(account.phone as string) ?? ""}
         email={(account.email as string) ?? ""}
         contactPreference={(s.contact_preference as string) ?? ""}
+        genderDisplay={account.gender ? label("gender", account.gender, lang) : null}
+        ageRangeDisplay={account.age_range ? label("age_range", account.age_range, lang) : null}
         nationalityDisplay={account.nationality === "other" ? `${other}: ${account.nationality_other}` : label("nationality", account.nationality, lang)}
         sourceDisplay={account.source === "other" ? `${other}: ${account.source_other}` : label("source", account.source, lang)}
         utmDisplay={[s.utm_source, s.utm_medium, s.utm_campaign].filter(Boolean).join(" / ") || null}

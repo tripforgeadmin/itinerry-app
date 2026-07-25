@@ -6,6 +6,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { DateCalendar } from "@/components/ui/DateCalendar";
 import { RevealBlock } from "@/components/ui/RevealBlock";
 import { Button } from "@/components/ui/Button";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { QuestionShell } from "@/components/screens/QuestionShell";
 import { QUESTIONS_MAP } from "@/lib/questions";
 import { DIAL_CODES, DEFAULT_DIAL_CODE, dialCodeOf, isValidPhone } from "@/lib/dialCodes";
@@ -20,6 +21,22 @@ import type { ScreenProps } from "@/components/screens/types";
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const NON_ASCII = /[^\x00-\x7F]/;
 const CHANNEL_IMG: Record<string, string> = { line: "/icons/line.png", call: "/icons/phone.png" };
+
+// Personal-info companions of q3 (like q3_first/q3_last) — stored as synthetic answer keys
+// q3_gender / q3_age, mapped to account.gender / account.age_range in the submit route.
+const GENDER_OPTIONS = [
+  { value: "male", label: "ชาย", labelEn: "Male" },
+  { value: "female", label: "หญิง", labelEn: "Female" },
+  { value: "other", label: "อื่นๆ", labelEn: "Other" },
+];
+const AGE_OPTIONS = [
+  { value: "under_18", label: "ต่ำกว่า 18 ปี", labelEn: "Under 18" },
+  { value: "18_29", label: "18–29 ปี", labelEn: "18–29" },
+  { value: "30_39", label: "30–39 ปี", labelEn: "30–39" },
+  { value: "40_49", label: "40–49 ปี", labelEn: "40–49" },
+  { value: "50_59", label: "50–59 ปี", labelEn: "50–59" },
+  { value: "60_plus", label: "60 ปีขึ้นไป", labelEn: "60+" },
+];
 
 const TH_DOW = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
 const TH_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
@@ -50,6 +67,8 @@ export function ContactScreen({
   activeIndex,
 }: ScreenProps) {
   const nickname = answers["q3"] ?? "";
+  const gender = answers["q3_gender"] ?? "";
+  const age = answers["q3_age"] ?? "";
   const phone = answers["q5"] ?? "";
   const cc = answers["q5_cc"] ?? DEFAULT_DIAL_CODE;
   const email = answers["q6"] ?? "";
@@ -112,7 +131,7 @@ export function ContactScreen({
           : "Invalid email"
         : null;
   const timeOk = !isCall || (!!callDate && !!callTime);
-  const gateOk = nameOk && phoneOk && EMAIL_RE.test(email) && !!channel && timeOk;
+  const gateOk = nameOk && !!gender && !!age && phoneOk && EMAIL_RE.test(email) && !!channel && timeOk;
 
   const q36 = QUESTIONS_MAP["q36"];
 
@@ -237,6 +256,45 @@ export function ContactScreen({
         onChange={(e) => setNickname(e.target.value)}
         placeholder={lang === "th" ? "ชื่อเล่นของคุณ" : "Your nickname"}
       />
+
+      {/* gender */}
+      <div className="mt-3">
+        <span className="mb-1.5 block text-sm font-semibold text-primary">
+          {lang === "th" ? "เพศ" : "Gender"}
+          <span className="text-red-alert"> *</span>
+        </span>
+        <SegmentedControl
+          segments={GENDER_OPTIONS.map((o) => ({ value: o.value, label: lang === "th" ? o.label : o.labelEn }))}
+          value={gender || null}
+          onChange={(v) => onAnswer("q3_gender", v)}
+        />
+      </div>
+
+      {/* age range */}
+      <div className="mt-3">
+        <span className="mb-1.5 block text-sm font-semibold text-primary">
+          {lang === "th" ? "ช่วงอายุ" : "Age range"}
+          <span className="text-red-alert"> *</span>
+        </span>
+        <select
+          value={age}
+          onChange={(e) => onAnswer("q3_age", e.target.value)}
+          aria-label={lang === "th" ? "ช่วงอายุ" : "Age range"}
+          className={
+            "w-full rounded-2xl border border-border bg-card px-4 py-3.5 outline-none transition-colors focus:border-accent " +
+            (age ? "text-primary" : "text-muted-soft")
+          }
+        >
+          <option value="" disabled>
+            {lang === "th" ? "เลือกช่วงอายุ" : "Select age range"}
+          </option>
+          {AGE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value} className="text-primary">
+              {lang === "th" ? o.label : o.labelEn}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* phone — dial code + local number */}
       <div className="mt-3">

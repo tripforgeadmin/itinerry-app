@@ -16,6 +16,8 @@ export async function anonymizeAccount(accountId: string): Promise<boolean> {
       is_friend:         null,
       nationality_other: null,
       source_other:      null,
+      gender:            null,
+      age_range:         null,
       updated_at:        new Date().toISOString(),
     })
     .eq("id", accountId);

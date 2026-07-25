@@ -52,6 +52,8 @@ export interface ContactEditorProps {
   // editable — user_assessment
   contactPreference: string;
   // read-only extras (already label-resolved server-side)
+  genderDisplay?: string | null;
+  ageRangeDisplay?: string | null;
   nationalityDisplay?: string | null;
   sourceDisplay?: string | null;
   // real click-derived campaign (utm_*), distinct from sourceDisplay (self-reported q7)
@@ -198,6 +200,8 @@ export default function ContactEditor(props: ContactEditorProps) {
           <ReadRow title={t(lang, "เบอร์โทร", "Phone")} value={phoneShown} />
           <ReadRow title={t(lang, "อีเมล", "Email")} value={props.email} />
           <ReadRow title={t(lang, "ติดต่อผ่าน", "Contact via")} value={prefLabel(props.contactPreference, lang)} />
+          <ReadRow title={t(lang, "เพศ", "Gender")} value={props.genderDisplay} />
+          <ReadRow title={t(lang, "ช่วงอายุ", "Age range")} value={props.ageRangeDisplay} />
           <ReadRow title={t(lang, "สัญชาติ", "Nationality")} value={props.nationalityDisplay} />
           <ReadRow title={t(lang, "รู้จักจาก (ลูกค้าตอบ)", "Found via (self-reported)")} value={props.sourceDisplay} />
           <ReadRow title={t(lang, "แคมเปญจริง (จากลิงก์)", "Campaign (from link)")} value={props.utmDisplay} />
