@@ -23,6 +23,8 @@ import CaseDataEditor from "./CaseDataEditor";
 import { BAND_COLOR, URGENCY_COLOR, stateWord, historyWord, bandWord, urgencyWord, cellActionEn, consistencyFlagEn } from "@/lib/assessment-vocab";
 import { displayName } from "@/lib/account-name";
 import { fetchLostReasonTree, fetchLostReasonLabels } from "@/lib/lost-reasons";
+import { QUOTE_STATUS_COLOR, quoteStatusLabel, type QuoteStatusValue } from "@/lib/quote-status";
+import { formatTHB } from "@/lib/money";
 import { COUNTRIES } from "@/lib/countries";
 import { followUpReadyToClose } from "@/lib/follow-up";
 import { bangkokNow } from "@/lib/holidays";
@@ -261,6 +263,15 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
     ? COUNTRIES.find((c) => c.code === closeInfo.lost_destination_country)?.[lang === "en" ? "en" : "th"] ?? closeInfo.lost_destination_country
     : null;
 
+  // Quotes issued from this case (Quote↔Opportunity link), newest-first.
+  type QuoteSummary = { id: string; quote_number: string; status: string; grand_total: unknown; created_at: string };
+  const { data: quoteRows } = await supabase
+    .from("quote")
+    .select("id, quote_number, status, grand_total, created_at")
+    .eq("assessment_id", id)
+    .order("created_at", { ascending: false });
+  const quotes = (quoteRows ?? []) as QuoteSummary[];
+
   // Send-result card (healthcheck image + message, 2-step confirm) — lives in the LEFT column.
   const hcTh = healthcheckFromDbRow(s, "th");
   const hcEn = healthcheckFromDbRow(s, "en");
@@ -390,6 +401,36 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
                   </span>
                 </div>
                 {h.note && <div className="mt-0.5 text-xs text-gray-400">{h.note}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <Section
+        title={t(lang, "ใบเสนอราคา", "Quotes")}
+        menu={
+          <Link
+            href={`/admin/quotes/new?assessment=${s.id}`}
+            className="text-xs font-bold text-blue-600 hover:text-blue-700"
+          >
+            ＋ {t(lang, "สร้างใบเสนอราคา", "New quote")}
+          </Link>
+        }
+      >
+        {quotes.length === 0 ? (
+          <p className="text-sm text-gray-400">{t(lang, "ยังไม่มีใบเสนอราคาสำหรับเคสนี้", "No quotes for this case yet")}</p>
+        ) : (
+          <div>
+            {quotes.map((q) => (
+              <div key={q.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 text-sm">
+                <Link href={`/admin/quotes/${q.id}`} className="font-mono text-xs text-blue-600 hover:underline">
+                  {q.quote_number}
+                </Link>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${QUOTE_STATUS_COLOR[q.status as QuoteStatusValue] ?? "bg-gray-100 text-gray-600"}`}>
+                  {quoteStatusLabel(q.status, lang)}
+                </span>
+                <span className="ml-auto font-medium text-gray-800 tabular-nums">{formatTHB(Number(q.grand_total))}</span>
               </div>
             ))}
           </div>
