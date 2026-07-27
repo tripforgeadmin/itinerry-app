@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminSession } from "@/app/api/admin/login/route";
+import { requireAdmin } from "@/lib/adminAuth";
 import { fetchQuoteWithLines } from "@/lib/quotes";
 import { renderQuotePdf } from "@/lib/quote-pdf";
 
@@ -7,8 +7,7 @@ export const dynamic = "force-dynamic";
 
 /** Customer-facing quotation PDF (ใบเสนอราคา) — admin-gated, rendered from snapshots. */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const token = request.cookies.get("admin_session")?.value;
-  if (!token || !(await verifyAdminSession(token))) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 

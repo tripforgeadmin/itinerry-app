@@ -63,9 +63,14 @@ async function handleFollow(userId: string, replyToken?: string) {
 const TRIGGER_KEYWORDS = ["ยกเลิกข้อมูล", "ลบข้อมูล", "pdpa", "ถอนความยินยอม"];
 
 function verifySignature(body: string, signature: string): boolean {
-  const secret = process.env.LINE_MESSAGING_CHANNEL_SECRET ?? "";
-  const hash = crypto.createHmac("sha256", secret).update(body).digest("base64");
-  return hash === signature;
+  // Fail CLOSED: with no secret we must reject, never HMAC with "" (which anyone
+  // can compute). Canonical env is LINE_MESSAGING_CHANNEL_SECRET; fall back to
+  // LINE_CHANNEL_SECRET (the login-channel var) since some deploys only set that.
+  const secret = process.env.LINE_MESSAGING_CHANNEL_SECRET || process.env.LINE_CHANNEL_SECRET;
+  if (!secret || !signature) return false;
+  const hash = crypto.createHmac("sha256", secret).update(body).digest();
+  const given = Buffer.from(signature, "base64");
+  return hash.length === given.length && crypto.timingSafeEqual(hash, given);
 }
 
 export async function POST(request: NextRequest) {

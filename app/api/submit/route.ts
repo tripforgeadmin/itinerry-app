@@ -9,6 +9,7 @@ import { generateTicketId } from "@/lib/ticket";
 import { assessmentFollowUpMessage } from "@/lib/line-messaging";
 import { pushMessageLogged } from "@/lib/message-log";
 import { normalizePhone, formatPhone } from "@/lib/dialCodes";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { assessmentReceivedFlex } from "@/lib/line-flex";
 import { bangkokDateTimeToUtc } from "@/lib/holidays";
 import { SLA_HOURS } from "@/lib/status";
@@ -67,6 +68,13 @@ export async function POST(request: NextRequest) {
 
   if (!profile) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  // Each submit fans out to email + PDF render + LINE push — meter it. Keyed on the
+  // LINE user (stable across IPs) with an IP fallback.
+  const rlKey = `submit:${profile.userId ?? clientIp(request)}`;
+  if (!(await checkRateLimit(rlKey, 5, 10 * 60 * 1000))) {
+    return NextResponse.json({ ok: false, error: "too many submissions" }, { status: 429 });
   }
 
   const body = await request.json();

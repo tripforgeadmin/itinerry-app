@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { verifyAdminSession } from "@/app/api/admin/login/route";
-
-async function requireAdmin(request: NextRequest): Promise<boolean> {
-  const token = request.cookies.get("admin_session")?.value;
-  return !!token && (await verifyAdminSession(token));
-}
+import { requireAdmin } from "@/lib/adminAuth";
 
 function validConditions(v: unknown): boolean {
   return (

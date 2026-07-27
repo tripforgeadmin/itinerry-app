@@ -15,7 +15,8 @@ export interface SellableProduct {
   destination: string | null;
   unit: string | null;
   taxable: boolean;
-  unitPrice: number;
+  unitPrice: number; // for kits: components' sum, display only
+  isKit?: boolean;
 }
 
 export default function QuoteLineEditor({
@@ -60,12 +61,19 @@ export default function QuoteLineEditor({
     }
   }
 
-  // Group by family for the <optgroup> dropdown; inside "fee", float the linked
-  // case's country to the top (sort, not filter — other fees stay selectable).
+  // Kits get their own top group (one pick explodes into component lines);
+  // the rest group by family. Inside "fee", float the linked case's country to
+  // the top (sort, not filter — other fees stay selectable).
+  const kits = sellable
+    .filter((p) => p.isKit)
+    .sort((a, b) => {
+      if (!caseDestination) return 0;
+      return (a.destination === caseDestination ? 0 : 1) - (b.destination === caseDestination ? 0 : 1);
+    });
   const groups = PRODUCT_FAMILIES.map((f) => ({
     family: f,
     items: sellable
-      .filter((p) => p.family === f.value)
+      .filter((p) => !p.isKit && p.family === f.value)
       .sort((a, b) => {
         if (f.value === "fee" && caseDestination) {
           const am = a.destination === caseDestination ? 0 : 1;
@@ -192,6 +200,15 @@ export default function QuoteLineEditor({
             className="flex-1 rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:border-blue-400 focus:outline-none"
           >
             <option value="">{t(lang, "— เลือกสินค้า/บริการ —", "— choose an item —")}</option>
+            {kits.length > 0 && (
+              <optgroup label={`📦 ${t(lang, "ชุดแพ็กเกจ (แตกเป็นรายการย่อยอัตโนมัติ)", "Kits (explode into lines)")}`}>
+                {kits.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    📦 {p.name} — {t(lang, "รวม", "total")} {formatTHB(p.unitPrice)}{p.unit ? `/${p.unit}` : ""}
+                  </option>
+                ))}
+              </optgroup>
+            )}
             {groups.map((g) => (
               <optgroup key={g.family.value} label={familyLabel(g.family.value, lang)}>
                 {g.items.map((p) => (

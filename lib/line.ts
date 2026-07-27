@@ -6,9 +6,13 @@ import {
   LINE_CALLBACK_URL,
 } from "./constants";
 
-const rawSecret = process.env.LINE_CHANNEL_SECRET;
-if (!rawSecret) throw new Error("LINE_CHANNEL_SECRET is not set");
-const secret = new TextEncoder().encode(rawSecret);
+// Lazy: proxy.ts imports this module for EVERY request, so a module-load throw on a
+// missing env var would take the whole site down, not just LINE auth. Throw at call.
+function getSecret(): Uint8Array {
+  const rawSecret = process.env.LINE_CHANNEL_SECRET;
+  if (!rawSecret) throw new Error("LINE_CHANNEL_SECRET is not set");
+  return new TextEncoder().encode(rawSecret);
+}
 
 export interface LineProfile {
   userId: string;
@@ -59,14 +63,14 @@ export async function createSessionToken(profile: LineProfile): Promise<string> 
   return new SignJWT({ ...profile })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("7d")
-    .sign(secret);
+    .sign(getSecret());
 }
 
 export async function verifySessionToken(
   token: string
 ): Promise<LineProfile | null> {
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload as unknown as LineProfile;
   } catch {
     return null;

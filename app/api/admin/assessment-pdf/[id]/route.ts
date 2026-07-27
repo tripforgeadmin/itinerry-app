@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { verifyAdminSession } from "@/app/api/admin/login/route";
+import { requireAdmin } from "@/lib/adminAuth";
 import { renderWorksheetPdf, worksheetFromDbRow } from "@/lib/worksheet-pdf";
 
 export const dynamic = "force-dynamic";
 
 /** Internal case-worksheet PDF (ใบงานประเมินวีซ่า) — admin-only, PII-free by design. */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const token = request.cookies.get("admin_session")?.value;
-  if (!token || !(await verifyAdminSession(token))) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 

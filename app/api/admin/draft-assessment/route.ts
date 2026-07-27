@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Anthropic from "@anthropic-ai/sdk";
 import { supabase } from "@/lib/supabase";
-import { verifyAdminSession } from "@/app/api/admin/login/route";
+import { requireAdmin } from "@/lib/adminAuth";
 import { getAnthropic, AI_DRAFT_MODEL, AI_DRAFT_ENABLED } from "@/lib/anthropic";
 import { buildDraftPrompt } from "@/lib/assessment-draft-prompt";
 import type { EngineResult, EngineCase } from "@/lib/assessment/types";
@@ -32,8 +32,7 @@ const clampItems = (v: unknown): string[] =>
     : [];
 
 export async function POST(request: NextRequest) {
-  const token = request.cookies.get("admin_session")?.value;
-  if (!token || !(await verifyAdminSession(token))) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 

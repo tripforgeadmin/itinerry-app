@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { PriceBookEntryRow, PriceBookRow, ProductRow } from "./product-families";
+import type { KitItemRow, PriceBookEntryRow, PriceBookRow, ProductRow } from "./product-families";
 
 /**
  * Product/service master data access (Salesforce-style Product2 / Pricebook2 /
@@ -53,6 +53,73 @@ export async function fetchEntriesForBook(priceBookId: string): Promise<PriceBoo
     return [];
   }
   return ((data ?? []) as Record<string, unknown>[]).map(toEntry);
+}
+
+/** Kit rows (≈ Odoo BoM lines), all of them or one parent's, in display order.
+ * PostgREST numeric → coerce quantity. */
+export async function fetchKitItems(parentId?: string): Promise<KitItemRow[]> {
+  let q = supabase.from("product_kit_item").select("*").order("sort_order");
+  if (parentId) q = q.eq("parent_product_id", parentId);
+  const { data, error } = await q;
+  if (error) {
+    console.error("product_kit_item fetch error:", error);
+    return [];
+  }
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    ...(r as unknown as KitItemRow),
+    quantity: Number(r.quantity),
+  }));
+}
+
+/** Product ids that ARE kits (have components) — marks dropdowns, blocks nesting. */
+export async function fetchKitParents(): Promise<Set<string>> {
+  const { data } = await supabase.from("product_kit_item").select("parent_product_id");
+  return new Set(((data ?? []) as { parent_product_id: string }[]).map((r) => r.parent_product_id));
+}
+
+export type KitResolution =
+  | { ok: true; components: { product: ProductRow; quantity: number; unitPrice: number }[] }
+  | { ok: false; missing: string[] };
+
+/** A kit is sellable in a book only when EVERY active component has an active price
+ * there. Returns the priced component list (explode order) or the missing names. */
+export async function resolveKitComponents(
+  parentId: string,
+  priceBookId: string
+): Promise<KitResolution> {
+  const items = await fetchKitItems(parentId);
+  if (items.length === 0) return { ok: false, missing: [] };
+  const ids = items.map((i) => i.component_product_id);
+  const [{ data: productRows }, { data: entryRows }] = await Promise.all([
+    supabase.from("product").select("*").in("id", ids),
+    supabase
+      .from("price_book_entry")
+      .select("product_id, unit_price, active")
+      .eq("price_book_id", priceBookId)
+      .in("product_id", ids),
+  ]);
+  const products = new Map(((productRows ?? []) as ProductRow[]).map((p) => [p.id, p]));
+  const prices = new Map(
+    ((entryRows ?? []) as { product_id: string; unit_price: unknown; active: boolean }[])
+      .filter((e) => e.active)
+      .map((e) => [e.product_id, Number(e.unit_price)])
+  );
+  const missing: string[] = [];
+  const components: { product: ProductRow; quantity: number; unitPrice: number }[] = [];
+  for (const item of items) {
+    const product = products.get(item.component_product_id);
+    if (!product || !product.active) {
+      missing.push(product?.name ?? item.component_product_id);
+      continue;
+    }
+    const unitPrice = prices.get(item.component_product_id);
+    if (unitPrice === undefined) {
+      missing.push(product.name);
+      continue;
+    }
+    components.push({ product, quantity: item.quantity, unitPrice });
+  }
+  return missing.length > 0 ? { ok: false, missing } : { ok: true, components };
 }
 
 /** Active price of a product in a book, or null when it isn't sellable there. */

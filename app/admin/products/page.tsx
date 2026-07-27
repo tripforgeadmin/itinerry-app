@@ -1,17 +1,22 @@
 import Link from "next/link";
-import { fetchProducts, fetchPriceBooks, fetchEntriesForBook, type PriceBookEntryRow } from "@/lib/products";
+import { fetchProducts, fetchPriceBooks, fetchEntriesForBook, fetchKitItems, type PriceBookEntryRow } from "@/lib/products";
 import { getAdminLang } from "@/lib/admin-lang";
 import { t } from "@/lib/i18n";
 import ProductManager from "./ProductManager";
 import PriceBookManager from "./PriceBookManager";
 import PriceBookEntryEditor from "./PriceBookEntryEditor";
+import KitEditor from "./KitEditor";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProductsAdminPage() {
   const lang = await getAdminLang();
   // Include inactive so admins can re-enable (lost-reasons pattern).
-  const [products, books] = await Promise.all([fetchProducts(false), fetchPriceBooks(false)]);
+  const [products, books, kitItems] = await Promise.all([
+    fetchProducts(false),
+    fetchPriceBooks(false),
+    fetchKitItems(),
+  ]);
   const entriesByBook: Record<string, PriceBookEntryRow[]> = Object.fromEntries(
     await Promise.all(books.map(async (b) => [b.id, await fetchEntriesForBook(b.id)]))
   );
@@ -35,7 +40,7 @@ export default async function ProductsAdminPage() {
           <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
             {t(lang, "สินค้า/บริการ", "Products")}
           </h2>
-          <ProductManager products={products} lang={lang} />
+          <ProductManager products={products} kitParentIds={kitItems.map((k) => k.parent_product_id)} lang={lang} />
         </section>
 
         <section className="mb-8">
@@ -45,11 +50,23 @@ export default async function ProductsAdminPage() {
           <PriceBookManager books={books} lang={lang} />
         </section>
 
-        <section>
+        <section className="mb-8">
           <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
             {t(lang, "ตั้งราคาต่อ price book", "Prices per book")}
           </h2>
           <PriceBookEntryEditor products={products} books={books} entriesByBook={entriesByBook} lang={lang} />
+        </section>
+
+        <section>
+          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+            📦 {t(lang, "ชุดแพ็กเกจ (Kit)", "Kits")}
+          </h2>
+          <KitEditor
+            products={products}
+            kitItems={kitItems}
+            standardEntries={entriesByBook[books.find((b) => b.is_standard)?.id ?? ""] ?? []}
+            lang={lang}
+          />
         </section>
       </div>
     </main>

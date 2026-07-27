@@ -30,6 +30,8 @@ export interface QuoteRow {
   grand_total: number;
   notes: string | null;
   terms: string | null;
+  credit_days: number | null;
+  sales_person: string | null;
   sent_at: string | null;
   decided_at: string | null;
   created_at: string;

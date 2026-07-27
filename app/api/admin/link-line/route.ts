@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { verifyAdminSession } from "@/app/api/admin/login/route";
+import { requireAdmin } from "@/lib/adminAuth";
 
 const LINE_ID_RE = /^U[0-9a-f]{32}$/; // same format the account.line_user_id_fmt_chk DB constraint enforces
 
 export async function POST(request: NextRequest) {
-  const token = request.cookies.get("admin_session")?.value;
-  if (!token || !(await verifyAdminSession(token))) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 

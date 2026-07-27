@@ -42,6 +42,37 @@ export interface QuoteTotals {
   grandTotal: number;
 }
 
+/** Line quantity when a kit explodes: kit qty × per-kit component qty (Odoo phantom BoM). */
+export function expandKit(componentQuantity: number, kitQuantity: number): number {
+  return round2(componentQuantity * kitQuantity);
+}
+
+export interface TaxBreakdown {
+  nonTaxableSubtotal: number; // มูลค่าที่ไม่มี/ยกเว้นภาษี (pass-through fees)
+  taxableSubtotal: number; // service lines before the quote-level discount
+  taxableBase: number; // มูลค่าที่คำนวณภาษี — must match computeQuoteTotals' VAT base
+}
+
+/** The PDF's tax-split rows. Mirrors computeQuoteTotals exactly: the quote-level
+ * discount reduces the taxable (service) portion first. */
+export function taxBreakdown(
+  lines: { lineTotal: number; taxable: boolean }[],
+  discountAmount: number
+): TaxBreakdown {
+  const taxableSubtotal = round2(
+    lines.filter((l) => l.taxable).reduce((sum, l) => sum + l.lineTotal, 0)
+  );
+  const nonTaxableSubtotal = round2(
+    lines.filter((l) => !l.taxable).reduce((sum, l) => sum + l.lineTotal, 0)
+  );
+  const discount = round2(Math.max(0, discountAmount));
+  return {
+    nonTaxableSubtotal,
+    taxableSubtotal,
+    taxableBase: Math.max(0, round2(taxableSubtotal - discount)),
+  };
+}
+
 export function computeQuoteTotals({ lines, discountAmount, vatRate }: TotalsInput): QuoteTotals {
   const subtotal = round2(lines.reduce((sum, l) => sum + l.lineTotal, 0));
   const taxableSubtotal = round2(

@@ -10,6 +10,9 @@ export async function GET() {
     .eq("is_active", true)
     .order("display_order");
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("questions fetch error:", error);
+    return NextResponse.json({ error: "internal error" }, { status: 500 });
+  }
   return NextResponse.json(data ?? []);
 }

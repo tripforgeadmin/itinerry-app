@@ -1,5 +1,8 @@
 {
   "crons": [
     { "path": "/api/cron/follow-up", "schedule": "0 2 * * *" }
-  ]
+  ],
+  "functions": {
+    "app/api/mcp/[transport]/route.ts": { "maxDuration": 60 }
+  }
 }
