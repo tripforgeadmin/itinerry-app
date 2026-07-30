@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { verifyAdminSession } from "@/app/api/admin/login/route";
+import { requireAdmin } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +12,7 @@ function one<T>(v: T | T[] | null): T | null {
 
 /** Message history for the CUSTOMER behind an assessment — all tickets, oldest first. */
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get("admin_session")?.value;
-  if (!token || !(await verifyAdminSession(token))) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 

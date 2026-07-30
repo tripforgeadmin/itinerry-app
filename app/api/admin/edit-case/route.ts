@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAssessment } from "@/lib/assessment";
 import { supabase } from "@/lib/supabase";
-import { verifyAdminSession } from "@/app/api/admin/login/route";
+import { requireAdmin } from "@/lib/adminAuth";
 import { tripFieldsFromAnswers, coreAssessmentFieldsFromAnswers, branchAnswersFromAnswers } from "@/lib/manual-case-mapping";
 
 // Lets admin staff correct S2 (destination/visa) / S3-S4 (occupation) / S5 (core screening)
@@ -13,8 +13,7 @@ import { tripFieldsFromAnswers, coreAssessmentFieldsFromAnswers, branchAnswersFr
 // (pass/notes/strengths/improvements/override_*) are untouched by this route.
 
 export async function POST(request: NextRequest) {
-  const token = request.cookies.get("admin_session")?.value;
-  if (!token || !(await verifyAdminSession(token))) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 

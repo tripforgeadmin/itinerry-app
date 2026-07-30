@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { fetchQuoteWithLines } from "@/lib/quotes";
-import { fetchProducts, fetchEntriesForBook, fetchPriceBooks } from "@/lib/products";
+import { fetchProducts, fetchEntriesForBook, fetchPriceBooks, fetchKitItems, resolveKitComponents } from "@/lib/products";
+import { round2 } from "@/lib/money";
 import { QUOTE_STATUS_COLOR, quoteStatusLabel, isQuoteEditable, type QuoteStatusValue } from "@/lib/quote-status";
 import { formatTHB } from "@/lib/money";
 import { getAdminLang } from "@/lib/admin-lang";
@@ -21,10 +22,11 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const { quote, lines } = result;
   const editable = isQuoteEditable(quote.status);
 
-  const [products, entries, books] = await Promise.all([
+  const [products, entries, books, kitItems] = await Promise.all([
     fetchProducts(true),
     fetchEntriesForBook(quote.price_book_id),
     fetchPriceBooks(true),
+    fetchKitItems(),
   ]);
   const book = books.find((b) => b.id === quote.price_book_id);
 
@@ -41,6 +43,26 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       taxable: p.taxable,
       unitPrice: priceByProduct.get(p.id)!,
     }));
+
+  // Kits: sellable when every component is priced in this book; the shown price is
+  // the components' sum (display only — the server re-resolves on add).
+  const kitParentIds = [...new Set(kitItems.map((k) => k.parent_product_id))];
+  for (const kitId of kitParentIds) {
+    const parent = products.find((p) => p.id === kitId);
+    if (!parent) continue;
+    const resolution = await resolveKitComponents(kitId, quote.price_book_id);
+    if (!resolution.ok) continue;
+    sellable.push({
+      id: parent.id,
+      name: parent.name,
+      family: parent.family,
+      destination: parent.destination,
+      unit: parent.unit,
+      taxable: parent.taxable,
+      unitPrice: round2(resolution.components.reduce((sum, c) => sum + c.unitPrice * c.quantity, 0)),
+      isKit: true,
+    });
+  }
 
   // Linked case (for the back-link and fee-sorting by the case's destination).
   let ticketId: string | null = null;
@@ -87,6 +109,8 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                 {" · "}
                 {t(lang, "ยืนราคาถึง", "Valid until")}: {fmtDate(quote.valid_until)}
                 {" · "}Price book: {book?.name ?? "—"}
+                {quote.credit_days !== null && <>{" · "}{t(lang, "เครดิต", "Credit")}: {quote.credit_days} {t(lang, "วัน", "days")}</>}
+                {quote.sales_person && <>{" · "}{t(lang, "ผู้ขาย", "Seller")}: {quote.sales_person}</>}
               </div>
               {ticketId && (
                 <div className="text-sm mt-1">

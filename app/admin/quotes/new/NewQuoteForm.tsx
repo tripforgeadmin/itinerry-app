@@ -34,6 +34,8 @@ export default function NewQuoteForm({
     priceBookId: standard?.id ?? "",
     validUntil: "",
     vat: false,
+    creditDays: "",
+    salesPerson: "",
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -58,6 +60,8 @@ export default function NewQuoteForm({
           priceBookId: form.priceBookId,
           validUntil: form.validUntil || undefined,
           vatRate: form.vat ? 7 : 0,
+          creditDays: form.creditDays.trim() !== "" && Number.isInteger(Number(form.creditDays)) ? Number(form.creditDays) : undefined,
+          salesPerson: form.salesPerson || undefined,
           assessmentId: prefill?.assessmentId,
           accountId: prefill?.accountId ?? undefined,
         }),
@@ -100,6 +104,14 @@ export default function NewQuoteForm({
           <div>
             <label className={label}>{t(lang, "ยืนราคาถึง", "Valid until")}</label>
             <input type="date" value={form.validUntil} onChange={set("validUntil")} className={input} />
+          </div>
+          <div>
+            <label className={label}>{t(lang, "เครดิต (วัน)", "Credit (days)")}</label>
+            <input value={form.creditDays} onChange={set("creditDays")} inputMode="numeric" placeholder={t(lang, "เช่น 4", "e.g. 4")} className={input} />
+          </div>
+          <div>
+            <label className={label}>{t(lang, "ผู้ขาย", "Salesperson")}</label>
+            <input value={form.salesPerson} onChange={set("salesPerson")} placeholder={t(lang, "เช่น คุณเอ็ท", "e.g. K. Ait")} className={input} />
           </div>
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-600">

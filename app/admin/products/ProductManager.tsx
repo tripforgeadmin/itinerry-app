@@ -17,7 +17,16 @@ const VISA_TYPES = [
 
 const EMPTY = { code: "", name: "", family: "core", destination: "", visaType: "", unit: "", taxable: true };
 
-export default function ProductManager({ products, lang }: { products: ProductRow[]; lang: Lang }) {
+export default function ProductManager({
+  products,
+  kitParentIds = [],
+  lang,
+}: {
+  products: ProductRow[];
+  kitParentIds?: string[];
+  lang: Lang;
+}) {
+  const kitIds = new Set(kitParentIds);
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -94,7 +103,12 @@ export default function ProductManager({ products, lang }: { products: ProductRo
               <tbody>
                 {items.map((p) => (
                   <tr key={p.id} className={`border-t border-gray-50 ${p.active ? "" : "opacity-50"}`}>
-                    <td className="py-1.5 pr-3 font-mono text-xs text-gray-500">{p.code}</td>
+                    <td className="py-1.5 pr-3 font-mono text-xs text-gray-500">
+                      {p.code}
+                      {kitIds.has(p.id) && (
+                        <span className="ml-1.5 rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600">KIT</span>
+                      )}
+                    </td>
                     <td className="py-1.5 pr-3">
                       {editing ? (
                         <input

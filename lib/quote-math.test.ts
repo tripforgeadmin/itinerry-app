@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computeLineTotal, computeQuoteTotals } from "./quote-math.ts";
+import { computeLineTotal, computeQuoteTotals, expandKit, taxBreakdown } from "./quote-math.ts";
 import { round2, parseMoneyInput } from "./money.ts";
 
 test("round2 rounds half-up at 2dp", () => {
@@ -86,6 +86,32 @@ test("negative discount input is treated as 0", () => {
   });
   assert.equal(t.discountAmount, 0);
   assert.equal(t.grandTotal, 1070);
+});
+
+test("expandKit multiplies kit qty into component qty", () => {
+  assert.equal(expandKit(1, 2), 2); // ชุด ×2 ท่าน, ส่วนประกอบ qty 1 → 2
+  assert.equal(expandKit(2.5, 2), 5);
+  assert.equal(expandKit(1, 1), 1);
+});
+
+test("taxBreakdown matches the example quotation (720 exempt / 3,200 taxable)", () => {
+  const lines = [
+    { lineTotal: 3200, taxable: true }, // บริการ Full Package
+    { lineTotal: 720, taxable: false }, // ค่าธรรมเนียมศูนย์ยื่น VFS
+  ];
+  const b = taxBreakdown(lines, 0);
+  assert.equal(b.nonTaxableSubtotal, 720);
+  assert.equal(b.taxableSubtotal, 3200);
+  assert.equal(b.taxableBase, 3200);
+  // VAT ที่ตามมาต้องเท่าตัวอย่าง: 224.00 และสอดคล้อง computeQuoteTotals
+  const t = computeQuoteTotals({ lines, discountAmount: 0, vatRate: 7 });
+  assert.equal(t.vatAmount, 224);
+  assert.equal(t.grandTotal, 4144);
+});
+
+test("taxBreakdown taxableBase clamps under a big quote discount", () => {
+  const b = taxBreakdown([{ lineTotal: 500, taxable: true }], 2000);
+  assert.equal(b.taxableBase, 0);
 });
 
 test("parseMoneyInput accepts ฿/commas, rejects junk", () => {

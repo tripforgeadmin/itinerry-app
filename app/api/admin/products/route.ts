@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { verifyAdminSession } from "@/app/api/admin/login/route";
-import { fetchProducts, VALID_FAMILIES } from "@/lib/products";
+import { requireAdmin } from "@/lib/adminAuth";
+import { fetchKitItems, fetchKitParents, fetchProducts, VALID_FAMILIES } from "@/lib/products";
 import { COUNTRIES } from "@/lib/countries";
-
-async function requireAdmin(request: NextRequest): Promise<boolean> {
-  const token = request.cookies.get("admin_session")?.value;
-  return !!token && (await verifyAdminSession(token));
-}
 
 const clean = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
@@ -47,7 +42,11 @@ function productPatch(body: Record<string, unknown>): Record<string, unknown> | 
 
 export async function GET(request: NextRequest) {
   if (!(await requireAdmin(request))) return NextResponse.json({ ok: false }, { status: 401 });
-  return NextResponse.json({ ok: true, products: await fetchProducts(false) });
+  return NextResponse.json({
+    ok: true,
+    products: await fetchProducts(false),
+    kits: await fetchKitItems(),
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -110,6 +109,67 @@ export async function POST(request: NextRequest) {
     const id = clean(body.id, 40);
     if (!id) return NextResponse.json({ ok: false, error: "id required" }, { status: 400 });
     const { error } = await supabase.from("product").delete().eq("id", id);
+    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (body.action === "kit_set") {
+    // Compose a kit (≈ Odoo BoM line upsert). No nesting in either direction:
+    // a component may not itself be a kit, and a kit may not become a component.
+    const parentId = clean(body.parentId, 40);
+    const componentId = clean(body.componentId, 40);
+    const quantity = typeof body.quantity === "number" ? body.quantity : 1;
+    if (!parentId || !componentId || parentId === componentId) {
+      return NextResponse.json({ ok: false, error: "invalid parent/component" }, { status: 400 });
+    }
+    if (!(quantity >= 0.01 && quantity <= 999)) {
+      return NextResponse.json({ ok: false, error: "invalid quantity" }, { status: 400 });
+    }
+    const kitParents = await fetchKitParents();
+    if (kitParents.has(componentId)) {
+      return NextResponse.json({ ok: false, error: "ส่วนประกอบเป็นชุด (kit) เองไม่ได้ — ไม่รองรับ kit ซ้อน kit" }, { status: 400 });
+    }
+    const { data: parentAsComponent } = await supabase
+      .from("product_kit_item")
+      .select("id")
+      .eq("component_product_id", parentId)
+      .limit(1);
+    if ((parentAsComponent ?? []).length > 0) {
+      return NextResponse.json({ ok: false, error: "สินค้านี้เป็นส่วนประกอบของชุดอื่นอยู่ ตั้งเป็นชุดไม่ได้" }, { status: 400 });
+    }
+    // Update-in-place keeps the row's position; only new components go to the end.
+    const { data: existing } = await supabase
+      .from("product_kit_item")
+      .select("id")
+      .eq("parent_product_id", parentId)
+      .eq("component_product_id", componentId)
+      .maybeSingle();
+    const qty = Math.round(quantity * 100) / 100;
+    if (existing) {
+      const { error } = await supabase.from("product_kit_item").update({ quantity: qty }).eq("id", existing.id);
+      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      return NextResponse.json({ ok: true });
+    }
+    const { data: last } = await supabase
+      .from("product_kit_item")
+      .select("sort_order")
+      .eq("parent_product_id", parentId)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+    const { error } = await supabase.from("product_kit_item").insert({
+      parent_product_id: parentId,
+      component_product_id: componentId,
+      quantity: qty,
+      sort_order: ((last?.[0]?.sort_order as number) ?? 0) + 10,
+    });
+    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (body.action === "kit_delete") {
+    const id = clean(body.id, 40);
+    if (!id) return NextResponse.json({ ok: false, error: "id required" }, { status: 400 });
+    const { error } = await supabase.from("product_kit_item").delete().eq("id", id);
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   }

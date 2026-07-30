@@ -5,7 +5,7 @@ import { generateTicketId } from "@/lib/ticket";
 import { normalizePhone } from "@/lib/dialCodes";
 import { bangkokDateTimeToUtc } from "@/lib/holidays";
 import { SLA_HOURS } from "@/lib/status";
-import { verifyAdminSession } from "@/app/api/admin/login/route";
+import { requireAdmin } from "@/lib/adminAuth";
 import { toNull, toJson, tripFieldsFromAnswers, coreAssessmentFieldsFromAnswers, branchAnswersFromAnswers } from "@/lib/manual-case-mapping";
 
 // Mirrors app/api/submit/route.ts's insert logic (account -> user_trip -> user_assessment,
@@ -22,8 +22,7 @@ import { toNull, toJson, tripFieldsFromAnswers, coreAssessmentFieldsFromAnswers,
 const REQUIRED_KEYS = ["q3", "q5", "q6", "q8", "q9", "q24", "q30", "q32", "q35"];
 
 export async function POST(request: NextRequest) {
-  const token = request.cookies.get("admin_session")?.value;
-  if (!token || !(await verifyAdminSession(token))) {
+  if (!(await requireAdmin(request))) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 

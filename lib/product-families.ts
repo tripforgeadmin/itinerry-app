@@ -39,6 +39,14 @@ export interface PriceBookEntryRow {
   active: boolean;
 }
 
+export interface KitItemRow {
+  id: string;
+  parent_product_id: string;
+  component_product_id: string;
+  quantity: number;
+  sort_order: number;
+}
+
 export interface ProductFamilyOption {
   value: "core" | "addon" | "fee";
   label_th: string;

@@ -97,6 +97,34 @@ export default function QuoteHeaderEditor({
           />
         </div>
         <div>
+          <label className={label}>{t(lang, "เครดิต (วัน)", "Credit (days)")}</label>
+          <input
+            defaultValue={quote.credit_days ?? ""}
+            disabled={!editable || busy}
+            inputMode="numeric"
+            placeholder="—"
+            onBlur={(e) => {
+              const raw = e.target.value.trim();
+              const v = raw === "" ? null : Number(raw);
+              if (v !== null && (!Number.isInteger(v) || v < 0 || v > 365)) {
+                setError(t(lang, "เครดิตต้องเป็นจำนวนวัน 0–365", "Credit must be 0–365 days"));
+                return;
+              }
+              if (v !== quote.credit_days) save({ creditDays: v });
+            }}
+            className={input}
+          />
+        </div>
+        <div>
+          <label className={label}>{t(lang, "ผู้ขาย", "Salesperson")}</label>
+          <input
+            defaultValue={quote.sales_person ?? ""}
+            disabled={!editable || busy}
+            onBlur={onBlurText("salesPerson", quote.sales_person)}
+            className={input}
+          />
+        </div>
+        <div>
           <label className={label}>{t(lang, "ส่วนลดท้ายใบ (บาท)", "Quote discount (THB)")}</label>
           <input
             defaultValue={quote.discount_amount > 0 ? String(quote.discount_amount) : ""}

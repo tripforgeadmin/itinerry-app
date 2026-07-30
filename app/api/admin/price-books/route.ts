@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { verifyAdminSession } from "@/app/api/admin/login/route";
+import { requireAdmin } from "@/lib/adminAuth";
 import { fetchEntriesForBook } from "@/lib/products";
-
-async function requireAdmin(request: NextRequest): Promise<boolean> {
-  const token = request.cookies.get("admin_session")?.value;
-  return !!token && (await verifyAdminSession(token));
-}
 
 const clean = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 

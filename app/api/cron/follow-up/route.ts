@@ -46,7 +46,10 @@ export async function GET(request: NextRequest) {
       "id, account_id, follow_up_count, account:account_id(line_user_id, is_friend, nationality), status_history(changed_at, to_status)"
     )
     .eq("status", "follow_up");
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  if (error) {
+    console.error("follow-up cron error:", error);
+    return NextResponse.json({ ok: false, error: "internal error" }, { status: 500 });
+  }
 
   let sent = 0, skipped = 0, ready = 0;
 
