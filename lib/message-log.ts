@@ -13,7 +13,7 @@ import { pushMessage } from "./line-messaging";
  *  - Logging never throws — a log failure must not break the send it describes.
  */
 
-export type MessageKind = "ticket_received" | "follow_up" | "share_card" | "result" | "manual";
+export type MessageKind = "ticket_received" | "follow_up" | "share_card" | "result" | "manual" | "broadcast" | "inbound";
 
 export interface MessageLogEntry {
   accountId: string;
@@ -39,6 +39,40 @@ export async function logLineMessage(e: MessageLogEntry): Promise<void> {
     if (error) console.error("message log error:", error);
   } catch (err) {
     console.error("message log error:", err);
+  }
+}
+
+/** Log a customer→OA message (webhook message event) and freshen account.last_inbound_at.
+ * Same never-throws contract as logLineMessage: losing one log row must not 500 the webhook. */
+export async function logInboundMessage(args: {
+  accountId: string;
+  content: string;
+  payload?: unknown; // raw LINE message event object
+  mediaPath?: string | null; // line-media bucket object path (image/video/audio/file)
+  mediaType?: string | null; // MIME type of the stored object
+}): Promise<void> {
+  try {
+    const now = new Date().toISOString();
+    const { error } = await supabase.from("line_message_log").insert({
+      account_id: args.accountId,
+      assessment_id: null,
+      kind: "inbound",
+      direction: "inbound",
+      content: args.content,
+      payload: args.payload ?? null,
+      sent_by: "customer",
+      delivered: true,
+      media_path: args.mediaPath ?? null,
+      media_type: args.mediaType ?? null,
+    });
+    if (error) console.error("inbound log error:", error);
+    const { error: accErr } = await supabase
+      .from("account")
+      .update({ last_inbound_at: now })
+      .eq("id", args.accountId);
+    if (accErr) console.error("last_inbound_at update error:", accErr);
+  } catch (err) {
+    console.error("inbound log error:", err);
   }
 }
 

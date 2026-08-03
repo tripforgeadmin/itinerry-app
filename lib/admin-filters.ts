@@ -6,7 +6,7 @@ import { t, type Lang } from "@/lib/i18n";
 // Categorical fields (checkbox multi-select, "is_any_of") vs. text fields (free-text
 // substring match, "contains") vs. date-range fields ("is_between"). status keeps its
 // own StatusValue-typed variant since it has a dedicated grouped UI in AddFilterPopover.
-type CategoricalField = "source" | "visa_type" | "intent" | "contact_preference" | "is_friend" | "printable" | "days_left";
+type CategoricalField = "source" | "visa_type" | "intent" | "contact_preference" | "is_friend" | "printable" | "days_left" | "followed_up";
 type TextField = "ticket_id" | "name" | "line" | "phone" | "destination";
 type DateField = "date" | "due_date";
 
@@ -21,7 +21,7 @@ export type FilterCondition =
 
 export const TEXT_FIELDS: TextField[] = ["ticket_id", "name", "line", "phone", "destination"];
 export const CATEGORICAL_FIELDS: CategoricalField[] = [
-  "source", "visa_type", "intent", "contact_preference", "is_friend", "printable", "days_left",
+  "source", "visa_type", "intent", "contact_preference", "is_friend", "printable", "days_left", "followed_up",
 ];
 export const DATE_FIELDS: DateField[] = ["date", "due_date"];
 export const ALL_FIELDS: FilterField[] = ["status", "date", "due_date", ...TEXT_FIELDS, ...CATEGORICAL_FIELDS];
@@ -54,6 +54,12 @@ export function printableOptions(lang: Lang = "th") {
     { value: "no", label: t(lang, "ยังไม่พร้อม", "Not ready") },
   ];
 }
+export function followedUpOptions(lang: Lang = "th") {
+  return [
+    { value: "yes", label: t(lang, "ยิงแล้ว", "Sent") },
+    { value: "no", label: t(lang, "ยังไม่ยิง", "Not sent") },
+  ];
+}
 export function daysLeftOptions(lang: Lang = "th") {
   return [
     { value: "urgent", label: t(lang, `ด่วน (< ${DAYS_LEFT_URGENT_MAX} วัน)`, `Urgent (< ${DAYS_LEFT_URGENT_MAX}d)`) },
@@ -72,18 +78,21 @@ export function categoricalOptions(field: CategoricalField, lang: Lang = "th"): 
     case "is_friend": return friendOptions(lang);
     case "printable": return printableOptions(lang);
     case "days_left": return daysLeftOptions(lang);
+    case "followed_up": return followedUpOptions(lang);
   }
 }
 
 const FIELD_LABEL_TH: Record<FilterField, string> = {
   status: "สถานะ", source: "แหล่งที่มา", visa_type: "วีซ่า", intent: "ความต้องการ",
   contact_preference: "ติดต่อ", is_friend: "เพื่อน", printable: "ผลประเมิน", days_left: "เหลือ",
+  followed_up: "Follow-up",
   date: "วันที่ส่ง", due_date: "กำหนด",
   ticket_id: "Ticket ID", name: "ชื่อเล่น", line: "LINE", phone: "โทร", destination: "ปลายทาง",
 };
 const FIELD_LABEL_EN: Record<FilterField, string> = {
   status: "Status", source: "Source", visa_type: "Visa", intent: "Intent",
   contact_preference: "Contact", is_friend: "Friend", printable: "Report", days_left: "Days left",
+  followed_up: "Follow-up",
   date: "Submitted date", due_date: "Due date",
   ticket_id: "Ticket ID", name: "Nickname", line: "LINE", phone: "Phone", destination: "Destination",
 };
@@ -99,6 +108,7 @@ export type MatchRow = {
   intent: string | null;
   contact_preference: string;
   printable: boolean;
+  follow_up_count?: number | null;
   account: {
     source: string | null;
     nickname: string | null; full_name: string | null; first_name: string | null; last_name: string | null;
@@ -159,6 +169,10 @@ export function matchesCondition(row: MatchRow, c: FilterCondition, todayIso: st
     case "days_left": {
       const bucket = daysLeftBucket(daysToTravel(row.trip, todayIso));
       return c.value.length === 0 || (bucket !== null && c.value.includes(bucket));
+    }
+    case "followed_up": {
+      const token = (row.follow_up_count ?? 0) > 0 ? "yes" : "no";
+      return c.value.length === 0 || c.value.includes(token);
     }
     case "date":
       return inRange(row.created_at, c.value[0], c.value[1]);

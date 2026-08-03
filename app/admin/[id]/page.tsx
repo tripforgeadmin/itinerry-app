@@ -5,6 +5,8 @@ import StatusUpdater from "./StatusUpdater";
 import ContactEditor from "./ContactEditor";
 import AssessmentResultForm from "./AssessmentResultForm";
 import ContactLog, { type ContactLogEntry } from "./ContactLog";
+import CaseCommentPanel, { type CaseCommentEntry } from "./CaseCommentPanel";
+import { fetchCommentCategories } from "@/lib/comment-categories";
 import SendResultFlow from "./SendResultFlow";
 import CopyLineIdButton from "./CopyLineIdButton";
 import LinkLineButton from "./LinkLineButton";
@@ -217,7 +219,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const lang = await getAdminLang();
   const { data: row, error } = await supabase
     .from("user_assessment")
-    .select("*, account:account_id(*), trip:trip_id(*), visa_evaluation(*), status_history(*), contact_log(*)")
+    .select("*, account:account_id(*), trip:trip_id(*), visa_evaluation(*), status_history(*), contact_log(*), case_comment(*)")
     .eq("id", id)
     .single();
 
@@ -240,6 +242,12 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
   const contactLog = ((s.contact_log ?? []) as ContactLogEntry[])
     .slice()
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  // Structured Problem/Solution comments (newest-first) + the category taxonomy for the dropdowns.
+  const caseComments = ((s.case_comment ?? []) as CaseCommentEntry[])
+    .slice()
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const commentCategories = await fetchCommentCategories(true);
 
   // Follow-up cadence: "ready to close" once both auto-nudges are sent + the grace has passed.
   // Entered follow_up = the latest status_history transition to it (statusHistory is newest-first).
@@ -509,6 +517,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
       />
 
       <ContactLog assessmentId={s.id as string} entries={contactLog} lang={lang} />
+      <CaseCommentPanel assessmentId={s.id as string} entries={caseComments} categories={commentCategories} lang={lang} />
 
       <CaseDataEditor
         assessmentId={s.id as string}

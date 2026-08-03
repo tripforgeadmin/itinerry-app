@@ -35,6 +35,7 @@ export default async function AdminPage() {
             <Link href="/admin/sla" className="text-sm font-medium text-blue-600 hover:text-blue-800">⏱️ SLA</Link>
             <Link href="/admin/quotes" className="text-sm font-medium text-blue-600 hover:text-blue-800">🧾 {t(lang, "ใบเสนอราคา", "Quotes")}</Link>
             <Link href="/admin/products" className="text-sm font-medium text-blue-600 hover:text-blue-800">📦 {t(lang, "สินค้า/ราคา", "Products")}</Link>
+            <Link href="/admin/broadcast" className="text-sm font-medium text-blue-600 hover:text-blue-800">📣 Broadcast</Link>
             <Link href="/admin/lost-reasons" className="text-sm font-medium text-blue-600 hover:text-blue-800">🏷️ {t(lang, "เหตุผลปิดดีล", "Lost reasons")}</Link>
             <Link href="/admin/holidays" className="text-sm font-medium text-blue-600 hover:text-blue-800">📅 {t(lang, "วันหยุด", "Holidays")}</Link>
             <Link href="/admin/manual-case" className="text-sm font-medium text-blue-600 hover:text-blue-800">✍️ {t(lang, "เพิ่มเคสด้วยตนเอง", "New manual case")}</Link>
