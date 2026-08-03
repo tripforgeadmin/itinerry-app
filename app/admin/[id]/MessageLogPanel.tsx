@@ -9,11 +9,36 @@ type LogRow = {
   id: string;
   assessment_id: string | null;
   kind: string;
+  direction?: string; // outbound | inbound
   content: string;
   sent_by: string;
   delivered: boolean;
   created_at: string;
+  media_url?: string | null; // signed URL into the private line-media bucket (1h TTL)
+  media_type?: string | null;
 };
+
+/** Inline preview for a stored inbound attachment; falls back to a plain link. */
+function MediaPreview({ url, mime, lang }: { url: string; mime: string; lang: Lang }) {
+  if (mime.startsWith("image/")) {
+    return (
+      <a href={url} target="_blank" rel="noreferrer">
+        <img src={url} alt="" className="max-h-48 rounded-lg object-contain" />
+      </a>
+    );
+  }
+  if (mime.startsWith("video/")) {
+    return <video src={url} controls preload="metadata" className="max-h-48 rounded-lg" />;
+  }
+  if (mime.startsWith("audio/")) {
+    return <audio src={url} controls preload="metadata" className="max-w-full" />;
+  }
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 underline">
+      {t(lang, "เปิดไฟล์แนบ", "Open attachment")}
+    </a>
+  );
+}
 
 const KIND_CLS: Record<string, string> = {
   ticket_received: "bg-blue-100 text-blue-700",
@@ -48,8 +73,9 @@ function timeLabel(iso: string, lang: Lang): string {
   });
 }
 
-/** Right-column outbound-message history + compose box for the case page. All bubbles are
- * outbound (we can't read LINE inbound history) — newest at the bottom, chat-style. */
+/** Right-column chat history + compose box for the case page. Outbound bubbles sit on the
+ * right; customer (inbound) bubbles — logged by the webhook since 0035, with media stored
+ * in the line-media bucket since 0036 — sit on the left. Newest at the bottom, chat-style. */
 export default function MessageLogPanel({ assessmentId, lang = "th" }: { assessmentId: string; lang?: Lang }) {
   const [messages, setMessages] = useState<LogRow[]>([]);
   const [ticketById, setTicketById] = useState<Record<string, string>>({});
@@ -109,7 +135,7 @@ export default function MessageLogPanel({ assessmentId, lang = "th" }: { assessm
   return (
     <div className="flex h-full flex-col rounded-2xl bg-white shadow-sm">
       <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
-        <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{t(lang, "ข้อความถึงลูกค้า", "Messages to customer")}</span>
+        <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{t(lang, "ประวัติแชทกับลูกค้า", "Chat history")}</span>
         <span className="ml-auto text-[11px] text-gray-300">{messages.length} {t(lang, "รายการ", "items")}</span>
       </div>
 
@@ -117,10 +143,11 @@ export default function MessageLogPanel({ assessmentId, lang = "th" }: { assessm
         {!loaded ? (
           <p className="pt-8 text-center text-xs text-gray-300">{t(lang, "กำลังโหลด…", "Loading…")}</p>
         ) : messages.length === 0 ? (
-          <p className="pt-8 text-center text-xs text-gray-300">{t(lang, "ยังไม่เคยส่งข้อความถึงลูกค้าคนนี้", "No messages sent to this customer yet")}</p>
+          <p className="pt-8 text-center text-xs text-gray-300">{t(lang, "ยังไม่มีประวัติแชทกับลูกค้าคนนี้", "No chat history with this customer yet")}</p>
         ) : (
           messages.map((m, i) => {
-            const badge = kindBadge(m.kind, lang);
+            const inbound = m.direction === "inbound";
+            const badge = inbound ? undefined : kindBadge(m.kind, lang);
             const newDay = i === 0 || dayLabel(messages[i - 1].created_at, lang) !== dayLabel(m.created_at, lang);
             const ticket = m.assessment_id ? ticketById[m.assessment_id] : "";
             const foreign = m.assessment_id && m.assessment_id !== assessmentId; // another ticket of the same customer
@@ -129,23 +156,37 @@ export default function MessageLogPanel({ assessmentId, lang = "th" }: { assessm
                 {newDay && (
                   <div className="my-2 text-center text-[10px] text-gray-300">{dayLabel(m.created_at, lang)}</div>
                 )}
-                <div className="flex flex-col items-end">
+                <div className={`flex flex-col ${inbound ? "items-start" : "items-end"}`}>
                   <div className="mb-0.5 flex items-center gap-1 text-[10px] text-gray-400">
-                    {!m.delivered && <span className="font-bold text-red-500">{t(lang, "ส่งไม่สำเร็จ", "Failed")} ·</span>}
-                    <span>{m.sent_by === "admin" ? t(lang, "แอดมิน", "Admin") : t(lang, "ระบบ", "System")} · {timeLabel(m.created_at, lang)}</span>
+                    {!inbound && !m.delivered && <span className="font-bold text-red-500">{t(lang, "ส่งไม่สำเร็จ", "Failed")} ·</span>}
+                    <span>
+                      {inbound
+                        ? t(lang, "ลูกค้า", "Customer")
+                        : m.sent_by === "admin" ? t(lang, "แอดมิน", "Admin") : t(lang, "ระบบ", "System")}
+                      {" · "}{timeLabel(m.created_at, lang)}
+                    </span>
                     {badge && <span className={`rounded px-1.5 py-px font-medium ${badge.cls}`}>{badge.label}</span>}
                     {foreign && ticket && <span className="rounded bg-gray-100 px-1.5 py-px text-gray-500">{ticket}</span>}
                   </div>
                   <div
-                    className={`max-w-[92%] whitespace-pre-wrap rounded-xl rounded-br-sm px-3 py-2 text-[13px] leading-relaxed ${
-                      !m.delivered
-                        ? "bg-red-50 text-red-900 opacity-90"
-                        : m.sent_by === "admin"
-                          ? "border border-gray-200 bg-gray-50 text-gray-800"
-                          : "bg-blue-50 text-blue-900"
+                    className={`max-w-[92%] whitespace-pre-wrap rounded-xl px-3 py-2 text-[13px] leading-relaxed ${
+                      inbound
+                        ? "rounded-bl-sm border border-emerald-100 bg-emerald-50 text-emerald-950"
+                        : !m.delivered
+                          ? "rounded-br-sm bg-red-50 text-red-900 opacity-90"
+                          : m.sent_by === "admin"
+                            ? "rounded-br-sm border border-gray-200 bg-gray-50 text-gray-800"
+                            : "rounded-br-sm bg-blue-50 text-blue-900"
                     }`}
                   >
-                    {m.content}
+                    {m.media_url && m.media_type ? (
+                      <div className="space-y-1">
+                        <MediaPreview url={m.media_url} mime={m.media_type} lang={lang} />
+                        {m.content && !m.content.startsWith("[") && <div>{m.content}</div>}
+                      </div>
+                    ) : (
+                      m.content
+                    )}
                   </div>
                 </div>
               </div>

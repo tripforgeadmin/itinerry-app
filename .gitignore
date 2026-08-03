@@ -53,3 +53,9 @@ next-env.d.ts
 
 # Facebook personal-data export — contains private customer message threads
 /facebook-itinerryvisa-18_7_2026-ZFKE28Qb/
+
+# LINE OA chat export — contains private customer message threads
+/line_oa_chat_csv_*/
+
+# local test artifact
+/examquotation.pdf

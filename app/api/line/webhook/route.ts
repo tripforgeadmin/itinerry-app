@@ -7,7 +7,8 @@ export async function GET() {
 import { supabase } from "@/lib/supabase";
 import { replyMessage, confirmDeleteMessage, assessmentReceivedMessage } from "@/lib/line-messaging";
 import { shareCardFlex } from "@/lib/line-flex";
-import { logLineMessage } from "@/lib/message-log";
+import { logLineMessage, logInboundMessage } from "@/lib/message-log";
+import { storeInboundMedia } from "@/lib/line-media";
 import { anonymizeAccount } from "@/lib/anonymize";
 
 /** Follow (add friend / unblock): freshen is_friend, then deliver the ticket thank-you message the
@@ -107,12 +108,55 @@ export async function POST(request: NextRequest) {
       continue;
     }
 
-    // User sent a message — check for trigger keywords
-    if (event.type === "message" && event.message?.type === "text") {
-      const text = (event.message.text as string).toLowerCase().trim();
-      const isDeleteRequest = TRIGGER_KEYWORDS.some((k) => text.includes(k));
-      if (isDeleteRequest) {
-        await replyMessage(event.replyToken, [confirmDeleteMessage()]);
+    // User sent a message — log it as inbound (reply tracking), then check trigger keywords
+    if (event.type === "message") {
+      const msgType = event.message?.type as string | undefined;
+      const rawText = msgType === "text" ? ((event.message.text as string) ?? "") : "";
+      try {
+        const { data: account } = await supabase
+          .from("account")
+          .select("id")
+          .eq("line_user_id", userId)
+          .maybeSingle();
+        if (account) {
+          // Media binaries are only downloadable NOW (no retroactive fetch from LINE) —
+          // capture into the private line-media bucket before logging. A failed capture
+          // degrades to the bracketed text label, never a webhook error.
+          const MEDIA_TYPES = ["image", "video", "audio", "file"] as const;
+          const isMedia = MEDIA_TYPES.includes(msgType as (typeof MEDIA_TYPES)[number]);
+          const media = isMedia
+            ? await storeInboundMedia({
+                accountId: account.id as string,
+                messageId: event.message.id as string,
+                messageType: msgType as string,
+                fileName: event.message.fileName as string | undefined,
+              })
+            : null;
+
+          const label: Record<string, string> = {
+            image: "[รูป]", video: "[วิดีโอ]", audio: "[เสียง]",
+            file: `[ไฟล์] ${event.message.fileName ?? ""}`.trim(),
+            sticker: "[สติกเกอร์]", location: "[ตำแหน่งที่ตั้ง]",
+          };
+          const content = msgType === "text" ? rawText.slice(0, 500) : (label[msgType ?? ""] ?? `[${msgType ?? "message"}]`);
+          await logInboundMessage({
+            accountId: account.id as string,
+            content,
+            payload: event.message,
+            mediaPath: media?.path,
+            mediaType: media?.contentType,
+          });
+        }
+      } catch (err) {
+        console.error("inbound message handler error:", err);
+      }
+
+      if (msgType === "text") {
+        const text = rawText.toLowerCase().trim();
+        const isDeleteRequest = TRIGGER_KEYWORDS.some((k) => text.includes(k));
+        if (isDeleteRequest) {
+          await replyMessage(event.replyToken, [confirmDeleteMessage()]);
+        }
       }
     }
 

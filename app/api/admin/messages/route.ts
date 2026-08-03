@@ -37,9 +37,11 @@ export async function GET(request: NextRequest) {
   const [{ data: messages }, { data: tickets }] = await Promise.all([
     supabase
       .from("line_message_log")
-      .select("id, assessment_id, kind, content, sent_by, delivered, created_at")
+      .select("id, assessment_id, kind, direction, content, sent_by, delivered, created_at, media_path, media_type")
       .eq("account_id", account.id)
-      .order("created_at", { ascending: true })
+      // newest 300, reversed below — ascending+limit would drop the LATEST rows once a
+      // customer's history (now including the OA-export backfill) exceeds the cap
+      .order("created_at", { ascending: false })
       .limit(300),
     supabase
       .from("user_assessment")
@@ -48,10 +50,27 @@ export async function GET(request: NextRequest) {
   ]);
 
   const ticketById = Object.fromEntries((tickets ?? []).map((t) => [t.id, t.ticket_id ?? ""]));
+  messages?.reverse(); // back to chronological for the chat panel
+
+  // Private bucket → short-lived signed URLs, one batch call for every media row.
+  const mediaPaths = (messages ?? []).map((m) => m.media_path).filter(Boolean) as string[];
+  let signedByPath: Record<string, string> = {};
+  if (mediaPaths.length) {
+    const { data: signed } = await supabase.storage
+      .from("line-media")
+      .createSignedUrls(mediaPaths, 3600);
+    for (const s of signed ?? []) {
+      if (s.path && s.signedUrl) signedByPath[s.path] = s.signedUrl;
+    }
+  }
 
   return NextResponse.json({
     ok: true,
-    messages: messages ?? [],
+    messages: (messages ?? []).map((m) => ({
+      ...m,
+      media_url: m.media_path ? (signedByPath[m.media_path] ?? null) : null,
+      media_path: undefined, // internal detail; the client only needs the signed URL
+    })),
     ticketById,
     // compose box needs both to be true — no LINE identity or unfriended → can't push
     canSend: !!account.line_user_id && account.is_friend !== false,
