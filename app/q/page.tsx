@@ -217,6 +217,21 @@ export default function QuestionnairePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers: clean, attribution }),
       });
+      if (res.status === 409) {
+        // Someone booked the same consultation slot first — clear it and send the
+        // customer back to the contact screen to pick a new time.
+        const { history: h, setAnswer } = useFormStore.getState();
+        setAnswer("q37", "");
+        setLoaderState(null);
+        setSubmitting(false);
+        alert("ขออภัย ช่วงเวลาที่เลือกเพิ่งถูกจองไป กรุณาเลือกเวลาใหม่อีกครั้งนะครับ");
+        const idx = h.indexOf("q3");
+        if (idx >= 0 && idx !== pos) {
+          dirRef.current = idx > pos ? 1 : -1;
+          goToIndex(idx);
+        }
+        return;
+      }
       if (!res.ok) throw new Error("Submit failed");
       // hand the case ticket to /done (survives the store reset there)
       const data = await res.json().catch(() => null);

@@ -6,7 +6,11 @@ import AnonymizeButton from "./AnonymizeButton";
 import { DIAL_CODES, formatPhone } from "@/lib/dialCodes";
 import { t, type Lang } from "@/lib/i18n";
 
-const prefLabel = (p: string, lang: Lang) => (p === "line" ? "LINE OA" : p === "call" ? t(lang, "โทรกลับ", "Call back") : p);
+const prefLabel = (p: string, lang: Lang) =>
+  p === "line" ? "LINE OA"
+  : p === "call" ? t(lang, "นัดโทรศัพท์", "Phone appointment")
+  : p === "online" ? t(lang, "นัด Online Meeting", "Online meeting")
+  : p;
 
 /** One read-only row — matches the <Row> helper in page.tsx. Hides empty values. */
 function ReadRow({ title, value }: { title: string; value?: string | null }) {
@@ -159,7 +163,7 @@ export default function ContactEditor(props: ContactEditorProps) {
           </Field>
           <Field label={t(lang, "ติดต่อผ่าน", "Contact via")}>
             <div className="flex gap-2">
-              {(["line", "call"] as const).map((p) => (
+              {(["call", "online"] as const).map((p) => (
                 <button
                   key={p}
                   type="button"

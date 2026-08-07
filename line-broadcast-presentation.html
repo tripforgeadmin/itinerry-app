@@ -1,0 +1,382 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>itinerry · แผนบอดแคส LINE — เอกสารพรีเซนต์</title>
+<style>
+:root{
+  --sky:#44A8DB; --sky-dark:#2B86B5; --sky-light:#D6EFFA;
+  --navy:#1B3D5C; --navy-soft:#2E5573;
+  --bg:#FDFEFF; --surface:#F0F8FD; --card:#FFFFFF; --line:#D6EFFA; --row:#E8F3FA;
+  --text:#2C2C2C; --muted:#6B7B8D;
+  --warn-bg:#FFF1CC; --warn-line:#F3DFAE; --warn-tx:#9A6B12;
+  --mint:#D4F1E4; --mint-line:#B6E4CE; --mint-tx:#1A7A4A;
+  --bar-track:#E4EEF5; --script-bg:#FBF6EA;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --sky:#5BB8E8; --sky-dark:#8FD0F0; --sky-light:#1E3A50;
+    --navy:#D9EAF6; --navy-soft:#9DB8CC;
+    --bg:#0C1822; --surface:#12222F; --card:#16293A; --line:#24455E; --row:#1C3448;
+    --text:#D5E4EF; --muted:#8AA2B5;
+    --warn-bg:#3A2E10; --warn-line:#5C4A1C; --warn-tx:#F0C463;
+    --mint:#123525; --mint-line:#1E5238; --mint-tx:#6FD1A0;
+    --bar-track:#1C3448; --script-bg:#241F12;
+  }
+}
+:root[data-theme="dark"]{
+  --sky:#5BB8E8; --sky-dark:#8FD0F0; --sky-light:#1E3A50;
+  --navy:#D9EAF6; --navy-soft:#9DB8CC;
+  --bg:#0C1822; --surface:#12222F; --card:#16293A; --line:#24455E; --row:#1C3448;
+  --text:#D5E4EF; --muted:#8AA2B5;
+  --warn-bg:#3A2E10; --warn-line:#5C4A1C; --warn-tx:#F0C463;
+  --mint:#123525; --mint-line:#1E5238; --mint-tx:#6FD1A0;
+  --bar-track:#1C3448; --script-bg:#241F12;
+}
+:root[data-theme="light"]{
+  --sky:#44A8DB; --sky-dark:#2B86B5; --sky-light:#D6EFFA;
+  --navy:#1B3D5C; --navy-soft:#2E5573;
+  --bg:#FDFEFF; --surface:#F0F8FD; --card:#FFFFFF; --line:#D6EFFA; --row:#E8F3FA;
+  --text:#2C2C2C; --muted:#6B7B8D;
+  --warn-bg:#FFF1CC; --warn-line:#F3DFAE; --warn-tx:#9A6B12;
+  --mint:#D4F1E4; --mint-line:#B6E4CE; --mint-tx:#1A7A4A;
+  --bar-track:#E4EEF5; --script-bg:#FBF6EA;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Sukhumvit Set","Noto Sans Thai",-apple-system,"Segoe UI","Helvetica Neue",Thonburi,sans-serif;
+  font-size:15px;line-height:1.75}
+.wrap{max-width:960px;margin:0 auto;padding:0 24px 96px}
+h1,h2,h3{color:var(--navy);line-height:1.35;margin:0;text-wrap:balance}
+
+header{border-bottom:1px solid var(--line);padding:44px 0 34px;background:var(--surface)}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.brand-dot{width:26px;height:26px;border-radius:9px;background:var(--sky);
+  display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px}
+.brand-name{font-weight:700;color:var(--navy);font-size:16px}
+h1{font-size:30px;font-weight:800;letter-spacing:-.4px}
+.sub{color:var(--navy-soft);font-size:16px;margin-top:12px;max-width:720px}
+.meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--sky-light);color:var(--sky-dark);border-radius:999px;padding:5px 13px;font-size:12.5px;font-weight:600}
+
+.slide{margin-top:44px;background:var(--card);border:1px solid var(--line);border-radius:18px;
+  padding:30px 34px;position:relative}
+.slide-no{position:absolute;top:26px;right:30px;font-size:11px;font-weight:800;letter-spacing:1.4px;
+  color:var(--muted);text-transform:uppercase}
+.eyebrow{font-size:11.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--sky-dark);margin-bottom:8px}
+h2{font-size:21px;font-weight:800;margin-bottom:12px;padding-right:70px}
+.script{background:var(--script-bg);border:1px dashed var(--warn-line);border-radius:12px;
+  padding:13px 18px;margin:16px 0 0;font-size:14px;color:var(--warn-tx)}
+.script b{font-weight:800}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:760px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.stat .v{font-size:27px;font-weight:800;color:var(--navy);line-height:1.1;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12.5px;color:var(--muted);margin-top:5px;font-weight:500}
+.stat.warn{background:var(--warn-bg);border-color:var(--warn-line)} .stat.warn .v{color:var(--warn-tx)}
+.stat.good{background:var(--mint);border-color:var(--mint-line)} .stat.good .v{color:var(--mint-tx)}
+
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13.5px}
+th{font-size:12px;font-weight:700;color:var(--navy-soft);text-align:left;padding:9px 10px;
+  border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--row);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.tag{display:inline-block;border-radius:7px;padding:2px 9px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.t-ok{background:var(--mint);color:var(--mint-tx)}
+.t-mid{background:var(--sky-light);color:var(--sky-dark)}
+.t-warn{background:var(--warn-bg);color:var(--warn-tx)}
+.code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--surface);
+  border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--sky-dark);font-weight:600;white-space:nowrap}
+ul,ol{margin:8px 0;padding-left:20px}
+li{margin:6px 0}
+li::marker{color:var(--sky)}
+.note{border-radius:12px;padding:14px 18px;margin-top:14px;font-size:13.5px}
+.note.good{background:var(--mint);border:1px solid var(--mint-line);color:var(--mint-tx)}
+.note.info{background:var(--sky-light);border:1px solid var(--line);color:var(--sky-dark)}
+
+.hbar{display:grid;grid-template-columns:110px 1fr 64px;gap:12px;align-items:center;margin:6px 0}
+.hbar .lb{font-size:13px;font-weight:600;color:var(--navy);white-space:nowrap}
+.hbar .track{height:24px;border-radius:8px;background:var(--bar-track);overflow:hidden;position:relative}
+.hbar .fill{position:absolute;inset:0 auto 0 0;border-radius:8px;
+  background:linear-gradient(90deg,var(--sky),var(--sky-dark));
+  display:flex;align-items:center;padding-left:10px;color:#fff;font-weight:700;font-size:12px;min-width:40px}
+:root[data-theme="dark"] .hbar .fill{color:#08202F}
+.hbar .fill.dim{background:var(--bar-track);color:var(--muted);border:1px solid var(--line)}
+.hbar .pct{font-size:12.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.foot{margin-top:56px;padding-top:22px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+</style>
+
+<header>
+  <div class="wrap">
+    <div class="brand"><div class="brand-dot">iti</div><div class="brand-name">itinerry · CRM &amp; Marketing</div></div>
+    <h1>แผนบอดแคส LINE: ปิดรูรั่ว ไม่ใช่หาลูกค้าใหม่</h1>
+    <p class="sub">เอกสารพรีเซนต์ทีม — รวมงานวิเคราะห์รากฐาน (รายงาน 28 ก.ค.) + ชั้นข้อมูลพฤติกรรมที่วิเคราะห์เพิ่ม (5 ส.ค.)
+    + แผนตั้งกฎยิงจริงในระบบ พร้อมสคริปต์พูดประกอบทุกช่วง</p>
+    <div class="meta">
+      <span class="chip">พรีเซนต์ ~15 นาที</span>
+      <span class="chip">ทุกตัวเลขมาจากฐานข้อมูลจริง</span>
+      <span class="chip">ระบบยิงพร้อมใช้งานแล้ว</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- SLIDE 1 -->
+<div class="slide">
+  <div class="slide-no">Slide 1 · เปิด</div>
+  <div class="eyebrow">ประเด็นเดียวของวันนี้</div>
+  <h2>เราไม่ได้แพ้คู่แข่ง และไม่ได้ขาดลูกค้าใหม่ — เราแพ้ความเงียบของตัวเอง</h2>
+  <div class="grid4">
+    <div class="stat"><div class="v">115</div><div class="l">ลูกค้าใน LINE ที่ยิงข้อความหาได้วันนี้</div></div>
+    <div class="stat warn"><div class="v">0 บาท</div><div class="l">ต้นทุนสื่อ — คนกลุ่มนี้จ่ายค่าแอดไปแล้ว</div></div>
+    <div class="stat warn"><div class="v">50 ราย</div><div class="l">คุยแล้วหลุดหาย ไม่เคยถูกตามต่อ</div></div>
+    <div class="stat good"><div class="v">0 ราย</div><div class="l">lost เพราะแพ้คู่แข่งหรือแพ้ราคา</div></div>
+  </div>
+  <div class="script">🗣 <b>พูดง่ายๆ ว่า:</b> "วันนี้ผมไม่ได้มาเสนอให้หาลูกค้าเพิ่ม ผมมาเสนอวิธีเก็บเงินจากลูกค้าที่เราจ่ายค่าแอดซื้อมาแล้ว
+  แต่ปล่อยให้เงียบหายไปเฉยๆ — และตอนนี้เรามีระบบที่ทำเรื่องนี้อัตโนมัติได้แล้ว"</div>
+</div>
+
+<!-- SLIDE 2 -->
+<div class="slide">
+  <div class="slide-no">Slide 2 · รากฐาน</div>
+  <div class="eyebrow">งานวิเคราะห์รากฐาน (รายงาน 28 ก.ค.)</div>
+  <h2>การวิเคราะห์ funnel ชี้จุดรั่ว 2 จุด — ทั้งคู่อยู่ฝั่งการขาย ไม่ใช่การตลาด</h2>
+  <div class="grid2">
+    <div class="stat warn"><div class="v">รั่วจุดที่ 1</div><div class="l"><b>คุยแล้วเงียบ</b> — ลูกค้าถูกติดต่อครั้งแรกเร็วมาก (เฉลี่ย 18 นาที)
+    แต่ไม่มี "จังหวะที่สอง" เลย — 50 รายหลุดตรงนี้ มากที่สุดใน funnel</div></div>
+    <div class="stat warn"><div class="v">รั่วจุดที่ 2</div><div class="l"><b>ตัดสินใจกับอากาศ</b> — 27 รายเคยถึงขั้น "รอตัดสินใจ"
+    แต่แทบไม่มีใครได้ใบเสนอราคาเป็นลายลักษณ์อักษร</div></div>
+  </div>
+  <ul style="margin-top:14px">
+    <li>รายงานเดิมเสนอ <b>9 กลุ่มเป้าหมาย + ลำดับการยิง 4 ระลอก</b> — ยิงกลุ่มใกล้ปิดก่อน แล้วไล่ขึ้นไปหากลุ่มที่ยังเย็น</li>
+    <li>พร้อมกติกาความปลอดภัย: ไม่ยิงคนปิดการขายแล้ว / เคสช่วยไม่ได้ / จำกัดความถี่ต่อคน</li>
+  </ul>
+  <div class="script">🗣 <b>พูดง่ายๆ ว่า:</b> "รายงานของพี่ [ชื่อ] วางรากฐานไว้ชัดมาก: ปัญหาไม่ใช่ lead ไม่ดี
+  แต่คือเราติดต่อครั้งแรกเร็วมากแล้วก็…เงียบ งานของผมคือเอาโครงนั้นมาต่อยอดด้วยข้อมูลชุดใหม่ที่ตอนนั้นยังไม่มี"</div>
+</div>
+
+<!-- SLIDE 3 -->
+<div class="slide">
+  <div class="slide-no">Slide 3 · ของใหม่</div>
+  <div class="eyebrow">สิ่งที่ผมวิเคราะห์เพิ่ม</div>
+  <h2>ตอนนี้เรามีข้อมูลที่รายงานเดิมไม่มี: ประวัติแชทจริง 794 ข้อความ</h2>
+  <p>ตั้งแต่ต้นเดือน ส.ค. ระบบเริ่มเก็บ<b>ข้อความที่ลูกค้าพิมพ์เข้ามา</b> + นำเข้าประวัติแชทย้อนหลังจาก LINE OA
+  ทำให้ตอบคำถามที่เมื่อก่อนต้องเดา ได้ด้วยข้อมูลจริง 3 ข้อ:</p>
+  <div class="grid3">
+    <div class="stat"><div class="v">ใครตอบจริง?</div><div class="l">แยกได้แล้วว่าใครเคยคุยจริง ใครไม่เคยพิมพ์เลยสักคำ</div></div>
+    <div class="stat"><div class="v">ข้อความเดิมได้ผลไหม?</div><div class="l">วัดอัตราตอบกลับของ follow-up template เดิมได้แล้ว</div></div>
+    <div class="stat"><div class="v">ตอบเวลาไหน?</div><div class="l">รู้ช่วงเวลาที่ลูกค้าตอบข้อความมากที่สุด</div></div>
+  </div>
+  <div class="script">🗣 <b>พูดง่ายๆ ว่า:</b> "เปรียบเหมือนเมื่อก่อนเราเห็นแค่ว่าโทรออกไปกี่สาย
+  ตอนนี้เราเห็นแล้วว่าใครรับสาย ใครไม่รับ และรับตอนกี่โมง"</div>
+</div>
+
+<!-- SLIDE 4 -->
+<div class="slide">
+  <div class="slide-no">Slide 4 · ค้นพบ 1</div>
+  <div class="eyebrow">ข้อค้นพบที่ 1 — สำคัญที่สุด</div>
+  <h2>ครึ่งหนึ่งของฐาน "ไม่เคยพิมพ์อะไรเลยสักคำ"</h2>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>กลุ่มพฤติกรรม</th><th class="n">คน</th><th class="n">ในนั้น lost</th><th>แปลว่า</th></tr></thead>
+    <tbody>
+      <tr><td><b>ไม่เคยตอบเลย</b></td><td class="n">58</td><td class="n">4</td><td>ไม่มีบทสนทนาให้ "ต่อ" — ต้องชวนเริ่ม แบบกดปุ่มเดียวจบ</td></tr>
+      <tr><td><b>กำลังคุยอยู่</b> (ตอบใน 7 วัน)</td><td class="n">5</td><td class="n">0</td><td>ห้ามยิงอัตโนมัติทับ — ให้เซลส์คุยมือ</td></tr>
+      <tr><td><b>เคยคุย แล้วเย็นลง</b> (8–21 วัน)</td><td class="n">24</td><td class="n">2</td><td>กลุ่มทอง — เคยสนใจจริง อ้างเรื่องเดิมต่อได้</td></tr>
+      <tr><td><b>เงียบเกิน 21 วัน</b></td><td class="n">28</td><td class="n">9</td><td>lost เกือบครึ่งของทั้งบริษัทกระจุกอยู่ตรงนี้</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note info"><b>ผลเชิงปฏิบัติ:</b> ลูกค้าที่ "เงียบ" มี 2 แบบที่ต้องคุยคนละวิธี —
+  คนเคยคุยแล้วหาย (ทักต่อจากเรื่องเดิม) กับคนไม่เคยพิมพ์เลย (ส่งปุ่มให้กดตอบใน 1 วินาที อย่าถามคำถามปลายเปิด)</div>
+  <div class="script">🗣 <b>พูดง่ายๆ ว่า:</b> "ลูกค้า 58 คน ไม่ใช่คนที่เลิกคุยกับเรานะครับ — เขาไม่เคยเริ่มคุยเลยต่างหาก
+  ถ้าส่งข้อความยาวๆ ไปถาม เขาก็จะเงียบเหมือนเดิม ต้องให้ปุ่มเขากด"</div>
+</div>
+
+<!-- SLIDE 5 -->
+<div class="slide">
+  <div class="slide-no">Slide 5 · ค้นพบ 2–3</div>
+  <div class="eyebrow">ข้อค้นพบที่ 2 และ 3</div>
+  <h2>ข้อความเดิมได้ผลแค่ 11% — และเราส่งผิดเวลามาตลอด</h2>
+  <div class="grid2">
+    <div>
+      <h3 style="font-size:15.5px;margin-bottom:8px">📉 Follow-up template เดิม (ข้อความเดียวเหมือนกันทุกคน)</h3>
+      <div class="grid3" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="stat"><div class="v">92</div><div class="l">ครั้งที่ส่ง</div></div>
+        <div class="stat"><div class="v">44</div><div class="l">คนที่ได้รับ</div></div>
+        <div class="stat warn"><div class="v">11%</div><div class="l">ตอบกลับใน 72 ชม. (5 คน)</div></div>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-top:10px">ตัวเลขนี้คือ<b>เส้น baseline</b> —
+      แคมเปญใหม่ต้องชนะ 11% ให้ได้ ไม่งั้นเสียแรงเปล่า</p>
+    </div>
+    <div>
+      <h3 style="font-size:15.5px;margin-bottom:8px">🕓 ลูกค้าตอบข้อความช่วงไหน (794 ข้อความ)</h3>
+      <div class="hbar"><div class="lb">บ่าย 14–17</div><div class="track"><div class="fill" style="width:100%">371</div></div><div class="pct">47%</div></div>
+      <div class="hbar"><div class="lb">เที่ยง 11–13</div><div class="track"><div class="fill" style="width:42%">155</div></div><div class="pct">20%</div></div>
+      <div class="hbar"><div class="lb">เช้า 06–10</div><div class="track"><div class="fill dim" style="width:31%">114</div></div><div class="pct">14%</div></div>
+      <div class="hbar"><div class="lb">ค่ำ 18–21</div><div class="track"><div class="fill dim" style="width:22%">81</div></div><div class="pct">10%</div></div>
+      <p style="font-size:13px;color:var(--muted);margin-top:8px">ช่วงหัวค่ำที่เคยคิดว่าดี จริงๆ เป็นช่วงตอบต่ำเกือบสุด
+      → ยิง <b>12:30 กับ 16:00</b></p>
+    </div>
+  </div>
+  <div class="script">🗣 <b>พูดง่ายๆ ว่า:</b> "ข้อความแบบเดิม ร้อยคนตอบสิบเอ็ดคน นี่คือตัวเลขที่เราต้องเอาชนะ
+  และต่อไปนี้เราจะส่งตอนบ่ายซึ่งเป็นช่วงลูกค้าตอบจริง ไม่ใช่ตอนค่ำที่เราเดากันเอง"</div>
+</div>
+
+<!-- SLIDE 6 -->
+<div class="slide">
+  <div class="slide-no">Slide 6 · หลักคิด</div>
+  <div class="eyebrow">เหตุผลเบื้องหลังการตัดสินใจ</div>
+  <h2>หลัก 3 ข้อที่ใช้ออกแบบแผนนี้</h2>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>หลัก</th><th>ความหมาย</th><th>หลักฐานจากข้อมูล</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>1 · ดูพฤติกรรมลูกค้า<br>ไม่ใช่แค่สถานะในระบบ</b></td>
+        <td>สถานะบอกว่า "เราทำอะไรกับเขา" แต่การตอบ/เงียบบอกว่า "เขารู้สึกยังไงกับเรา" — ตัวหลังแม่นกว่า</td>
+        <td>lost กระจุกในกลุ่มเงียบเกิน 21 วัน (9/21) ไม่ได้กระจายตามสถานะ → ทุกกฎมีเงื่อนไข "ไม่ตอบเกิน N ชม." ประกบ</td>
+      </tr>
+      <tr>
+        <td><b>2 · แบ่งกลุ่มเท่าที่วัดผลไหว</b></td>
+        <td>ฐาน 115 คน ถ้าซอยเป็น 9-12 กลุ่ม บางกลุ่มเหลือ 2-4 คน — เขียนข้อความ 9 แบบแต่สรุปไม่ได้ว่าแบบไหนดี</td>
+        <td>เหลือ 4 กฎ กลุ่มละ 11–40 คน ใหญ่พอให้ตัวเลขตอบกลับมีความหมาย · กลุ่มจิ๋ว (lost 2-5 คน) ส่งรายคนแทน</td>
+      </tr>
+      <tr>
+        <td><b>3 · ระบบถาวร<br>ไม่ใช่แคมเปญครั้งเดียว</b></td>
+        <td>ลูกค้าใหม่จะไหลเข้ามาแล้ว "เงียบ" แบบเดิมทุกสัปดาห์ — ยิงครั้งเดียวแก้เฉพาะคนค้างวันนี้</td>
+        <td>ตั้งเป็นกฎอัตโนมัติรายสัปดาห์: ใครก็ตามที่เข้าเงื่อนไข "คุยแล้วเงียบ 10 วัน" ในอนาคต ถูกตามอัตโนมัติตลอดไป</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="script">🗣 <b>พูดง่ายๆ ว่า:</b> "สามหลักนี้สรุปสั้นๆ คือ ฟังลูกค้าจากพฤติกรรม
+  แบ่งกลุ่มเท่าที่พิสูจน์ผลได้ และสร้างระบบที่ทำงานเองทุกสัปดาห์ ไม่ใช่ยิงครั้งเดียวจบ"</div>
+</div>
+
+<!-- SLIDE 7 -->
+<div class="slide">
+  <div class="slide-no">Slide 7 · แผนจริง</div>
+  <div class="eyebrow">แผนปฏิบัติ — ตั้งในระบบได้วันนี้</div>
+  <h2>กฎ 4 ข้อ: ยิงใคร เมื่อไหร่ ทำไม</h2>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>กฎ</th><th>ยิงใคร (segment)</th><th class="n">คน</th><th>ยิงยังไง</th><th>ทำไมกลุ่มนี้</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>1 · ตามใบเสนอราคาค้าง</b><br><span class="tag t-ok">พร้อมตั้ง</span></td>
+        <td>สถานะ "รอตัดสินใจ" + ไม่ตอบเกิน 48 ชม.</td>
+        <td class="n">11</td>
+        <td>กดส่งเอง หลังใบเสนอราคาพร้อม</td>
+        <td>ใกล้ปิดที่สุด effort ต่อ 1 win ต่ำสุด — แก้จุดรั่วที่ 2 ตรงๆ</td>
+      </tr>
+      <tr>
+        <td><b>2 · จังหวะที่สองของเซลส์</b><br><span class="tag t-ok">พร้อมตั้ง</span></td>
+        <td>สถานะ "ติดต่อแล้ว" + ไม่ตอบเกิน 240 ชม. (10 วัน)</td>
+        <td class="n">40</td>
+        <td>อัตโนมัติ ทุกวัน 16:00 · ส่งครั้งเดียวต่อคน</td>
+        <td>จุดรั่วใหญ่สุด (หลุด 50 ราย) — ยิงทุกวันเพื่อดักคนที่เพิ่งครบ 10 วัน แต่คนเดิมไม่โดนซ้ำ</td>
+      </tr>
+      <tr>
+        <td><b>3 · ใกล้เดดไลน์เดินทาง</b><br><span class="tag t-mid">รอเติมข้อมูล 1 จุด</span></td>
+        <td>ทุกสถานะที่ยังเปิด + เงื่อนไข "ใกล้เดดไลน์ตามประเทศ"</td>
+        <td class="n">31</td>
+        <td>อัตโนมัติ ทุกวัน 12:30 · ส่งครั้งเดียวต่อคน</td>
+        <td>ต้องยิง<b>ตามวันที่ลูกค้าใกล้เดินทางจริง</b> ไม่ใช่นัดรวมสัปดาห์ละครั้ง — ระบบเช็คทุกวันว่าใครเพิ่งเข้าเขตเดดไลน์ · รอเติมตารางระยะเวลาวีซ่า 6 ประเทศ</td>
+      </tr>
+      <tr>
+        <td><b>4 · ให้ความรู้กลุ่มยังสำรวจ</b><br><span class="tag t-ok">พร้อมตั้ง</span></td>
+        <td>ระดับความสนใจ "หาข้อมูล (Cold)"</td>
+        <td class="n">18</td>
+        <td>กดส่งเอง ทุก 2–3 สัปดาห์</td>
+        <td>59% ของฐานยังไม่พร้อมซื้อ — ขายตอนนี้คือผลักหนี ให้ความรู้เพื่ออยู่ในใจจนกว่าจะพร้อม</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note good"><b>ระบบกันพลาดให้อัตโนมัติทุกกฎ:</b> ตั้งได้ว่าลูกค้า 1 คนรับข้อความจากกฎนี้ได้บ่อยแค่ไหน
+  (ครั้งเดียว / ทุก 7–30 วัน) · ตัดคนบล็อก-ไม่รับข้อความ · ข้ามวันยิงแอดตามปฏิทินการตลาด <b>แล้วยกยอดไปส่งวันถัดไป</b>
+  (ไม่ใช่หายไปเฉยๆ) · แคมเปญที่จบหรือถูกปิดจะยิงไม่ได้ทั้งอัตโนมัติและกดเอง · จำกัด 300 คน/รอบ · บันทึกผลทุกข้อความ</div>
+  <div class="note info"><b>ข้อความเรียกชื่อลูกค้าได้แล้ว</b> — ใส่ตัวแปรในข้อความได้เลย เช่น
+  "สวัสดีครับ {ชื่อ} ยังสนใจวีซ่า{วีซ่า}ไป{ประเทศ}อยู่ไหมครับ เหลืออีก {เหลือวัน} วัน"
+  ระบบเติมข้อมูลรายคนให้ตอนส่ง ถ้าลูกค้าคนไหนไม่มีข้อมูลนั้น ระบบตัดคำออกให้เอง ไม่หลุดวงเล็บไปหาลูกค้า</div>
+  <div class="note info"><b>กลุ่มที่ไม่ตั้งกฎ:</b> lost รายสาเหตุ (2–5 คน/กลุ่ม) ส่งแบบรายคน (1-on-1) คุมโทนได้ดีกว่า ·
+  คนกำลังคุยอยู่กับเซลส์ = เงื่อนไข "ไม่ตอบเกิน N ชม." กันไว้แล้วทุกกฎ</div>
+  <div class="script">🗣 <b>พูดง่ายๆ ว่า:</b> "สี่กฎนี้เรียงจากคนใกล้จ่ายเงินสุดไปหาคนที่ยังดูๆ อยู่
+  สองกฎแรกกดตั้งได้วันนี้เลย กฎสามรอตัวเลขจากทีมนิดเดียว"</div>
+</div>
+
+<!-- SLIDE 8 -->
+<div class="slide">
+  <div class="slide-no">Slide 8 · วัดผล</div>
+  <div class="eyebrow">จะรู้ได้ยังไงว่าสำเร็จ</div>
+  <h2>เกณฑ์วัดผล — เทียบกับเส้น baseline ที่วัดไว้แล้ว</h2>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>ตัวชี้วัด</th><th class="n">เส้นเดิม</th><th class="n">เป้า</th><th>วิธีวัด</th></tr></thead>
+    <tbody>
+      <tr><td><b>อัตราตอบกลับใน 72 ชม.</b></td><td class="n">11%</td><td class="n">≥ 20%</td><td>ระบบผูกรอบยิงกับข้อความขาเข้าให้อัตโนมัติ — ดูได้ในแท็บ "ประวัติการส่ง"</td></tr>
+      <tr><td><b>ใบเสนอราคาส่งออกจริง</b></td><td class="n">1 ใบ</td><td class="n">≥ 8 ใบ</td><td>ตัวชี้วัดสำคัญสุด — พิสูจน์ว่าแก้จุดรั่วที่ 2 ได้จริง</td></tr>
+      <tr><td><b>สถานะขยับขึ้นใน 7 วัน</b></td><td class="n">—</td><td class="n">≥ 15 คน</td><td>ประวัติการเปลี่ยนสถานะในระบบ</td></tr>
+      <tr><td><b>โดนบล็อก/เลิกเป็นเพื่อน</b></td><td class="n">—</td><td class="n">≤ 3 คน</td><td>ตัววัดความเสี่ยง — ถ้าเกิน หยุดทบทวนข้อความทันที</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="script">🗣 <b>พูดง่ายๆ ว่า:</b> "เราไม่ได้วัดกันลอยๆ — ข้อความเดิมทำได้ 11% แผนใหม่ต้องทำให้ได้ 20%
+  และตัวเลขที่ผมอยากเห็นสุดคือใบเสนอราคาที่ส่งออกจริง เพราะนั่นคือรูรั่วที่แพงที่สุดของเรา"</div>
+</div>
+
+<!-- SLIDE 9 -->
+<div class="slide">
+  <div class="slide-no">Slide 9 · ปิด</div>
+  <div class="eyebrow">สิ่งที่ขอจากที่ประชุมวันนี้</div>
+  <h2>ขอ 4 อย่าง เพื่อเริ่มยิงจริงในสัปดาห์นี้</h2>
+  <ol>
+    <li><b>ตัวเลขระยะเวลาทำวีซ่า 6 ประเทศ</b> (เยอรมนี เกาหลี ออสเตรเลีย ไต้หวัน ฝรั่งเศส สวีเดน) — ใช้เวลากี่วัน ควรเตือนลูกค้าเมื่อเหลือกี่วัน → ปลดล็อกกฎ "ใกล้เดดไลน์"</li>
+    <li><b>ทีมขายเตรียมใบเสนอราคา 11 รายที่ค้าง "รอตัดสินใจ"</b> — กฎ 1 จะยิงก็ต่อเมื่อมีของจริงแนบไปด้วย</li>
+    <li><b>ยืนยันกำลังรับของเซลส์</b> — ถ้ายิง 40 คนแล้วตอบ 20% = ~8 บทสนทนาเข้าพร้อมกัน รับไหวไหม ถ้าไม่ไหวจะซอยยิงเป็น 2 รอบ</li>
+    <li><b>ทีมแอดติดแท็ก UTM ในลิงก์โฆษณาทุกตัว</b> — ระบบเก็บพร้อมแล้วแต่ลิงก์ยังไม่ติดแท็ก ทำให้ตอบไม่ได้ว่าแอดตัวไหนคุ้ม (งานคู่ขนาน ไม่บล็อกแคมเปญนี้)</li>
+  </ol>
+  <div class="script">🗣 <b>พูดง่ายๆ ว่า:</b> "ระบบพร้อมแล้ว ข้อมูลพร้อมแล้ว ผมขอแค่ 4 อย่างนี้จากพวกพี่
+  แล้วสัปดาห์นี้เราเริ่มเก็บลูกค้าที่จ่ายเงินซื้อมาแล้วกลับมาได้เลยครับ"</div>
+</div>
+
+<!-- Q&A -->
+<div class="slide" style="background:var(--surface)">
+  <div class="slide-no">ภาคผนวก</div>
+  <div class="eyebrow">ชีทเตรียมตอบคำถาม</div>
+  <h2>คำถามที่น่าจะโดนถาม + แนวตอบสั้น</h2>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>ถ้าโดนถามว่า…</th><th>ตอบว่า…</th></tr></thead>
+    <tbody>
+      <tr><td>"ยิงเยอะแบบนี้ลูกค้าจะรำคาญไหม"</td>
+        <td>ทุกกฎมีเงื่อนไข "ไม่ตอบเกิน N ชม." — คนที่กำลังคุยอยู่จะไม่โดนยิงทับเลย และแต่ละกฎยิงสัปดาห์ละครั้งเดียว
+        มีตัววัดความเสี่ยง (บล็อกเกิน 3 คน = หยุดทันที)</td></tr>
+      <tr><td>"ต่างจากแผน 9 segment ของเดิมยังไง"</td>
+        <td>โครงเดียวกัน แต่ยุบกลุ่มเล็กเข้าด้วยกันให้วัดผลได้ (115 คนแบ่ง 9 กลุ่ม = บางกลุ่ม 2-4 คน สรุปสถิติไม่ได้)
+        และเปลี่ยนจากแคมเปญครั้งเดียวเป็นระบบถาวร — จุดที่วิเคราะห์อิสระแล้วได้ข้อสรุปตรงกัน ยิ่งยืนยันว่าแผนเดิมมาถูกทาง</td></tr>
+      <tr><td>"ตัวเลข 11% เชื่อได้แค่ไหน"</td>
+        <td>มาจากการยิงจริง 92 ครั้งกับ 44 คน วัดจากข้อความขาเข้าจริงใน 72 ชม. — ฐานเล็กก็จริง
+        แต่เป็นตัวเลขจริงตัวแรกที่เรามี ดีกว่าไม่มีเส้นเทียบเลย</td></tr>
+      <tr><td>"ทำไมส่งบ่าย ไม่ใช่หลังเลิกงาน"</td>
+        <td>จากประวัติแชท 794 ข้อความ ลูกค้าตอบช่วง 14-17 น. ถึง 47% ส่วน 18-21 น. มีแค่ 10% —
+        มีข้อแม้ว่าตัวเลขนี้สะท้อนเวลาที่เราทักไปด้วย แผนคือทดสอบ 12:30 กับ 16:00 คู่กันแล้วให้ตัวเลขตัดสิน</td></tr>
+      <tr><td>"วัดผลตอนไหน"</td>
+        <td>ทุกรอบยิงระบบบันทึกอัตโนมัติ นัดรีวิวหลังยิง 2 สัปดาห์ — ถ้าอัตราตอบต่ำกว่า 11% (แพ้ template เดิม) หยุดปรับข้อความก่อน</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="foot">
+  <b>เอกสารประกอบ:</b> รายงานหลัก "Analysis &amp; Funnel Flow" (28 ก.ค.) · "Behavioral Addendum" (5 ส.ค.) ·
+  ตัวเลขทั้งหมดดึงจากฐานข้อมูลจริง ณ 5 ส.ค. 2026 · ระบบบอดแคสพร้อมใช้งานบน production แล้ว
+</div>
+
+</div>

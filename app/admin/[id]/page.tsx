@@ -5,7 +5,7 @@ import StatusUpdater from "./StatusUpdater";
 import ContactEditor from "./ContactEditor";
 import AssessmentResultForm from "./AssessmentResultForm";
 import ContactLog, { type ContactLogEntry } from "./ContactLog";
-import CaseCommentPanel, { type CaseCommentEntry } from "./CaseCommentPanel";
+import { CaseCommentProvider, ProblemCard, SolutionCard, type CaseCommentEntry } from "./CaseCommentPanel";
 import { fetchCommentCategories } from "@/lib/comment-categories";
 import SendResultFlow from "./SendResultFlow";
 import CopyLineIdButton from "./CopyLineIdButton";
@@ -445,10 +445,20 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         )}
       </Section>
 
+      {/* จุดแข็ง → ปัญหา → ที่เราจะช่วยเสริม → แนวทาง: the customer-facing lists and the
+          internal problem/solution log interleave into one diagnosis-then-plan column. */}
+      <CaseCommentProvider
+        assessmentId={s.id as string}
+        entries={caseComments}
+        categories={commentCategories}
+        lang={lang}
+      >
       <AssessmentResultForm
         assessmentId={s.id as string}
         status={s.status as string}
         lang={lang}
+        afterStrengths={<ProblemCard />}
+        afterImprovements={<SolutionCard />}
         initialPass={(evaluation.pass as boolean | null) ?? null}
         initialNotes={(evaluation.notes as string | null) ?? null}
         initialStrengths={Array.isArray(evaluation.strengths) ? (evaluation.strengths as string[]) : []}
@@ -464,6 +474,7 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
         hasAutoResult={!!(evaluation.result as Dict)?.approvability_band}
         aiEnabled={AI_DRAFT_ENABLED}
       />
+      </CaseCommentProvider>
 
       {sendResult}
     </>
@@ -517,7 +528,6 @@ export default async function AdminDetailPage({ params }: { params: Promise<{ id
       />
 
       <ContactLog assessmentId={s.id as string} entries={contactLog} lang={lang} />
-      <CaseCommentPanel assessmentId={s.id as string} entries={caseComments} categories={commentCategories} lang={lang} />
 
       <CaseDataEditor
         assessmentId={s.id as string}

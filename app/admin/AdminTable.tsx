@@ -426,7 +426,7 @@ export default function AdminTable({
                   </td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{acc?.phone ? formatPhone(acc.phone_country_code ?? "+66", acc.phone) : "—"}</td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                    {s.contact_preference === "line" ? "💬 LINE" : s.contact_preference === "call" ? t(lang, "📞 โทร", "📞 Call") : s.contact_preference}
+                    {s.contact_preference === "line" ? "💬 LINE" : s.contact_preference === "call" ? t(lang, "📞 โทร", "📞 Call") : s.contact_preference === "online" ? t(lang, "💻 ออนไลน์", "💻 Online") : s.contact_preference}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {acc?.is_friend === true ? "✅" : acc?.is_friend === false ? "❌" : "—"}

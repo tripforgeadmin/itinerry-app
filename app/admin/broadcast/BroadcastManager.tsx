@@ -13,7 +13,8 @@ export type CampaignRow = {
 };
 export type RuleRow = {
   id: string; campaign_id: string | null; name: string; mode: string; enabled: boolean;
-  days_of_week: number[]; time_slots: string[]; segment: Record<string, string[]> | null;
+  days_of_week: number[]; time_slots: string[]; per_customer_days: number | null;
+  segment: Record<string, string[]> | null;
   condition: { type: string; keys?: string[]; hours?: number; items?: { type: string; keys?: string[]; hours?: number }[] } | null;
   message_th: string | null; message_en: string | null; target_account_id: string | null;
   created_at: string;
@@ -72,7 +73,16 @@ export default function BroadcastManager({
     const days = r.days_of_week.length === 7
       ? t(lang, "ทุกวัน", "Daily")
       : r.days_of_week.map((d) => (lang === "en" ? DAY_EN[d] : DAY_TH[d])).join(",");
-    return `${days} · ${r.time_slots.join(", ")}`;
+    return `${days} · ${[...r.time_slots].sort().join(", ")}`;
+  }
+
+  /** How often one customer can be reached by this rule (null = every run). */
+  function describeFrequency(r: RuleRow): string {
+    if (r.mode === "one_to_one") return "—";
+    const n = r.per_customer_days;
+    if (n == null) return t(lang, "ทุกรอบ", "Every run");
+    if (n === 0) return t(lang, "ครั้งเดียว/คน", "Once per person");
+    return t(lang, `ทุก ${n} วัน/คน`, `Every ${n}d/person`);
   }
 
   function describeCondition(r: RuleRow): string {
@@ -180,6 +190,7 @@ export default function BroadcastManager({
                     <th className={thCls}>{t(lang, "ชื่อกฎ", "Name")}</th>
                     <th className={thCls}>{t(lang, "โหมด", "Mode")}</th>
                     <th className={thCls}>{t(lang, "เวลาส่ง", "Schedule")}</th>
+                    <th className={thCls}>{t(lang, "ความถี่/คน", "Per person")}</th>
                     <th className={thCls}>{t(lang, "กลุ่มเป้าหมาย", "Segment")}</th>
                     <th className={thCls}>{t(lang, "เงื่อนไข", "Condition")}</th>
                     <th className={thCls}>{t(lang, "แคมเปญ", "Campaign")}</th>
@@ -207,6 +218,7 @@ export default function BroadcastManager({
                           {r.mode === "auto" ? "Auto" : r.mode === "group" ? t(lang, "กดส่งเอง", "Manual") : "1-on-1"}
                         </td>
                         <td className="py-2 pr-3 text-gray-600 whitespace-nowrap">{describeTrigger(r)}</td>
+                        <td className="py-2 pr-3 text-gray-600 whitespace-nowrap">{describeFrequency(r)}</td>
                         <td className="py-2 pr-3 text-gray-600 max-w-45 truncate" title={describeSegment(r)}>{describeSegment(r)}</td>
                         <td className="py-2 pr-3 text-gray-600 max-w-40 truncate" title={describeCondition(r)}>{describeCondition(r)}</td>
                         <td className="py-2 pr-3 text-gray-600 max-w-30 truncate" title={campaignNameOf(r.campaign_id)}>{campaignNameOf(r.campaign_id)}</td>

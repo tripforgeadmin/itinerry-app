@@ -7,8 +7,26 @@ import { label } from "@/lib/answer-labels";
 import { sortedCountries } from "@/lib/countries";
 import type { CampaignRow, PainPointOption, RuleRow } from "./BroadcastManager";
 
-export const SLOT_OPTIONS = ["09:00", "11:30", "12:30", "16:00", "16:30", "18:00", "20:00"];
-const AUTO_PRESET = ["09:00", "16:00"];
+// Any minute is schedulable — the cron ticks every 5 min and fires each rule at the first
+// tick at-or-after its time. These two are just a quick preset from the reply-time
+// analysis (customers answer most in the early afternoon).
+const AUTO_PRESET = ["12:30", "16:00"];
+
+/** Message placeholders offered as insert-chips under the message bodies. */
+const TOKENS: { token: string; th: string; en: string }[] = [
+  { token: "{ชื่อ}", th: "ชื่อลูกค้า", en: "Customer name" },
+  { token: "{ประเทศ}", th: "ประเทศปลายทาง", en: "Destination" },
+  { token: "{วีซ่า}", th: "ประเภทวีซ่า", en: "Visa type" },
+  { token: "{เหลือวัน}", th: "จำนวนวันก่อนเดินทาง", en: "Days until trip" },
+];
+
+const FREQ_OPTIONS: { value: string; th: string; en: string }[] = [
+  { value: "0", th: "ส่งครั้งเดียวต่อคน", en: "Once per customer" },
+  { value: "7", th: "ซ้ำได้ทุก 7 วัน", en: "Repeat every 7 days" },
+  { value: "14", th: "ซ้ำได้ทุก 14 วัน", en: "Repeat every 14 days" },
+  { value: "30", th: "ซ้ำได้ทุก 30 วัน", en: "Repeat every 30 days" },
+  { value: "", th: "ส่งทุกรอบ (ไม่จำกัด)", en: "Every run (no limit)" },
+];
 const VISA_TYPES = ["tourist", "visitor", "business", "student"];
 const AGE_RANGES = ["under_18", "18_29", "30_39", "40_49", "50_59", "60_plus"];
 const SERVICE_NEEDS: { value: string; th: string; en: string }[] = [
@@ -37,6 +55,7 @@ export type RuleDraft = {
   messageTh: string;
   messageEn: string;
   targetAccountId: string;
+  perCustomerDays: number | null; // null = every run, 0 = once ever, N = once per N days
 };
 
 type AccountHit = {
@@ -66,6 +85,12 @@ export default function RuleEditorModal({
   const [mode, setMode] = useState(initial?.mode ?? "group");
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(initial?.days_of_week ?? [0, 1, 2, 3, 4, 5, 6]);
   const [timeSlots, setTimeSlots] = useState<string[]>(initial?.time_slots ?? []);
+  const [slotDraft, setSlotDraft] = useState("09:00");
+  // New rules default to once-per-customer; existing rows keep whatever they had (null =
+  // unlimited, the behaviour before per_customer_days existed).
+  const [perCustomerDays, setPerCustomerDays] = useState<string>(
+    initial ? (initial.per_customer_days == null ? "" : String(initial.per_customer_days)) : "0"
+  );
   const [segment, setSegment] = useState<Record<string, string[]>>(initial?.segment ?? {});
   // Stored condition can be legacy single ({type:"no_reply_72h"} etc.) or {type:"all",items:[…]}.
   const initialCondItems = ((): ConditionItem[] => {
@@ -173,13 +198,34 @@ export default function RuleEditorModal({
     setSaving(true);
     try {
       await onSave(
-        { name, campaignId, mode, daysOfWeek, timeSlots, segment, condition: condition(), messageTh, messageEn, targetAccountId },
+        {
+          name, campaignId, mode, daysOfWeek, timeSlots, segment, condition: condition(),
+          messageTh, messageEn, targetAccountId,
+          perCustomerDays: perCustomerDays === "" ? null : Number(perCustomerDays),
+        },
         initial?.id
       );
     } finally {
       setSaving(false);
     }
   }
+
+  /** Insert-chips for message placeholders; appends to the end of that body. */
+  const tokenBar = (setter: (fn: (prev: string) => string) => void) => (
+    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+      <span className="text-[11px] text-gray-400">{t(lang, "แทรกข้อมูลลูกค้า:", "Insert:")}</span>
+      {TOKENS.map((tk) => (
+        <button
+          key={tk.token}
+          onClick={() => setter((prev) => prev + tk.token)}
+          title={lang === "en" ? tk.en : tk.th}
+          className="rounded-md border border-gray-200 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 hover:border-blue-400 hover:text-blue-600"
+        >
+          {tk.token}
+        </button>
+      ))}
+    </div>
+  );
 
   const checkbox = (checked: boolean, onChange: () => void, lab: string) => (
     <label key={lab} className="flex items-center gap-1.5 text-xs text-gray-700 whitespace-nowrap">
@@ -250,20 +296,76 @@ export default function RuleEditorModal({
             </div>
 
             <div className={sectionLabel}>
-              {t(lang, "ช่วงเวลา (Bangkok)", "Time slots (Bangkok)")}
+              {t(lang, "เวลาส่ง (Bangkok) — พิมพ์เวลาเองได้", "Send times (Bangkok) — any time")}
               <button onClick={() => setTimeSlots(AUTO_PRESET)} className="ml-2 text-blue-500 normal-case font-medium">
-                Auto (9:00, 16:00)
+                {t(lang, "ใช้เวลาแนะนำ", "Use suggested")} (12:30, 16:00)
               </button>
             </div>
-            <div className="flex flex-wrap gap-3">
-              {SLOT_OPTIONS.map((s) =>
-                checkbox(
-                  timeSlots.includes(s),
-                  () => setTimeSlots((prev) => (prev.includes(s) ? prev.filter((v) => v !== s) : [...prev, s])),
-                  s
-                )
-              )}
+            <div className="flex flex-wrap items-center gap-2">
+              {[...timeSlots].sort().map((s) => (
+                <span key={s} className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-xs font-bold text-gray-700">
+                  {s}
+                  <button
+                    onClick={() => setTimeSlots((prev) => prev.filter((v) => v !== s))}
+                    className="text-gray-400 hover:text-red-500"
+                    aria-label={`remove ${s}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <input
+                type="time"
+                value={slotDraft}
+                onChange={(e) => setSlotDraft(e.target.value)}
+                className="rounded-lg border border-gray-200 px-2 py-1 text-xs bg-white"
+              />
+              <button
+                onClick={() => {
+                  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(slotDraft)) return;
+                  // After 23:55 the next tick is already the following day, so the slot
+                  // would never fire — reject it instead of failing silently.
+                  if (slotDraft > "23:55") {
+                    alert(t(lang, "ตั้งเวลาได้ถึง 23:55 เท่านั้น", "Latest schedulable time is 23:55"));
+                    return;
+                  }
+                  setTimeSlots((prev) => (prev.includes(slotDraft) ? prev : [...prev, slotDraft]));
+                }}
+                className="rounded-lg px-2.5 py-1 text-xs font-bold bg-gray-800 text-white"
+              >
+                ＋ {t(lang, "เพิ่มเวลา", "Add time")}
+              </button>
             </div>
+            <p className="mt-1 text-[11px] text-gray-400">
+              {t(lang,
+                "ระบบเช็คทุก 5 นาที และจะส่งในรอบแรกหลังถึงเวลาที่ตั้ง (ไม่ส่งก่อนเวลา) — ตั้ง 16:19 จะออกช่วง 16:20 เป็นต้นไป",
+                "The scheduler ticks every 5 minutes and sends on the first tick at or after your time, never before — 16:19 goes out from about 16:20")}
+            </p>
+            {timeSlots.length === 0 && (
+              <p className="mt-1 text-[11px] text-amber-600">
+                {t(lang, "ยังไม่ได้เลือกเวลา — กฎอัตโนมัติจะไม่ทำงาน", "No time selected — this auto rule will never fire")}
+              </p>
+            )}
+          </>
+        )}
+
+        {mode !== "one_to_one" && (
+          <>
+            <div className={sectionLabel}>{t(lang, "ความถี่ต่อลูกค้า 1 คน", "Frequency per customer")}</div>
+            <select
+              value={perCustomerDays}
+              onChange={(e) => setPerCustomerDays(e.target.value)}
+              className="rounded-lg border border-gray-200 px-2 py-2 text-sm bg-white"
+            >
+              {FREQ_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{lang === "en" ? o.en : o.th}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-gray-400">
+              {t(lang,
+                "กฎยิงได้ทุกวันตามเวลาที่ตั้ง แต่ลูกค้าคนเดิมจะไม่โดนซ้ำภายในช่วงที่เลือก — เหมาะกับกฎ “ใกล้เดดไลน์” ที่ต้องดักคนใหม่ทุกวัน",
+                "The rule still runs on schedule, but a customer won't be messaged again within this window — ideal for a daily deadline rule that must catch new people each day")}
+            </p>
           </>
         )}
 
@@ -461,9 +563,16 @@ export default function RuleEditorModal({
         <div className={sectionLabel}>{t(lang, "ข้อความ (ไทย)", "Message (Thai)")}</div>
         <textarea value={messageTh} onChange={(e) => setMessageTh(e.target.value)} rows={3}
           className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+        {tokenBar(setMessageTh)}
         <div className={sectionLabel}>{t(lang, "ข้อความ (อังกฤษ — ลูกค้าต่างชาติ)", "Message (English — foreign customers)")}</div>
         <textarea value={messageEn} onChange={(e) => setMessageEn(e.target.value)} rows={3}
           className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+        {tokenBar(setMessageEn)}
+        <p className="mt-2 text-[11px] text-gray-400">
+          {t(lang,
+            "ตัวอย่าง: สวัสดีครับ {ชื่อ} ยังสนใจวีซ่า{วีซ่า}ไป{ประเทศ}อยู่ไหมครับ — ถ้าไม่มีข้อมูลของลูกค้าคนนั้น ระบบจะตัดคำนั้นออกให้เอง",
+            "Example: Hi {name}, still planning your {visa} visa for {country}? — a token with no data is dropped automatically")}
+        </p>
 
         <div className="mt-4 flex justify-end gap-2">
           <button onClick={onClose} className="rounded-lg px-4 py-2 text-xs font-medium text-gray-500 hover:text-gray-700">
