@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
 import { fetchBusyIntervals, type BusyInterval } from "./ads-calendar";
 import { bangkokNow, makeConfig, type CallbackConfig } from "./holidays";
+import { createCalendarEvent } from "./google-calendar";
 
 /**
  * Consultation-slot rules (single source of truth for the Q form, the public slots API
@@ -129,12 +130,19 @@ export async function availabilityByDay(): Promise<DayAvailability[]> {
 }
 
 /** Claim a slot. The partial unique index on (slot_start where status='booked') makes
- * this race-safe: either the insert wins or we get a conflict. */
+ * this race-safe: either the insert wins or we get a conflict.
+ *
+ * `customerName`/`phone` are optional purely for the Google Calendar event title/description
+ * (lib/google-calendar.ts) — the booking itself never depends on them. A calendar-push
+ * failure never fails the booking: the row is already committed by the time it's attempted,
+ * and the push is wrapped so it can only leave gcal_event_id/meet_link null on error. */
 export async function createBooking(args: {
   assessmentId: string | null;
   accountId: string | null;
   channel: "phone" | "online";
   slotStartIso: string;
+  customerName?: string;
+  phone?: string;
 }): Promise<{ ok: true; id: string } | { ok: false; reason: "taken" | "invalid" | "error" }> {
   const startMs = Date.parse(args.slotStartIso);
   if (Number.isNaN(startMs)) return { ok: false, reason: "invalid" };
@@ -143,14 +151,18 @@ export async function createBooking(args: {
   const valid = (await freeSlotsForDate(dateIso)).some((s) => Date.parse(s.startIso) === startMs);
   if (!valid) return { ok: false, reason: "taken" };
 
+  const endMs = startMs + SLOT_MINUTES * 60_000;
+  const startIso = new Date(startMs).toISOString();
+  const endIso = new Date(endMs).toISOString();
+
   const { data, error } = await supabase
     .from("consultation_booking")
     .insert({
       assessment_id: args.assessmentId,
       account_id: args.accountId,
       channel: args.channel,
-      slot_start: new Date(startMs).toISOString(),
-      slot_end: new Date(startMs + SLOT_MINUTES * 60_000).toISOString(),
+      slot_start: startIso,
+      slot_end: endIso,
     })
     .select("id")
     .single();
@@ -160,5 +172,32 @@ export async function createBooking(args: {
     console.error("createBooking error:", error);
     return { ok: false, reason: "error" };
   }
-  return { ok: true, id: data.id as string };
+  const bookingId = data.id as string;
+
+  try {
+    const timeLabel = startIso.slice(11, 16);
+    const icon = args.channel === "online" ? "💻" : "📞";
+    const name = args.customerName?.trim() || "—";
+    const event = await createCalendarEvent({
+      channel: args.channel,
+      startIso,
+      endIso,
+      title: `${timeLabel} ${icon} นัดคุย — ${name}`,
+      description: [
+        "จองผ่านแบบประเมิน itinerry",
+        args.phone ? `โทร ${args.phone}` : null,
+      ].filter(Boolean).join(" · "),
+    });
+    if (event) {
+      await supabase
+        .from("consultation_booking")
+        .update({ gcal_event_id: event.eventId, meet_link: event.meetLink })
+        .eq("id", bookingId);
+    }
+  } catch (err) {
+    // Never let a calendar-side failure undo an already-committed booking.
+    console.error("booking calendar push error:", err);
+  }
+
+  return { ok: true, id: bookingId };
 }

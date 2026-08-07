@@ -38,7 +38,7 @@ export default async function QueuePage() {
     supabase
       .from("consultation_booking")
       .select(
-        "id, channel, slot_start, status, assessment_id, " +
+        "id, channel, slot_start, status, assessment_id, meet_link, " +
           "account:account_id(nickname, full_name, line_display_name), " +
           "assessment:assessment_id(id, ticket_id, status)"
       )
@@ -139,6 +139,16 @@ export default async function QueuePage() {
                         <td className="py-2 pr-3 font-bold text-gray-800 whitespace-nowrap">{fmtSlot(b.slot_start as string)}</td>
                         <td className="py-2 pr-3 whitespace-nowrap">
                           {b.channel === "online" ? t(lang, "💻 ออนไลน์", "💻 Online") : t(lang, "📞 โทร", "📞 Phone")}
+                          {b.channel === "online" && typeof b.meet_link === "string" && (
+                            <a
+                              href={b.meet_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-600 hover:bg-blue-100"
+                            >
+                              🎥 {t(lang, "เข้าประชุม", "Join")}
+                            </a>
+                          )}
                         </td>
                         <td className="py-2 pr-3 text-gray-800">{displayName(acc)}</td>
                         <td className="py-2 pr-3">

@@ -15,6 +15,11 @@ const DAY_HEAD_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const addDaysIso = (iso: string, d: number) =>
   new Date(Date.parse(`${iso}T00:00:00Z`) + d * 86_400_000).toISOString().slice(0, 10);
 
+// Consultation-booking events (lib/google-calendar.ts) always title themselves
+// "HH:MM 📞/💻 นัดคุย — {name}" — spot them by the icon so they stand out from any other
+// meeting already on the team calendar, without needing a separate data source.
+const isBookingEvent = (summary: string) => summary.includes("📞") || summary.includes("💻");
+
 export default function AdCalendar({ lang, events, todayIso }: {
   lang: Lang;
   events: AdEvent[];
@@ -84,6 +89,10 @@ export default function AdCalendar({ lang, events, todayIso }: {
             {t(lang, "วันยิงแอด — งดบอดแคสอัตโนมัติ", "Ad day — no auto broadcast")}
           </span>
           <span className="flex items-center gap-1">
+            <span className="inline-block w-2.5 h-2.5 rounded-sm bg-blue-100 border border-blue-300" />
+            {t(lang, "นัดคุยที่จองไว้", "Booked consultation")}
+          </span>
+          <span className="flex items-center gap-1">
             <span className="inline-block w-2.5 h-2.5 rounded-sm bg-gray-100 border border-gray-200" />
             {t(lang, "อีเวนต์อื่น", "Other event")}
           </span>
@@ -132,7 +141,9 @@ export default function AdCalendar({ lang, events, todayIso }: {
                   key={j}
                   title={e.summary}
                   className={`truncate rounded px-1 py-0.5 text-[10px] leading-tight ${
-                    e.matched ? "bg-red-100 text-red-700 font-medium" : "bg-gray-100 text-gray-600"
+                    e.matched ? "bg-red-100 text-red-700 font-medium"
+                    : isBookingEvent(e.summary) ? "bg-blue-100 text-blue-700 font-medium"
+                    : "bg-gray-100 text-gray-600"
                   }`}
                 >
                   {e.summary || t(lang, "(ไม่มีชื่อ)", "(untitled)")}

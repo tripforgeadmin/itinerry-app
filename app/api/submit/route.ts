@@ -165,6 +165,8 @@ export async function POST(request: NextRequest) {
       accountId: account.id,
       channel: answers.q36 === "online" ? "online" : "phone",
       slotStartIso: `${answers.q37_date}T${answers.q37.padStart(5, "0")}:00+07:00`,
+      customerName: nickname,
+      phone: formatPhone(toNull(answers.q5_cc) ?? "+66", answers.q5 ?? ""),
     });
     if (!claim.ok && claim.reason === "taken") {
       return NextResponse.json({ ok: false, error: "slot_taken" }, { status: 409 });
