@@ -45,12 +45,17 @@ export function conditionItems(condition: BroadcastCondition): BroadcastConditio
   return [condition];
 }
 
+/** Everything the message renderer may reference. The trip fields ride along free — the
+ * segment query already joins user_trip for the filters. */
 export type Recipient = {
   assessmentId: string;
   accountId: string;
   lineUserId: string;
   lang: "th" | "en";
   displayName: string;
+  destination: string | null; // ISO-2 as stored (lowercase in practice)
+  visaType: string | null;
+  travelDateIso: string | null; // travel_arrival ?? study_start
 };
 
 type Dict = Record<string, unknown>;
@@ -173,6 +178,7 @@ export async function resolveSegment(
     if (seen.has(accId)) continue;
     seen.add(accId);
     const acc = one(r.account)!;
+    const trip = one(r.trip);
     recipients.push({
       assessmentId: r.id as string,
       accountId: accId,
@@ -183,6 +189,9 @@ export async function resolveSegment(
         (acc.full_name as string) ||
         [acc.first_name, acc.last_name].filter(Boolean).join(" ") ||
         "—",
+      destination: (trip?.destination as string) ?? null,
+      visaType: (trip?.visa_type as string) ?? null,
+      travelDateIso: ((trip?.travel_arrival ?? trip?.study_start) as string | undefined)?.slice(0, 10) ?? null,
     });
   }
   return recipients;

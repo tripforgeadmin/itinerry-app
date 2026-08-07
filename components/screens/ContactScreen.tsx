@@ -11,16 +11,16 @@ import { QuestionShell } from "@/components/screens/QuestionShell";
 import { QUESTIONS_MAP } from "@/lib/questions";
 import { DIAL_CODES, DEFAULT_DIAL_CODE, dialCodeOf, isValidPhone } from "@/lib/dialCodes";
 import { flagEmoji } from "@/lib/countries";
-import {
-  type CallbackConfig, DEFAULT_CONFIG, makeConfig, earliestCallbackDate, maxCallbackDate,
-  slotsForDate, isSelectableCallbackDate, hourLabel,
-} from "@/lib/holidays";
 import type { ScreenProps } from "@/components/screens/types";
 
 // Standard email, ASCII/English only — rejects Thai and other non-Latin characters.
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 const NON_ASCII = /[^\x00-\x7F]/;
-const CHANNEL_IMG: Record<string, string> = { line: "/icons/line.png", call: "/icons/phone.png" };
+
+// Consultation availability from /api/booking/slots — the server owns all the rules
+// (working hours, holidays, Google-Calendar busy times, already-booked slots).
+type DayAvailability = { dateIso: string; free: number };
+type SlotInfo = { startIso: string; label: string };
 
 // Personal-info companions of q3 (like q3_first/q3_last) — stored as synthetic answer keys
 // q3_gender / q3_age, mapped to account.gender / account.age_range in the submit route.
@@ -51,8 +51,9 @@ function fmtDate(iso: string, lang: "th" | "en"): string {
 
 /**
  * Contact (rendered at q3) — first/last name (q3_first/q3_last + combined q3), phone with a country
- * dial-code prefix (q5 local + q5_cc), email (q6), 2-col contact channel (q36) and callback time
- * (q37); then `advanceTo("q7")`.
+ * dial-code prefix (q5 local + q5_cc), email (q6), and a real consultation booking: channel (q36,
+ * phone call / online meeting) + a 30-min slot (q37 "HH:MM" + q37_date) validated against
+ * /api/booking/slots. Then `advanceTo("q7")`.
  */
 export function ContactScreen({
   question,
@@ -73,38 +74,57 @@ export function ContactScreen({
   const cc = answers["q5_cc"] ?? DEFAULT_DIAL_CODE;
   const email = answers["q6"] ?? "";
   const channel = answers["q36"] ?? "";
-  const callTime = answers["q37"] ?? ""; // chosen slot "HH:00"
-  const callDate = answers["q37_date"] ?? ""; // chosen callback date (ISO)
-  const isCall = channel === "call";
+  const callTime = answers["q37"] ?? ""; // chosen slot "HH:MM"
+  const callDate = answers["q37_date"] ?? ""; // chosen appointment date (ISO)
+  const isBooking = channel === "call" || channel === "online";
 
-  // Callback calendar config (holidays + weekly days off) — admin-editable, fetched from the DB;
-  // falls back to the hardcoded 2569 default until it arrives so the picker always works.
-  const [cfg, setCfg] = useState<CallbackConfig>(DEFAULT_CONFIG);
+  // Day-level availability (which dates still have free slots) + per-date slot list.
+  const [days, setDays] = useState<DayAvailability[]>([]);
+  const [slots, setSlots] = useState<SlotInfo[] | null>(null);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [cbDateOpen, setCbDateOpen] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/holidays")
+    fetch("/api/booking/slots")
       .then((r) => r.json())
       .then((d) => {
-        if (!cancelled && Array.isArray(d?.holidays)) setCfg(makeConfig(d.holidays, d.weeklyOff ?? [0]));
+        if (!cancelled && Array.isArray(d?.days)) setDays(d.days);
       })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
-  // Pin "now" once so the date window / slot rule don't drift while the user fills the form.
-  const now = useMemo(() => new Date(), []);
-  const minDate = earliestCallbackDate(now, cfg);
-  const maxDate = maxCallbackDate(now);
-  const hours = callDate ? slotsForDate(callDate, now, cfg) : [];
+  useEffect(() => {
+    if (!callDate) { setSlots(null); return; }
+    let cancelled = false;
+    setSlotsLoading(true);
+    fetch(`/api/booking/slots?date=${callDate}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const list: SlotInfo[] = Array.isArray(d?.slots) ? d.slots : [];
+        setSlots(list);
+        // drop a previously-chosen slot that's no longer free on this date
+        if (callTime && !list.some((s) => s.label === callTime)) onAnswer("q37", "");
+      })
+      .catch(() => { if (!cancelled) setSlots([]); })
+      .finally(() => { if (!cancelled) setSlotsLoading(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callDate]);
 
-  function setCallbackDate(iso: string) {
+  const freeDates = useMemo(() => new Set(days.filter((d) => d.free > 0).map((d) => d.dateIso)), [days]);
+  // Fallback window while availability is loading / on fetch error — the server still
+  // validates every slot, so a permissive calendar can never over-book.
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const minDate = days[0]?.dateIso ?? todayIso;
+  const maxDate = days[days.length - 1]?.dateIso
+    ?? new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
+
+  function setBookingDate(iso: string) {
     onAnswer("q37_date", iso);
     setCbDateOpen(false);
-    // drop a previously-chosen time that isn't offered on the new date (e.g. morning on a
-    // restricted earliest day)
-    const allowed = slotsForDate(iso, now, cfg).map(hourLabel);
-    if (callTime && !allowed.includes(callTime)) onAnswer("q37", "");
   }
 
   // Errors only surface once a field has been blurred — no red flash while the user is still typing.
@@ -130,8 +150,8 @@ export function ContactScreen({
           ? "รูปแบบอีเมลไม่ถูกต้อง"
           : "Invalid email"
         : null;
-  const timeOk = !isCall || (!!callDate && !!callTime);
-  const gateOk = nameOk && !!gender && !!age && phoneOk && EMAIL_RE.test(email) && !!channel && timeOk;
+  const timeOk = isBooking && !!callDate && !!callTime;
+  const gateOk = nameOk && !!gender && !!age && phoneOk && EMAIL_RE.test(email) && timeOk;
 
   const q36 = QUESTIONS_MAP["q36"];
 
@@ -144,7 +164,7 @@ export function ContactScreen({
       lang={lang}
       onLangChange={onLangChange}
       screenKey={question.id}
-      title={lang === "th" ? "อยากให้รับผลประเมินวีซ่าทางไหน?" : "How should we send your result?"}
+      title={lang === "th" ? "นัดคุยผลประเมินกับทีมผู้เชี่ยวชาญ" : "Book a call with our specialist"}
       hideTitleDivider
       footer={
         <Button disabled={!gateOk} onClick={() => advanceTo("q7")}>
@@ -153,18 +173,19 @@ export function ContactScreen({
       }
     >
       {/* channel — the primary choice (the screen header asks it), at the top */}
-      <h3 className="mb-2 font-bold text-primary">{lang === "th" ? "เลือกช่องทาง" : "Choose a channel"}</h3>
+      <h3 className="mb-1 font-bold text-primary">{lang === "th" ? "เลือกช่องทางนัดคุย" : "Choose how we talk"}</h3>
+      <p className="mb-2 text-xs text-muted-soft">
+        {lang === "th" ? "ใช้เวลาประมาณ 20 นาที ไม่มีค่าใช้จ่าย" : "About 20 minutes, free of charge"}
+      </p>
       {/* frosted GlassCards, same recipe as the Ties-to-Thailand grid */}
       <div className="grid grid-cols-2 gap-4">
         {q36.options?.map((o) => (
           <GlassCard key={o.value} selected={channel === o.value} onSelect={() => onAnswer("q36", o.value)}>
             <div className="flex flex-col items-center gap-2 p-4 text-center">
-              {CHANNEL_IMG[o.value] ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={CHANNEL_IMG[o.value]} alt="" className="h-20 w-20 object-contain" />
-              ) : (
-                <span className="text-4xl leading-none">{o.emoji ?? "•"}</span>
-              )}
+              {/* same-size emoji box for every channel so the cards always match */}
+              <span className="flex h-20 w-20 items-center justify-center text-[52px] leading-none">
+                {o.emoji ?? "•"}
+              </span>
               <p className="line-clamp-2 text-sm font-bold leading-tight text-primary">
                 {lang === "th" ? o.label : o.labelEn ?? o.label}
               </p>
@@ -173,12 +194,12 @@ export function ContactScreen({
         ))}
       </div>
 
-      <RevealBlock open={isCall}>
+      <RevealBlock open={isBooking}>
         <div className="space-y-3 pt-3">
-          {/* callback date — calendar dropdown, within 2 weeks, business days only */}
+          {/* appointment date — calendar dropdown, within 2 weeks, only days with free slots */}
           <div>
             <span className="mb-1.5 block text-sm font-semibold text-primary">
-              {lang === "th" ? "วันที่สะดวกให้โทร" : "Preferred date"}
+              {lang === "th" ? "วันที่สะดวก" : "Preferred date"}
               <span className="text-red-alert"> *</span>
             </span>
             <button
@@ -204,40 +225,62 @@ export function ContactScreen({
               <div className="pt-3">
                 <DateCalendar
                   value={callDate || undefined}
-                  onChange={setCallbackDate}
+                  onChange={setBookingDate}
                   minDate={minDate}
                   maxDate={maxDate}
-                  isDayDisabled={(iso) => !isSelectableCallbackDate(iso, now, cfg)}
+                  isDayDisabled={(iso) => days.length > 0 && !freeDates.has(iso)}
                   hideMascot
                 />
               </div>
             </RevealBlock>
           </div>
 
-          {/* time — hourly slots for the chosen date */}
+          {/* time — free 30-min slots for the chosen date, checked against the team calendar */}
           <div>
             <span className="mb-1.5 block text-sm font-semibold text-primary">
-              {lang === "th" ? "เวลาที่สะดวกให้โทร" : "Preferred time"}
+              {lang === "th" ? "เวลาที่สะดวก" : "Preferred time"}
               <span className="text-red-alert"> *</span>
             </span>
-            <select
-              value={callTime}
-              disabled={!callDate}
-              onChange={(e) => onAnswer("q37", e.target.value)}
-              className={
-                "w-full rounded-2xl border bg-card px-4 py-3.5 outline-none transition-colors focus:border-accent disabled:opacity-50 " +
-                (callTime ? "border-border text-primary" : "border-border text-muted-soft")
-              }
-            >
-              <option value="" disabled>
-                {callDate ? (lang === "th" ? "เลือกเวลา" : "Pick a time") : lang === "th" ? "เลือกวันก่อน" : "Pick a date first"}
-              </option>
-              {hours.map((h) => (
-                <option key={h} value={hourLabel(h)}>
-                  {hourLabel(h)} {lang === "th" ? "น." : ""}
-                </option>
-              ))}
-            </select>
+            {!callDate ? (
+              <p className="rounded-2xl border border-border bg-card px-4 py-3.5 text-sm text-muted-soft">
+                {lang === "th" ? "เลือกวันก่อน" : "Pick a date first"}
+              </p>
+            ) : slotsLoading || slots === null ? (
+              <p className="rounded-2xl border border-border bg-card px-4 py-3.5 text-sm text-muted-soft">
+                {lang === "th" ? "กำลังเช็คคิวว่าง…" : "Checking availability…"}
+              </p>
+            ) : slots.length === 0 ? (
+              <p className="rounded-2xl border border-border bg-card px-4 py-3.5 text-sm text-muted-soft">
+                {lang === "th" ? "วันนี้คิวเต็มแล้ว ลองเลือกวันอื่นนะครับ" : "This day is fully booked — please pick another date"}
+              </p>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {slots.map((s) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    onClick={() => onAnswer("q37", s.label)}
+                    className={
+                      "rounded-xl border px-2 py-2.5 text-sm font-bold transition-colors " +
+                      (callTime === s.label
+                        ? "border-accent bg-accent text-white"
+                        : "border-border bg-card text-primary hover:border-accent")
+                    }
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="mt-1.5 text-xs text-muted-soft">
+              {channel === "online"
+                ? lang === "th"
+                  ? "🎥 ทีมจะส่งลิงก์ประชุมออนไลน์ให้ทาง LINE ก่อนถึงเวลานัด"
+                  : "🎥 We'll send the meeting link via LINE before your slot"
+                : lang === "th"
+                  ? "📞 ทีมจะโทรหาคุณตามวัน-เวลาที่เลือก"
+                  : "📞 We'll call you at the time you pick"}
+            </p>
           </div>
         </div>
       </RevealBlock>

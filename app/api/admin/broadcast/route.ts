@@ -12,7 +12,9 @@ import { adsCalendarEnabled, fetchAdKeywords, fetchCalendarEvents, AD_KEYWORDS_C
 
 const clean = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
-const VALID_SLOTS = ["09:00", "11:30", "12:30", "16:00", "16:30", "18:00", "20:00"];
+// Rules pick their own free-form send times; the cron ticks every 5 minutes and fires a
+// rule at the first tick at-or-after its time, so any minute is schedulable.
+const SLOT_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const VALID_MODES = ["auto", "group", "one_to_one"];
 
 /** Allow-list the jsonb blobs so a typo'd filter never silently matches everyone. */
@@ -142,7 +144,17 @@ export async function POST(request: NextRequest) {
       patch.days_of_week = body.daysOfWeek.filter((d: unknown) => typeof d === "number" && d >= 0 && d <= 6).slice(0, 7);
     }
     if (Array.isArray(body.timeSlots)) {
-      patch.time_slots = body.timeSlots.filter((s: unknown) => VALID_SLOTS.includes(s as string));
+      patch.time_slots = [...new Set(
+        body.timeSlots.filter((s: unknown) => typeof s === "string" && SLOT_RE.test(s)) as string[]
+      )].sort().slice(0, 24);
+    }
+    if (body.perCustomerDays !== undefined) {
+      // null = send every run (legacy behaviour); 0 = once ever; N = once per N days.
+      const n = Number(body.perCustomerDays);
+      patch.per_customer_days =
+        body.perCustomerDays === null || body.perCustomerDays === "" || !Number.isFinite(n)
+          ? null
+          : Math.min(Math.max(Math.round(n), 0), 365);
     }
     if (body.segment !== undefined) patch.segment = cleanSegment(body.segment);
     if (body.condition !== undefined) patch.condition = cleanCondition(body.condition);
@@ -239,10 +251,28 @@ export async function POST(request: NextRequest) {
   if (body.action === "send_now") {
     const ruleId = clean(body.ruleId, 64);
     if (!ruleId) return NextResponse.json({ ok: false, error: "ruleId required" }, { status: 400 });
-    const { data: rule } = await supabase.from("broadcast_rule").select("*").eq("id", ruleId).maybeSingle();
+    const { data: rule } = await supabase
+      .from("broadcast_rule")
+      .select("*, campaign:campaign_id(name, active, start_date, end_date)")
+      .eq("id", ruleId)
+      .maybeSingle();
     if (!rule) return NextResponse.json({ ok: false, error: "rule not found" }, { status: 404 });
     if (rule.mode === "auto") {
       return NextResponse.json({ ok: false, error: "auto rules fire on schedule" }, { status: 400 });
+    }
+
+    // Same campaign window the cron enforces — a paused or finished campaign must not be
+    // blastable by hand either.
+    const c = (Array.isArray(rule.campaign) ? rule.campaign[0] : rule.campaign) as
+      { name?: string; active?: boolean; start_date?: string | null; end_date?: string | null } | null;
+    if (c) {
+      const todayIso = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok" }).format(new Date());
+      const stop =
+        c.active === false ? `แคมเปญ "${c.name ?? ""}" ถูกปิดใช้งานอยู่`
+        : c.start_date && todayIso < c.start_date ? `แคมเปญ "${c.name ?? ""}" ยังไม่เริ่ม (เริ่ม ${c.start_date})`
+        : c.end_date && todayIso > c.end_date ? `แคมเปญ "${c.name ?? ""}" จบไปแล้ว (สิ้นสุด ${c.end_date})`
+        : null;
+      if (stop) return NextResponse.json({ ok: false, error: stop }, { status: 400 });
     }
 
     const now = new Date();

@@ -12,6 +12,7 @@ import { normalizePhone, formatPhone } from "@/lib/dialCodes";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { assessmentReceivedFlex } from "@/lib/line-flex";
 import { bangkokDateTimeToUtc } from "@/lib/holidays";
+import { createBooking } from "@/lib/booking";
 import { SLA_HOURS } from "@/lib/status";
 
 function toNull(v: string | undefined): string | null {
@@ -146,6 +147,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: accountError?.message ?? "account failed" }, { status: 500 });
   }
 
+  // ---- consultation booking (q36 = call | online, q37/q37_date = 30-min slot) ----
+  // Claim the slot BEFORE creating trip/assessment rows: if someone else just took it we
+  // 409 out cleanly and the form sends the customer back to pick a new time — no orphan
+  // records. The partial unique index on consultation_booking makes the claim race-safe.
+  const isBookingChannel = answers.q36 === "call" || answers.q36 === "online";
+  const validSlot = /^\d{1,2}:\d{2}$/.test(answers.q37 ?? "") && /^\d{4}-\d{2}-\d{2}$/.test(answers.q37_date ?? "");
+  const rawCb = isBookingChannel && validSlot ? bangkokDateTimeToUtc(answers.q37_date, answers.q37) : null;
+  const callbackDatetime = rawCb && !isNaN(rawCb.getTime()) ? rawCb : null;
+  // A valid slot → due at that exact time; otherwise the generic 24h SLA.
+  const dueDate = callbackDatetime ?? new Date(Date.now() + SLA_HOURS * 60 * 60 * 1000);
+
+  let bookingId: string | null = null;
+  if (callbackDatetime) {
+    const claim = await createBooking({
+      assessmentId: null, // linked right after the assessment insert below
+      accountId: account.id,
+      channel: answers.q36 === "online" ? "online" : "phone",
+      slotStartIso: `${answers.q37_date}T${answers.q37.padStart(5, "0")}:00+07:00`,
+    });
+    if (!claim.ok && claim.reason === "taken") {
+      return NextResponse.json({ ok: false, error: "slot_taken" }, { status: 409 });
+    }
+    // "invalid"/"error" → keep the lead; callback_datetime still records the requested time.
+    if (claim.ok) bookingId = claim.id;
+  }
+
   // ===== 2) user_trip (destination + visa type + dates) =====
   const { data: trip, error: tripError } = await supabase
     .from("user_trip")
@@ -164,16 +191,6 @@ export async function POST(request: NextRequest) {
     console.error("trip insert error:", tripError);
     return NextResponse.json({ ok: false, error: tripError?.message ?? "trip failed" }, { status: 500 });
   }
-
-  // ---- callback slot + SLA due date ----
-  // call: q37 = "HH:00", q37_date = the chosen (next-business-day) date → exact slot.
-  // line: no callback; SLA is submit time + 24h.
-  const isCall = answers.q36 === "call";
-  const validSlot = /^\d{1,2}:\d{2}$/.test(answers.q37 ?? "") && /^\d{4}-\d{2}-\d{2}$/.test(answers.q37_date ?? "");
-  const rawCb = isCall && validSlot ? bangkokDateTimeToUtc(answers.q37_date, answers.q37) : null;
-  const callbackDatetime = rawCb && !isNaN(rawCb.getTime()) ? rawCb : null;
-  // LINE (or a call with no usable slot) → 24h SLA; a valid call slot → that exact time.
-  const dueDate = isCall && callbackDatetime ? callbackDatetime : new Date(Date.now() + SLA_HOURS * 60 * 60 * 1000);
 
   // ===== 3) user_assessment (qualification + screening) =====
   const ticketId = await generateTicketId(answers.q8 ?? "");
@@ -201,6 +218,16 @@ export async function POST(request: NextRequest) {
   if (assessError || !assessment) {
     console.error("assessment insert error:", assessError);
     return NextResponse.json({ ok: false, error: assessError?.message ?? "assessment failed" }, { status: 500 });
+  }
+
+  // Link the claimed consultation slot to this assessment (best-effort — the booking
+  // already carries account_id, so a failed link never loses the appointment).
+  if (bookingId) {
+    const { error: linkErr } = await supabase
+      .from("consultation_booking")
+      .update({ assessment_id: assessment.id })
+      .eq("id", bookingId);
+    if (linkErr) console.error("booking link error:", linkErr);
   }
 
   // Auto rule-engine evaluation — runs AFTER the response so it never adds latency.

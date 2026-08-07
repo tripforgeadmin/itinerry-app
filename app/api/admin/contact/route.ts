@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
   // contact_preference lives on user_assessment — update only when a valid value is supplied.
   const pref = clean(body.contactPreference);
-  if (assessmentId && (pref === "line" || pref === "call")) {
+  if (assessmentId && (pref === "line" || pref === "call" || pref === "online")) {
     const { error: uErr } = await supabase
       .from("user_assessment")
       .update({ contact_preference: pref })

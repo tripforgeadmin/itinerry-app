@@ -669,39 +669,33 @@ export const QUESTIONS: Question[] = [
   {
     id: "q36",
     type: "radio",
-    question: "ต้องการให้เราติดต่อกลับทางไหน?",
-    questionEn: "How would you like us to contact you?",
+    question: "สะดวกนัดคุยกับทีมเราแบบไหน?",
+    questionEn: "How would you like to talk to us?",
     required: true,
     section: "S6",
-    sectionTitle: "นัดรับการติดต่อ",
-    sectionTitleEn: "Schedule Callback",
-    sectionEmoji: "📞",
+    sectionTitle: "นัดคุยกับทีม",
+    sectionTitleEn: "Book a Consultation",
+    sectionEmoji: "🗓️",
     options: [
-      { value: "line", label: "ผ่าน LINE OA @itinerry", labelEn: "Via LINE OA @itinerry", emoji: "💬", nextId: "q7" },
-      { value: "call", label: "ให้โทรกลับ", labelEn: "Call me back", emoji: "📱", nextId: "q37" },
+      { value: "call", label: "นัดคุยทางโทรศัพท์", labelEn: "Phone call", emoji: "📱", nextId: "q37" },
+      { value: "online", label: "นัด Online Meeting", labelEn: "Online meeting", emoji: "💻", nextId: "q37" },
     ],
   },
 
-  // ── S7: Callback Time ─────────────────────────────────────────
+  // ── S7: Consultation slot ─────────────────────────────────────
   {
+    // Rendered inside ContactScreen (q3): a real date + 30-min-slot booking checked
+    // against the team calendar. q37 stores the slot "HH:MM", q37_date the ISO date.
     id: "q37",
     type: "radio",
-    question: "ช่วงเวลาที่ต้องการให้ติดต่อกลับ",
-    questionEn: "Preferred callback time",
+    question: "เลือกวันและเวลานัด",
+    questionEn: "Pick a date and time",
     required: true,
-    allowOtherText: true,
-    otherPlaceholder: "ระบุเวลาที่สะดวก",
-    otherPlaceholderEn: "Your preferred time",
     section: "S7",
-    sectionTitle: "ช่วงเวลาโทรกลับ",
-    sectionTitleEn: "Callback Time",
+    sectionTitle: "วัน-เวลานัด",
+    sectionTitleEn: "Appointment Slot",
     sectionEmoji: "⏰",
-    options: [
-      { value: "morning", label: "เช้า 9:00–12:00", labelEn: "Morning 9:00–12:00", emoji: "🌅" },
-      { value: "afternoon", label: "บ่าย 12:00–15:00", labelEn: "Afternoon 12:00–15:00", emoji: "☀️" },
-      { value: "evening", label: "เย็น 15:00–18:00", labelEn: "Evening 15:00–18:00", emoji: "🌆" },
-      { value: "other", label: "อื่นๆ (ระบุเวลา)", labelEn: "Other (specify)", emoji: "✏️" },
-    ],
+    options: [],
     defaultNextId: "q7",
   },
   {

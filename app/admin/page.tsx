@@ -30,6 +30,7 @@ export default async function AdminPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Submissions</h1>
           <div className="flex items-center gap-4">
+            <Link href="/admin/queue" className="text-sm font-medium text-blue-600 hover:text-blue-800">📋 {t(lang, "คิวงาน", "Queue")}</Link>
             <Link href="/admin/today" className="text-sm font-medium text-blue-600 hover:text-blue-800">🗓️ {t(lang, "งานวันนี้", "Today's tasks")}</Link>
             <Link href="/admin/dashboard" className="text-sm font-medium text-blue-600 hover:text-blue-800">📊 Dashboard</Link>
             <Link href="/admin/sla" className="text-sm font-medium text-blue-600 hover:text-blue-800">⏱️ SLA</Link>

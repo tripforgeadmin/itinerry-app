@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { stateWord, historyWord, bandWord, tiesFundingOptions, riskOptions, bandOptions } from "@/lib/assessment-vocab";
 import { t, type Lang } from "@/lib/i18n";
@@ -178,6 +178,8 @@ export default function AssessmentResultForm({
   hasAutoResult,
   aiEnabled = false,
   lang = "th",
+  afterStrengths,
+  afterImprovements,
 }: {
   assessmentId: string;
   status: string;
@@ -201,6 +203,10 @@ export default function AssessmentResultForm({
    *  that always errors is worse than no button. */
   aiEnabled?: boolean;
   lang?: Lang;
+  /** Internal problem/solution cards, interleaved with the customer-facing lists so the
+   *  column reads จุดแข็ง → ปัญหา → ที่เราจะช่วยเสริม → แนวทาง. */
+  afterStrengths?: ReactNode;
+  afterImprovements?: ReactNode;
 }) {
   const router = useRouter();
   const [pass, setPass] = useState<boolean | null>(initialPass);
@@ -305,6 +311,7 @@ export default function AssessmentResultForm({
         accent="green"
         lang={lang}
       />
+      {afterStrengths}
       <ItemListCard
         title={t(lang, "ที่เราจะช่วยเสริม (ลง PDF ลูกค้า)", "Where we'll help (on customer PDF)")}
         hint={t(lang, "ใส่ทีละข้อ — แสดงเป็นรายการเครื่องหมายบวกในรายงานสุขภาพวีซ่าของลูกค้า", "One per line — shown as a plus list in the customer's visa health report")}
@@ -313,6 +320,7 @@ export default function AssessmentResultForm({
         accent="amber"
         lang={lang}
       />
+      {afterImprovements}
       <div className="bg-white rounded-2xl shadow-sm p-5 mb-4">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
           {t(lang, "ระดับความแข็งแรง (ภายใน — เอเจนต์ปรับได้)", "Strength levels (internal — agent adjustable)")}

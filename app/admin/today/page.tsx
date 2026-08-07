@@ -114,7 +114,7 @@ export default async function TodayReportPage() {
       dueToday.push({ id: r.id as string, ticketId, name, detail: `${statusLabel(status, lang)} · ${fmtTime(dueDate, lang) ?? "—"}` });
     }
 
-    if (r.contact_preference === "call" && typeof r.callback_datetime === "string" && (r.callback_datetime as string).slice(0, 10) === today) {
+    if ((r.contact_preference === "call" || r.contact_preference === "online") && typeof r.callback_datetime === "string" && (r.callback_datetime as string).slice(0, 10) === today) {
       callbackToday.push({ id: r.id as string, ticketId, name, detail: fmtTime(r.callback_datetime, lang) ?? "—" });
     }
 

@@ -1,21 +1,17 @@
 # Broadcast slot scheduler — Vercel Hobby allows only daily crons, so GitHub Actions
-# fires the broadcast endpoint at each Bangkok-time slot instead. The endpoint itself
-# decides which rules are due (nearest-slot matching, ±45 min tolerance) and guards
-# against double-firing, so extra or late invocations are harmless.
+# ticks the broadcast endpoint every 5 minutes instead. The endpoint fires each rule at
+# the first tick at-or-after its own send time and guards against double-firing, so
+# extra or late invocations are harmless (GitHub schedules routinely run minutes late).
 #
 # Setup: add repo secret CRON_SECRET = the same value as the Vercel env var.
 name: broadcast-cron
 
 on:
   schedule:
-    # UTC == Bangkok − 7. Slots: 09:00, 11:30, 12:30, 16:00, 16:30, 18:00, 20:00 ICT.
-    - cron: "0 2 * * *"    # 09:00 Bangkok
-    - cron: "30 4 * * *"   # 11:30 Bangkok
-    - cron: "30 5 * * *"   # 12:30 Bangkok
-    - cron: "0 9 * * *"    # 16:00 Bangkok (Auto preset)
-    - cron: "30 9 * * *"   # 16:30 Bangkok
-    - cron: "0 11 * * *"   # 18:00 Bangkok
-    - cron: "0 13 * * *"   # 20:00 Bangkok
+    # Rules choose their own free-form HH:MM times in the admin UI, so this ticks every 5
+    # minutes (GitHub's shortest allowed interval; free on public repos) and the endpoint
+    # decides which rules are due. A tick with nothing due exits in well under a second.
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
 jobs:

@@ -143,6 +143,52 @@ export async function fetchCalendarEvents(daysAhead = 14, daysBehind = 0): Promi
   return events;
 }
 
+export type BusyInterval = { startMs: number; endMs: number; summary: string };
+
+/** Timed events (meetings etc.) on the team calendar within [now, now + daysAhead] —
+ * used by consultation booking to block slots. All-day events (ad-day markers, notes)
+ * are ignored on purpose: they mark days, not meeting time. */
+export async function fetchBusyIntervals(daysAhead = 14): Promise<BusyInterval[]> {
+  const raw = await fetchIcs();
+  if (!raw) return [];
+
+  const out: BusyInterval[] = [];
+  try {
+    const parsed = ical.sync.parseICS(raw);
+    const windowStart = new Date();
+    const windowEnd = new Date(Date.now() + daysAhead * 86_400_000);
+
+    for (const item of Object.values(parsed)) {
+      if (!item || item.type !== "VEVENT") continue;
+      const ev = item as VEvent;
+      if (!ev.start) continue;
+      // node-ical marks all-day starts with datetype "date"
+      if ((ev.start as Date & { dateOnly?: boolean }).dateOnly || (ev as VEvent & { datetype?: string }).datetype === "date") continue;
+      const durationMs = (ev.end?.getTime() ?? ev.start.getTime()) - ev.start.getTime();
+      if (durationMs <= 0) continue;
+      const summary = String(ev.summary ?? "");
+
+      const push = (start: Date) => {
+        const startMs = start.getTime();
+        const endMs = startMs + durationMs;
+        if (endMs <= windowStart.getTime() || startMs >= windowEnd.getTime()) return;
+        out.push({ startMs, endMs, summary });
+      };
+
+      if (ev.rrule) {
+        for (const occ of ev.rrule.between(windowStart, windowEnd, true)) push(occ);
+      } else {
+        push(ev.start);
+      }
+    }
+  } catch (err) {
+    console.error("busy intervals parse error:", err);
+    return [];
+  }
+  out.sort((a, b) => a.startMs - b.startMs);
+  return out;
+}
+
 /** Bangkok date ISOs (within the window) on which broadcasts must be skipped. */
 export async function getAdDays(daysAhead = 1): Promise<Set<string>> {
   const days = new Set<string>();
