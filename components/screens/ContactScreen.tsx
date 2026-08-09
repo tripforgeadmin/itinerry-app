@@ -19,7 +19,7 @@ const NON_ASCII = /[^\x00-\x7F]/;
 
 // Consultation availability from /api/booking/slots — the server owns all the rules
 // (working hours, holidays, Google-Calendar busy times, already-booked slots).
-type DayAvailability = { dateIso: string; free: number };
+type DayAvailability = { dateIso: string; free: number; status: "off" | "full" | "available" };
 type SlotInfo = { startIso: string; label: string };
 
 // Personal-info companions of q3 (like q3_first/q3_last) — stored as synthetic answer keys
@@ -114,7 +114,10 @@ export function ContactScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callDate]);
 
-  const freeDates = useMemo(() => new Set(days.filter((d) => d.free > 0).map((d) => d.dateIso)), [days]);
+  // Per-day status for both the disabled check and the 3-color calendar legend (gray = day
+  // off/holiday, orange = fully booked, blue = open).
+  const dayStatusMap = useMemo(() => new Map(days.map((d) => [d.dateIso, d.status])), [days]);
+  const getDayStatus = (iso: string) => dayStatusMap.get(iso);
   // Fallback window while availability is loading / on fetch error — the server still
   // validates every slot, so a permissive calendar can never over-book.
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -228,9 +231,24 @@ export function ContactScreen({
                   onChange={setBookingDate}
                   minDate={minDate}
                   maxDate={maxDate}
-                  isDayDisabled={(iso) => days.length > 0 && !freeDates.has(iso)}
+                  isDayDisabled={(iso) => days.length > 0 && getDayStatus(iso) !== "available"}
+                  dayStatus={days.length > 0 ? getDayStatus : undefined}
                   hideMascot
                 />
+                <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-muted-soft">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--color-accent)" }} />
+                    {lang === "th" ? "ว่าง" : "Open"}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: "#9A5B12" }} />
+                    {lang === "th" ? "เต็มแล้ว" : "Fully booked"}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-border" />
+                    {lang === "th" ? "วันหยุด" : "Closed"}
+                  </span>
+                </div>
               </div>
             </RevealBlock>
           </div>
