@@ -24,7 +24,10 @@ const OPEN_HOUR = 9;
 const CLOSE_HOUR = 18;
 
 export type SlotInfo = { startIso: string; label: string };
-export type DayAvailability = { dateIso: string; free: number };
+/** status: "off" = weekly day off or holiday (never bookable); "full" = a normal working
+ * day with zero slots left right now (busy calendar + existing bookings); "available" =
+ * at least one slot open. Powers the 3-color date picker (gray / orange / blue). */
+export type DayAvailability = { dateIso: string; free: number; status: "off" | "full" | "available" };
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -97,9 +100,13 @@ async function buildContext(): Promise<SlotContext> {
   };
 }
 
+function isDayOff(dateIso: string, cfg: CallbackConfig): boolean {
+  return cfg.weeklyOff.has(bangkokDow(dateIso)) || cfg.holidays.has(dateIso);
+}
+
 function freeSlotsInContext(dateIso: string, ctx: SlotContext): SlotInfo[] {
   if (dateIso < ctx.todayIso || dateIso > ctx.maxIso) return [];
-  if (ctx.cfg.weeklyOff.has(bangkokDow(dateIso)) || ctx.cfg.holidays.has(dateIso)) return [];
+  if (isDayOff(dateIso, ctx.cfg)) return [];
 
   const out: SlotInfo[] = [];
   for (const startIso of daySlotIsos(dateIso)) {
@@ -118,13 +125,15 @@ export async function freeSlotsForDate(dateIso: string): Promise<SlotInfo[]> {
   return freeSlotsInContext(dateIso, await buildContext());
 }
 
-/** Per-day free-slot counts across the horizon — powers the date picker. */
+/** Per-day free-slot counts + status across the horizon — powers the date picker. */
 export async function availabilityByDay(): Promise<DayAvailability[]> {
   const ctx = await buildContext();
   const days: DayAvailability[] = [];
   for (let i = 0; i <= BOOKING_HORIZON_DAYS; i++) {
     const dateIso = addDaysIso(ctx.todayIso, i);
-    days.push({ dateIso, free: freeSlotsInContext(dateIso, ctx).length });
+    const free = freeSlotsInContext(dateIso, ctx).length;
+    const status = isDayOff(dateIso, ctx.cfg) ? "off" : free > 0 ? "available" : "full";
+    days.push({ dateIso, free, status });
   }
   return days;
 }
