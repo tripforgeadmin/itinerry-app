@@ -63,18 +63,20 @@ export function isOnCurrentPath(id: string, history: string[]): boolean {
   return !isBranchQuestion(id) || history.includes(id);
 }
 
-/** Conditionally-revealed detail questions → the parent answer that unlocks them. */
-const REVEAL_IF: Record<string, [string, string]> = {
+/** Conditionally-revealed detail questions → the parent answer(s) that unlock them. */
+const REVEAL_IF: Record<string, [string, string | string[]]> = {
   q31: ["q30", "yes"], // refusal detail — only when "เคยถูกปฏิเสธ" = yes
   q33: ["q32", "yes"], // overstay detail — only when "เคย overstay" = yes
-  q37: ["q36", "call"], // callback time — only when contact channel = call
+  q37: ["q36", ["call", "online"]], // consultation slot — needed for either booking channel
 };
 
 /** False when a conditional detail question's parent no longer unlocks it — so a stale answer left
  * behind after toggling the parent (e.g. refused yes→no) is dropped from the summary + submit. */
 export function isRevealed(id: string, answers: Record<string, string>): boolean {
   const g = REVEAL_IF[id];
-  return !g || answers[g[0]] === g[1];
+  if (!g) return true;
+  const [key, expected] = g;
+  return Array.isArray(expected) ? expected.includes(answers[key]) : answers[key] === expected;
 }
 
 /** First question of a category that the user actually visited (scans real history, so it skips

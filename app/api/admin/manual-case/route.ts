@@ -91,11 +91,11 @@ export async function POST(request: NextRequest) {
   }
 
   // ---- callback slot + SLA due date (identical to /api/submit) ----
-  const isCall = answers.q36 === "call";
+  const isBookingChannel = answers.q36 === "call" || answers.q36 === "online";
   const validSlot = /^\d{1,2}:\d{2}$/.test(answers.q37 ?? "") && /^\d{4}-\d{2}-\d{2}$/.test(answers.q37_date ?? "");
-  const rawCb = isCall && validSlot ? bangkokDateTimeToUtc(answers.q37_date, answers.q37) : null;
+  const rawCb = isBookingChannel && validSlot ? bangkokDateTimeToUtc(answers.q37_date, answers.q37) : null;
   const callbackDatetime = rawCb && !isNaN(rawCb.getTime()) ? rawCb : null;
-  const dueDate = isCall && callbackDatetime ? callbackDatetime : new Date(Date.now() + SLA_HOURS * 60 * 60 * 1000);
+  const dueDate = callbackDatetime ?? new Date(Date.now() + SLA_HOURS * 60 * 60 * 1000);
 
   // ===== 3) user_assessment =====
   const ticketId = await generateTicketId(answers.q8 ?? "");
