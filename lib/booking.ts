@@ -175,7 +175,11 @@ export async function createBooking(args: {
   const bookingId = data.id as string;
 
   try {
-    const timeLabel = startIso.slice(11, 16);
+    // startIso is UTC (toISOString()) — slicing it directly would put the wrong hour in
+    // the title (e.g. "03:30" for a 10:30 Bangkok slot). Format in Asia/Bangkok explicitly.
+    const timeLabel = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    }).format(new Date(startMs));
     const icon = args.channel === "online" ? "💻" : "📞";
     const name = args.customerName?.trim() || "—";
     const event = await createCalendarEvent({
