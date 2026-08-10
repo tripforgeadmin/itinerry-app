@@ -152,7 +152,7 @@ export async function createBooking(args: {
   slotStartIso: string;
   customerName?: string;
   phone?: string;
-}): Promise<{ ok: true; id: string } | { ok: false; reason: "taken" | "invalid" | "error" }> {
+}): Promise<{ ok: true; id: string; meetLink: string | null } | { ok: false; reason: "taken" | "invalid" | "error" }> {
   const startMs = Date.parse(args.slotStartIso);
   if (Number.isNaN(startMs)) return { ok: false, reason: "invalid" };
 
@@ -182,6 +182,7 @@ export async function createBooking(args: {
     return { ok: false, reason: "error" };
   }
   const bookingId = data.id as string;
+  let meetLink: string | null = null;
 
   try {
     // startIso is UTC (toISOString()) — slicing it directly would put the wrong hour in
@@ -202,6 +203,7 @@ export async function createBooking(args: {
       ].filter(Boolean).join(" · "),
     });
     if (event) {
+      meetLink = event.meetLink;
       await supabase
         .from("consultation_booking")
         .update({ gcal_event_id: event.eventId, meet_link: event.meetLink })
@@ -212,5 +214,5 @@ export async function createBooking(args: {
     console.error("booking calendar push error:", err);
   }
 
-  return { ok: true, id: bookingId };
+  return { ok: true, id: bookingId, meetLink };
 }

@@ -78,21 +78,53 @@ export function assessmentResultMessage(pass: boolean, notes: string, lang: "th"
 }
 
 /** Second message of the post-submit pair — sent alongside assessmentReceivedFlex (lib/line-flex.ts).
- * The thank-you + ticket id already live in that Flex card, so this is just the delivery
- * promise (by the SLA due date, date only), contact info, and a share nudge. Falls back to
- * "within 24 hours" when no due date is given. */
-export function assessmentFollowUpMessage(lang: "th" | "en" = "th", dueDateISO?: string) {
+ * The thank-you + ticket id already live in that Flex card, so this is the first-line promise,
+ * contact info, and a share nudge. The first line depends on how the customer chose to talk:
+ *  - phone booking  → the expert will call at the booked time
+ *  - online booking → the Google Meet link right in the chat (or "we'll send it before the
+ *    meeting" when the calendar push didn't yield one)
+ *  - no booking     → the original result-delivery promise (by the SLA due date, date only;
+ *    "within 24 hours" when no due date is given)
+ * For bookings, dueDateISO is the slot start (see app/api/submit/route.ts), so it doubles
+ * as the appointment time shown here. */
+export function assessmentFollowUpMessage(
+  lang: "th" | "en" = "th",
+  dueDateISO?: string,
+  booking?: { channel: "phone" | "online"; meetLink?: string | null },
+) {
   const due = dueDateISO ? new Date(dueDateISO) : null;
   const validDue = due && !isNaN(due.getTime()) ? due : null;
   const opts = { timeZone: "Asia/Bangkok", day: "numeric", month: "long", year: "numeric" } as const;
-  const dueTh = validDue ? `ภายในวันที่ ${validDue.toLocaleDateString("th-TH", opts)}` : "ภายใน 24 ชั่วโมง";
-  const dueEn = validDue ? `by ${validDue.toLocaleDateString("en-GB", opts)}` : "within 24 hours";
+  const timeOpts = { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hourCycle: "h23" } as const;
+
+  let firstTh: string;
+  let firstEn: string;
+  if (booking && validDue) {
+    const slotTh = `วันที่ ${validDue.toLocaleDateString("th-TH", opts)} เวลา ${validDue.toLocaleTimeString("en-GB", timeOpts)} น.`;
+    const slotEn = `on ${validDue.toLocaleDateString("en-GB", opts)} at ${validDue.toLocaleTimeString("en-GB", timeOpts)}`;
+    if (booking.channel === "phone") {
+      firstTh = `📞 ผู้เชี่ยวชาญของเราจะโทรติดต่อคุณตามเวลาที่นัดไว้ ${slotTh}`;
+      firstEn = `📞 Our specialist will call you at your booked time, ${slotEn}`;
+    } else if (booking.meetLink) {
+      firstTh = `💻 นัดปรึกษาออนไลน์ของคุณคือ${slotTh}\nเข้าร่วมผ่าน Google Meet ได้ที่ลิงก์นี้ครับ\n${booking.meetLink}`;
+      firstEn = `💻 Your online consultation is ${slotEn}\nJoin via this Google Meet link\n${booking.meetLink}`;
+    } else {
+      firstTh = `💻 นัดปรึกษาออนไลน์ของคุณคือ${slotTh}\nทีมงานจะส่งลิงก์ Google Meet ให้ทางแชทก่อนถึงเวลานัดครับ`;
+      firstEn = `💻 Your online consultation is ${slotEn}\nWe will send you the Google Meet link in this chat before the meeting`;
+    }
+  } else {
+    const dueTh = validDue ? `ภายในวันที่ ${validDue.toLocaleDateString("th-TH", opts)}` : "ภายใน 24 ชั่วโมง";
+    const dueEn = validDue ? `by ${validDue.toLocaleDateString("en-GB", opts)}` : "within 24 hours";
+    firstTh = `⏱️ เราจะส่งผลประเมินให้คุณ${dueTh}`;
+    firstEn = `⏱️ We will send you your assessment result ${dueEn}`;
+  }
+
   const text =
     lang === "en"
-      ? `⏱️ We will send you your assessment result ${dueEn}\n\n` +
+      ? `${firstEn}\n\n` +
         `💬 If you have any questions or further requests, feel free to chat with us anytime\n\n` +
         `📲 You can share the assessment app with fellow travellers or anyone who's interested`
-      : `⏱️ เราจะส่งผลประเมินให้คุณ${dueTh}\n\n` +
+      : `${firstTh}\n\n` +
         `💬 หากคุณลูกค้ามีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยนะครับ\n\n` +
         `📲 คุณลูกค้าสามารถแชร์แอปการประเมินให้เพื่อนร่วมเดินทางหรือผู้ที่สนใจได้ครับ`;
   return { type: "text", text };

@@ -159,6 +159,7 @@ export async function POST(request: NextRequest) {
   const dueDate = callbackDatetime ?? new Date(Date.now() + SLA_HOURS * 60 * 60 * 1000);
 
   let bookingId: string | null = null;
+  let bookingMeetLink: string | null = null;
   if (callbackDatetime) {
     const claim = await createBooking({
       assessmentId: null, // linked right after the assessment insert below
@@ -172,7 +173,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "slot_taken" }, { status: 409 });
     }
     // "invalid"/"error" → keep the lead; callback_datetime still records the requested time.
-    if (claim.ok) bookingId = claim.id;
+    if (claim.ok) {
+      bookingId = claim.id;
+      bookingMeetLink = claim.meetLink;
+    }
   }
 
   // ===== 2) user_trip (destination + visa type + dates) =====
@@ -293,13 +297,21 @@ export async function POST(request: NextRequest) {
   try {
     if (profile?.userId) {
       const msgLang = answers.q4 === "other" ? "en" : "th";
+      // When a consultation slot was claimed, the follow-up's first line becomes the
+      // appointment promise (phone: "expert will call"; online: the Meet link) instead
+      // of the generic result-delivery SLA — dueDate is the slot start in that case.
+      const booking = callbackDatetime
+        ? { channel: answers.q36 === "online" ? ("online" as const) : ("phone" as const), meetLink: bookingMeetLink }
+        : undefined;
       const delivered = await pushMessageLogged({
         to: profile.userId,
-        messages: [assessmentReceivedFlex(ticketId, msgLang), assessmentFollowUpMessage(msgLang, dueDate.toISOString())],
+        messages: [assessmentReceivedFlex(ticketId, msgLang), assessmentFollowUpMessage(msgLang, dueDate.toISOString(), booking)],
         accountId: account.id,
         assessmentId,
         kind: "ticket_received",
-        content: `[Flex] แจ้งรับเรื่อง · ${ticketId} + ข้อความติดตามผลใน 24 ชม.`,
+        content: booking
+          ? `[Flex] แจ้งรับเรื่อง · ${ticketId} + ข้อความนัดหมายปรึกษา (${booking.channel === "online" ? "Google Meet" : "โทรศัพท์"})`
+          : `[Flex] แจ้งรับเรื่อง · ${ticketId} + ข้อความติดตามผลใน 24 ชม.`,
       });
       if (delivered) {
         await supabase
