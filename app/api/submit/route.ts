@@ -12,7 +12,8 @@ import { normalizePhone, formatPhone } from "@/lib/dialCodes";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { assessmentReceivedFlex } from "@/lib/line-flex";
 import { bangkokDateTimeToUtc } from "@/lib/holidays";
-import { createBooking } from "@/lib/booking";
+import { createBooking, bookingEventTitle } from "@/lib/booking";
+import { updateCalendarEventTitle } from "@/lib/google-calendar";
 import { SLA_HOURS } from "@/lib/status";
 
 function toNull(v: string | undefined): string | null {
@@ -160,11 +161,13 @@ export async function POST(request: NextRequest) {
 
   let bookingId: string | null = null;
   let bookingMeetLink: string | null = null;
+  let bookingGcalEventId: string | null = null;
+  const bookingChannel = answers.q36 === "online" ? "online" : "phone";
   if (callbackDatetime) {
     const claim = await createBooking({
       assessmentId: null, // linked right after the assessment insert below
       accountId: account.id,
-      channel: answers.q36 === "online" ? "online" : "phone",
+      channel: bookingChannel,
       slotStartIso: `${answers.q37_date}T${answers.q37.padStart(5, "0")}:00+07:00`,
       customerName: nickname,
       phone: formatPhone(toNull(answers.q5_cc) ?? "+66", answers.q5 ?? ""),
@@ -176,6 +179,7 @@ export async function POST(request: NextRequest) {
     if (claim.ok) {
       bookingId = claim.id;
       bookingMeetLink = claim.meetLink;
+      bookingGcalEventId = claim.gcalEventId;
     }
   }
 
@@ -200,6 +204,19 @@ export async function POST(request: NextRequest) {
 
   // ===== 3) user_assessment (qualification + screening) =====
   const ticketId = await generateTicketId(answers.q8 ?? "");
+
+  // The calendar event (if any) was created before the ticket ID existed — patch the
+  // title now that it's minted. Best-effort: never blocks the submit.
+  if (bookingGcalEventId && callbackDatetime) {
+    try {
+      await updateCalendarEventTitle(
+        bookingGcalEventId,
+        bookingEventTitle({ channel: bookingChannel, startMs: callbackDatetime.getTime(), customerName: nickname, ticketId })
+      );
+    } catch (err) {
+      console.error("booking calendar title patch error:", err);
+    }
+  }
   const { data: assessment, error: assessError } = await supabase.from("user_assessment").insert({
     trip_id:              trip.id,
     account_id:           account.id,
@@ -305,7 +322,10 @@ export async function POST(request: NextRequest) {
         : undefined;
       const delivered = await pushMessageLogged({
         to: profile.userId,
-        messages: [assessmentReceivedFlex(ticketId, msgLang), assessmentFollowUpMessage(msgLang, dueDate.toISOString(), booking)],
+        messages: [
+          assessmentReceivedFlex(ticketId, msgLang),
+          assessmentFollowUpMessage(msgLang, dueDate.toISOString(), booking, profile.displayName),
+        ],
         accountId: account.id,
         assessmentId,
         kind: "ticket_received",
