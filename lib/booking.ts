@@ -23,6 +23,26 @@ export const MIN_LEAD_HOURS = 3;
 const OPEN_HOUR = 9;
 const CLOSE_HOUR = 18;
 
+/** Calendar event title for a consultation booking. `ticketId` is minted after the
+ * booking (it needs the assessment's destination) — callers pass it once known, patching
+ * the title in via updateCalendarEventTitle; the event is created without it first. */
+export function bookingEventTitle(args: {
+  channel: "phone" | "online";
+  startMs: number;
+  customerName?: string;
+  ticketId?: string;
+}): string {
+  // startMs comes from a UTC epoch — format in Asia/Bangkok explicitly so e.g. a 10:30
+  // Bangkok slot doesn't show as "03:30".
+  const timeLabel = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).format(new Date(args.startMs));
+  const icon = args.channel === "online" ? "💻" : "📞";
+  const name = args.customerName?.trim() || "—";
+  const base = `${timeLabel} ${icon} นัดคุย — ${name}`;
+  return args.ticketId ? `${base} -- (${args.ticketId})` : base;
+}
+
 export type SlotInfo = { startIso: string; label: string };
 /** status: "off" = weekly day off or holiday (never bookable); "full" = a normal working
  * day with zero slots left right now (busy calendar + existing bookings); "available" =
@@ -152,7 +172,10 @@ export async function createBooking(args: {
   slotStartIso: string;
   customerName?: string;
   phone?: string;
-}): Promise<{ ok: true; id: string; meetLink: string | null } | { ok: false; reason: "taken" | "invalid" | "error" }> {
+}): Promise<
+  | { ok: true; id: string; meetLink: string | null; gcalEventId: string | null }
+  | { ok: false; reason: "taken" | "invalid" | "error" }
+> {
   const startMs = Date.parse(args.slotStartIso);
   if (Number.isNaN(startMs)) return { ok: false, reason: "invalid" };
 
@@ -183,20 +206,14 @@ export async function createBooking(args: {
   }
   const bookingId = data.id as string;
   let meetLink: string | null = null;
+  let gcalEventId: string | null = null;
 
   try {
-    // startIso is UTC (toISOString()) — slicing it directly would put the wrong hour in
-    // the title (e.g. "03:30" for a 10:30 Bangkok slot). Format in Asia/Bangkok explicitly.
-    const timeLabel = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-    }).format(new Date(startMs));
-    const icon = args.channel === "online" ? "💻" : "📞";
-    const name = args.customerName?.trim() || "—";
     const event = await createCalendarEvent({
       channel: args.channel,
       startIso,
       endIso,
-      title: `${timeLabel} ${icon} นัดคุย — ${name}`,
+      title: bookingEventTitle({ channel: args.channel, startMs, customerName: args.customerName }),
       description: [
         "จองผ่านแบบประเมิน itinerry",
         args.phone ? `โทร ${args.phone}` : null,
@@ -204,6 +221,7 @@ export async function createBooking(args: {
     });
     if (event) {
       meetLink = event.meetLink;
+      gcalEventId = event.eventId;
       await supabase
         .from("consultation_booking")
         .update({ gcal_event_id: event.eventId, meet_link: event.meetLink })
@@ -214,5 +232,5 @@ export async function createBooking(args: {
     console.error("booking calendar push error:", err);
   }
 
-  return { ok: true, id: bookingId, meetLink };
+  return { ok: true, id: bookingId, meetLink, gcalEventId };
 }

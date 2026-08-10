@@ -170,6 +170,29 @@ export async function createCalendarEvent(args: {
   }
 }
 
+/** Best-effort title patch — used once the ticket ID is minted (after the event already
+ * exists, since ticket generation happens later in the booking flow). */
+export async function updateCalendarEventTitle(eventId: string, title: string): Promise<void> {
+  if (!calendarWriteEnabled()) return;
+  const token = await getAccessToken();
+  const calendarId = process.env.GOOGLE_CALENDAR_ID;
+  if (!token || !calendarId) return;
+
+  try {
+    const url = `${API_BASE}/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`;
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ summary: title }),
+    });
+    if (!res.ok) {
+      console.error("google calendar update event title failed:", res.status, await res.text().catch(() => ""));
+    }
+  } catch (err) {
+    console.error("google calendar update event title error:", err);
+  }
+}
+
 /** Best-effort delete — used when a booking is cancelled. */
 export async function deleteCalendarEvent(eventId: string): Promise<void> {
   if (!calendarWriteEnabled()) return;

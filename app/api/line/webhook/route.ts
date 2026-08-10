@@ -19,7 +19,7 @@ async function handleFollow(userId: string, replyToken?: string) {
 
   const { data: account } = await supabase
     .from("account")
-    .select("id, nationality")
+    .select("id, nationality, line_display_name")
     .eq("line_user_id", userId)
     .maybeSingle();
   if (!account) return;
@@ -47,7 +47,7 @@ async function handleFollow(userId: string, replyToken?: string) {
   const msgLang = account.nationality === "other" ? "en" : "th";
   // thank-you + the viral share card ride the same (free) reply — one send, two messages
   const messages = [
-    assessmentReceivedMessage(pending.ticket_id as string, msgLang),
+    assessmentReceivedMessage(pending.ticket_id as string, msgLang, account.line_display_name as string | null),
     shareCardFlex(msgLang),
   ];
   await replyMessage(replyToken, messages);

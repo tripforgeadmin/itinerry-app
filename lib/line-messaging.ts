@@ -40,8 +40,11 @@ export async function pushMessage(to: string, messages: object[]): Promise<boole
 }
 
 /** Post-submit thank-you note carrying the case ticket id. English for non-Thai nationals
- * (q4 = "other"), Thai otherwise. */
-export function assessmentReceivedMessage(ticketId: string, lang: "th" | "en" = "th") {
+ * (q4 = "other"), Thai otherwise. `displayName` is the customer's LINE display name — shown
+ * in the Thai copy in place of the generic "คุณลูกค้า" when available. */
+export function assessmentReceivedMessage(ticketId: string, lang: "th" | "en" = "th", displayName?: string | null) {
+  const name = displayName?.trim();
+  const addressTh = name ? `คุณ ${name}` : "คุณลูกค้า";
   const text =
     lang === "en"
       ? `🙏 Thank you for completing the itinerry assessment — we have received your information ✅\n\n` +
@@ -51,7 +54,7 @@ export function assessmentReceivedMessage(ticketId: string, lang: "th" | "en" = 
       : `🙏 ขอขอบคุณที่ทำแบบประเมินกับ itinerry เราได้รับข้อมูลเบื้องต้นแล้ว ✅\n\n` +
         `🔖 หมายเลขอ้างอิงของคุณคือ\n${ticketId}\n\n` +
         `⏱️ เราจะส่งผลประเมินให้คุณภายใน 24 ชั่วโมง\n\n` +
-        `💬 หากคุณลูกค้ามีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยครับ`;
+        `💬 หาก${addressTh}มีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยครับ`;
   return { type: "text", text };
 }
 
@@ -86,12 +89,16 @@ export function assessmentResultMessage(pass: boolean, notes: string, lang: "th"
  *  - no booking     → the original result-delivery promise (by the SLA due date, date only;
  *    "within 24 hours" when no due date is given)
  * For bookings, dueDateISO is the slot start (see app/api/submit/route.ts), so it doubles
- * as the appointment time shown here. */
+ * as the appointment time shown here. `displayName` is the customer's LINE display name —
+ * shown in the Thai copy in place of the generic "คุณลูกค้า" when available. */
 export function assessmentFollowUpMessage(
   lang: "th" | "en" = "th",
   dueDateISO?: string,
   booking?: { channel: "phone" | "online"; meetLink?: string | null },
+  displayName?: string | null,
 ) {
+  const name = displayName?.trim();
+  const addressTh = name ? `คุณ ${name}` : "คุณลูกค้า";
   const due = dueDateISO ? new Date(dueDateISO) : null;
   const validDue = due && !isNaN(due.getTime()) ? due : null;
   const opts = { timeZone: "Asia/Bangkok", day: "numeric", month: "long", year: "numeric" } as const;
@@ -125,8 +132,8 @@ export function assessmentFollowUpMessage(
         `💬 If you have any questions or further requests, feel free to chat with us anytime\n\n` +
         `📲 You can share the assessment app with fellow travellers or anyone who's interested`
       : `${firstTh}\n\n` +
-        `💬 หากคุณลูกค้ามีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยนะครับ\n\n` +
-        `📲 คุณลูกค้าสามารถแชร์แอปการประเมินให้เพื่อนร่วมเดินทางหรือผู้ที่สนใจได้ครับ`;
+        `💬 หาก${addressTh}มีข้อสอบถามหรือความต้องการเพิ่มเติม สามารถทักแชทได้เลยนะครับ\n\n` +
+        `📲 ${addressTh}สามารถแชร์แอปการประเมินให้เพื่อนร่วมเดินทางหรือผู้ที่สนใจได้ครับ`;
   return { type: "text", text };
 }
 
