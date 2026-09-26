@@ -3,7 +3,22 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ItinerryLogo } from "@/components/ItinerryLogo";
-import { LIFF_DEEPLINK } from "@/lib/constants";
+import {
+  ATTRIBUTION_STORAGE_KEY,
+  buildHandoffQuery,
+  readAttributionParams,
+} from "@/lib/attribution";
+import {
+  LINE_APP_ONLY,
+  androidIntentUrl,
+  detectInAppBrowser,
+  isAndroidUA,
+  isLineInAppUA,
+  isMobileUA,
+  liffHttpsUrl,
+  lineSchemeUrl,
+  type InAppBrowser,
+} from "@/lib/line-browser";
 import { useTypewriter } from "@/lib/useTypewriter";
 import { useFormStore } from "@/store/formStore";
 
@@ -19,27 +34,72 @@ const STEPS = [
   { icon: "💬", text: "รับผล + คำแนะนำผ่าน LINE ใน 24 ชม." },
 ];
 
-function isLineBrowser(): boolean {
-  return /Line\//i.test(navigator.userAgent);
+// Where this page is being viewed. LINE-app-only policy (lib/line-browser.ts): only "line" gets
+// the landing + login button; everyone else gets a hand-off into the LINE app — a deep link on
+// mobile (incl. the Facebook/Instagram/TikTok in-app browsers ads open in), a QR code on desktop
+// (incl. LINE PC, which opens links in the system browser). proxy.ts enforces the same rule
+// server-side, so this screen is the UX, not the gate. Local `next dev` is permissive ("line"
+// for everyone) unless NEXT_PUBLIC_ENFORCE_LINE_APP=true.
+type Env = "line" | "mobile" | "desktop";
+
+interface Handoff {
+  env: Env;
+  qs: string; // tracking params re-sent through the deep link (see buildHandoffQuery)
+  android: boolean;
+  inApp: InAppBrowser | null;
 }
 
-// The LIFF deep-link ("เปิดใน LINE app") only makes sense on mobile — desktop has no LINE
-// app to hand off to. Desktop users skip straight to the real login button below, which goes
-// through LINE's standard OAuth page (QR-scan to authenticate, then the redirect lands back
-// in this same desktop tab) rather than moving the whole session to mobile.
-function isMobileDevice(): boolean {
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+function detectHandoff(): Handoff {
+  const ua = navigator.userAgent;
+  if (!LINE_APP_ONLY || isLineInAppUA(ua)) return { env: "line", qs: "", android: false, inApp: null };
+  // iPadOS reports a desktop Mac UA — a touch-capable "Mac" is an iPad. Likewise Android Chrome's
+  // "Desktop site" (the default on large tablets) sends an X11 Linux UA with no Android/Mobile
+  // token — a touch-capable Linux (not ChromeOS) is an Android device, not a QR-scanning desktop.
+  const androidDesktopMode = /X11; Linux/.test(ua) && !/CrOS/.test(ua) && navigator.maxTouchPoints > 1;
+  const mobile =
+    isMobileUA(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) || androidDesktopMode;
+  // localStorage doesn't cross into the LINE app, so the campaign params ride the deep link.
+  // Current URL first; else what UtmCleanup stored earlier (e.g. a later visit to a bare /auth,
+  // or a proxy.ts bounce, which drops the query).
+  let stored: unknown = null;
+  try {
+    stored = JSON.parse(localStorage.getItem(ATTRIBUTION_STORAGE_KEY) || "null");
+  } catch {
+    /* storage disabled / malformed — hand off without attribution */
+  }
+  const qs = buildHandoffQuery(readAttributionParams(window.location.search), stored, document.referrer);
+  return {
+    env: mobile ? "mobile" : "desktop",
+    qs,
+    android: isAndroidUA(ua) || androidDesktopMode,
+    inApp: detectInAppBrowser(ua),
+  };
+}
+
+// The in-app "open in browser" escape (and the host app's own copy-link) takes the webview's
+// CURRENT URL into a browser with its own, empty localStorage. Mirror the hand-off params into
+// that URL — they may have come from storage (bare /auth), and src_referrer is never in it — so
+// the next /auth load there rebuilds the same deep link. Other params (fbclid, …) are kept.
+function keepHandoffParamsInUrl(qs: string) {
+  const url = new URL(window.location.href);
+  new URLSearchParams(qs).forEach((value, key) => url.searchParams.set(key, value));
+  if (url.href !== window.location.href) {
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+  }
 }
 
 export default function AuthPage() {
   const [loading, setLoading] = useState<null | "continue" | "new">(null);
-  const [showOpenInLine, setShowOpenInLine] = useState(false);
+  // null until decided after mount — never flash the login button to a non-LINE visitor.
+  const [handoff, setHandoff] = useState<Handoff | null>(null);
   // True when localStorage holds an unsubmitted assessment worth resuming (any recorded answer).
   const [resume, setResume] = useState(false);
   const typed = useTypewriter(TAGLINES);
 
   useEffect(() => {
-    if (!isLineBrowser() && isMobileDevice()) setShowOpenInLine(true);
+    const detected = detectHandoff();
+    setHandoff(detected);
+    if (detected.env !== "line" && detected.qs) keepHandoffParamsInUrl(detected.qs);
     try {
       const s = JSON.parse(localStorage.getItem("itinerry-visa-form-v3") || "null")?.state;
       setResume(!!s && (Object.keys(s.answers || {}).length > 0 || (s.history?.length ?? 0) > 1));
@@ -77,30 +137,9 @@ export default function AuthPage() {
     window.location.href = `/api/auth/login?state=${state}`;
   }
 
-  if (showOpenInLine) {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center px-6 bg-surface">
-        <div className="w-full max-w-sm flex flex-col items-center gap-6 text-center">
-          <img src="/itin.png" alt="" className="w-24 h-24 object-contain" />
-          <div className="space-y-2">
-            <h1 className="text-xl font-bold text-primary">เปิดในแอป LINE</h1>
-            <p className="text-sm text-muted leading-relaxed">
-              กดปุ่มด้านล่างเพื่อเปิดในแอป LINE<br />
-              แล้วเข้าสู่ระบบได้เลย
-            </p>
-          </div>
-          <a
-            href={LIFF_DEEPLINK}
-            className="w-full flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-bold text-base shadow-lg"
-            style={{ backgroundColor: "#06c755", boxShadow: "0 4px 24px rgba(6,199,85,0.3)" }}
-          >
-            <LineIcon />
-            เปิดใน LINE
-          </a>
-        </div>
-      </main>
-    );
-  }
+  if (!handoff) return <main className="min-h-screen bg-surface" />;
+  if (handoff.env === "mobile") return <OpenInLineScreen handoff={handoff} />;
+  if (handoff.env === "desktop") return <DesktopQrScreen qs={handoff.qs} />;
 
   return (
     <main className="min-h-screen flex flex-col bg-surface overflow-hidden relative">
@@ -254,6 +293,163 @@ export default function AuthPage() {
       </div>
     </main>
   );
+}
+
+const IN_APP_NAME: Record<InAppBrowser, string> = {
+  facebook: "Facebook",
+  messenger: "Messenger",
+  instagram: "Instagram",
+  tiktok: "TikTok",
+};
+
+// Mobile, outside LINE (Safari/Chrome, or an ad's in-app browser) → deep link into the LINE app.
+// Android gets an intent:// URL (Chrome and most Android in-app browsers won't follow a bare
+// line:// link); iOS gets line://. In-app browsers sometimes swallow both, hence the escape
+// hatches: the "open in browser" tip and copying the https LIFF link to paste into a LINE chat.
+function OpenInLineScreen({ handoff }: { handoff: Handoff }) {
+  const liffUrl = liffHttpsUrl(handoff.qs);
+  const deepLink = handoff.android ? androidIntentUrl(handoff.qs) : lineSchemeUrl(handoff.qs);
+  const [copied, setCopied] = useState(false);
+  const [showLink, setShowLink] = useState(false);
+
+  async function copyLink() {
+    let ok = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(liffUrl);
+        ok = true;
+      }
+    } catch {
+      /* permission denied / insecure context — fall through */
+    }
+    if (!ok) ok = legacyCopy(liffUrl);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      setShowLink(true); // last resort: reveal it for long-press → copy
+    }
+  }
+
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 bg-surface">
+      <div className="w-full max-w-sm flex flex-col items-center gap-6 text-center" data-liff-url={liffUrl}>
+        <img src="/itin.png" alt="" className="w-24 h-24 object-contain" />
+        <div className="space-y-2">
+          <h1 className="text-xl font-bold text-primary">เปิดในแอป LINE</h1>
+          <p className="text-sm text-muted leading-relaxed">
+            แบบประเมินนี้ใช้งานได้ในแอป LINE เท่านั้น<br />
+            กดปุ่มด้านล่างเพื่อเปิดในแอป LINE แล้วเข้าสู่ระบบได้เลย
+          </p>
+        </div>
+        <div className="w-full flex flex-col gap-3">
+          <a
+            href={deepLink}
+            data-testid="line-deeplink"
+            className="w-full flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-bold text-base shadow-lg"
+            style={{ backgroundColor: "#06c755", boxShadow: "0 4px 24px rgba(6,199,85,0.3)" }}
+          >
+            <LineIcon />
+            เปิดใน LINE
+          </a>
+          {handoff.inApp && (
+            <p className="text-xs text-muted leading-relaxed px-2">
+              ถ้ากดแล้วไม่เปิด: แตะ ⋯ มุมขวาบนของ {IN_APP_NAME[handoff.inApp]} แล้วเลือก
+              “เปิดในเบราว์เซอร์” จากนั้นกดปุ่มนี้อีกครั้ง
+            </p>
+          )}
+        </div>
+        <div className="w-full flex flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={copyLink}
+            data-testid="copy-liff-link"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl border border-border bg-transparent px-6 py-3.5 text-sm font-bold text-muted transition-all active:scale-95"
+          >
+            {copied ? "คัดลอกแล้ว ✓" : "คัดลอกลิงก์"}
+          </button>
+          <p className="text-xs text-muted">แล้ววางลิงก์ในแชท LINE เพื่อเปิด</p>
+          {showLink && (
+            <p className="w-full rounded-xl bg-card border border-border px-3 py-2 text-xs text-primary-mid break-all select-all">
+              {liffUrl}
+            </p>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+// Desktop (incl. LINE PC, which opens links in the system browser) → nothing to hand off to on
+// this machine, so show a QR of the https LIFF link to scan with the phone. qrcode is loaded on
+// demand so the LINE-app landing doesn't ship it.
+function DesktopQrScreen({ qs }: { qs: string }) {
+  const liffUrl = liffHttpsUrl(qs);
+  const [qr, setQr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    import("qrcode")
+      .then(({ toDataURL }) => toDataURL(liffUrl, { width: 416, margin: 1, errorCorrectionLevel: "M" }))
+      .then((dataUrl) => {
+        if (!cancelled) setQr(dataUrl);
+      })
+      .catch(() => {
+        /* QR render failed — the link text below still works */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [liffUrl]);
+
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-10 bg-surface">
+      <div className="w-full max-w-sm flex flex-col items-center gap-6 text-center">
+        <img src="/itin.png" alt="" className="w-24 h-24 object-contain" />
+        <div className="space-y-2">
+          <h1 className="text-xl font-bold text-primary">เปิดในแอป LINE บนมือถือ</h1>
+          <p className="text-sm text-muted leading-relaxed">
+            แบบประเมินนี้ใช้งานได้ในแอป LINE บนมือถือเท่านั้น<br />
+            สแกน QR code ด้านล่างเพื่อเริ่มประเมินได้เลย
+          </p>
+        </div>
+        <div
+          className="w-full bg-card rounded-2xl p-5 shadow-card flex flex-col items-center gap-3"
+          data-liff-url={liffUrl}
+        >
+          <div className="w-52 h-52 flex items-center justify-center">
+            {qr ? (
+              <img src={qr} alt="QR code เปิดในแอป LINE" data-testid="desktop-qr" className="w-52 h-52" />
+            ) : (
+              <div className="w-52 h-52 rounded-xl bg-surface-soft animate-pulse" />
+            )}
+          </div>
+          <p className="text-sm font-bold text-primary-mid">สแกนด้วยกล้องมือถือหรือแอป LINE</p>
+          <p className="text-[11px] text-muted-soft break-all select-all">{liffUrl}</p>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+// Clipboard fallback for in-app browsers without navigator.clipboard (or that deny it).
+function legacyCopy(text: string): boolean {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length); // iOS ignores select() alone
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
 }
 
 function Spinner() {

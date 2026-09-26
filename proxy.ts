@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "./lib/line";
 import { verifyAdminSession } from "./lib/adminAuth";
+import { LINE_APP_ONLY, isLineInAppUA } from "./lib/line-browser";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -13,6 +14,19 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }
     return NextResponse.next();
+  }
+
+  // LINE-app-only (lib/line-browser.ts): outside the LINE in-app browser, the questionnaire and
+  // the login entry bounce to /auth, which shows the "open in LINE" / QR hand-off instead of a
+  // login button. Checked BEFORE the session, so a desktop browser already holding a valid
+  // session is still blocked. /auth itself is never gated here, so this can't loop.
+  const lineOnlyPaths = ["/q", "/done", "/result", "/api/auth/login"];
+  if (
+    LINE_APP_ONLY &&
+    lineOnlyPaths.some((p) => pathname.startsWith(p)) &&
+    !isLineInAppUA(request.headers.get("user-agent") ?? "")
+  ) {
+    return NextResponse.redirect(new URL("/auth", request.url));
   }
 
   // User routes — check LINE session
@@ -30,5 +44,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/q/:path*", "/done", "/result/:path*", "/admin/:path*"],
+  matcher: ["/q/:path*", "/done", "/result/:path*", "/admin/:path*", "/api/auth/login"],
 };
