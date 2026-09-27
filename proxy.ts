@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "./lib/line";
 import { verifyAdminSession } from "./lib/adminAuth";
-import { LINE_APP_ONLY, isLineInAppUA } from "./lib/line-browser";
+import { LINE_APP_ONLY, requiresLineHandoffUA } from "./lib/line-browser";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -16,15 +16,19 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // LINE-app-only (lib/line-browser.ts): outside the LINE in-app browser, the questionnaire and
-  // the login entry bounce to /auth, which shows the "open in LINE" / QR hand-off instead of a
-  // login button. Checked BEFORE the session, so a desktop browser already holding a valid
-  // session is still blocked. /auth itself is never gated here, so this can't loop.
-  const lineOnlyPaths = ["/q", "/done", "/result", "/api/auth/login"];
+  // Phones/tablets outside the LINE app (lib/line-browser.ts): the questionnaire and the login
+  // entry bounce to /auth, which shows the "open in LINE" deep-link hand-off instead of a login
+  // button. Checked BEFORE the session, so a phone browser already holding a valid session is
+  // still sent to LINE. Desktop UAs fall through to the session check below — without a session
+  // they land on /auth (LINE Login or a QR to the phone); /api/auth/login proceeds to LINE OAuth.
+  // Tablets sending a desktop UA (iPadOS, Android "Desktop site") look like desktops here —
+  // components/LineHandoffGuard.tsx bounces those client-side. /auth itself is never gated, so
+  // this can't loop.
+  const handoffPaths = ["/q", "/done", "/result", "/api/auth/login"];
   if (
     LINE_APP_ONLY &&
-    lineOnlyPaths.some((p) => pathname.startsWith(p)) &&
-    !isLineInAppUA(request.headers.get("user-agent") ?? "")
+    handoffPaths.some((p) => pathname.startsWith(p)) &&
+    requiresLineHandoffUA(request.headers.get("user-agent") ?? "")
   ) {
     return NextResponse.redirect(new URL("/auth", request.url));
   }

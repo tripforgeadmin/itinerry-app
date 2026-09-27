@@ -1,10 +1,11 @@
 // Campaign-attribution params, shared by components/UtmCleanup.tsx (capture into localStorage +
-// strip from the visible URL) and the /auth "open in LINE" hand-off (app/auth/page.tsx).
+// strip from the visible URL) and the /auth "open in LINE" hand-off (app/auth/page.tsx) — the
+// mobile deep link and the desktop "continue on your phone" QR.
 //
 // Why the hand-off needs them: ads run on Facebook/Instagram/TikTok, whose in-app browsers are
 // NOT the LINE app, so /auth sends the visitor on into LINE. localStorage does not cross apps, so
-// the deep link re-carries utm_*/ref (plus the original referrer as src_referrer) and the LINE-side
-// landing captures them again.
+// the deep link / QR re-carries utm_*/ref (plus the original referrer as src_referrer) and the
+// LINE-side landing captures them again.
 //
 // PURE MODULE — no window/document access, so node --test can import it (lib/attribution.test.ts).
 

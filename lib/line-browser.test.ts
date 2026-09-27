@@ -1,6 +1,7 @@
 /**
- * LINE-app-only policy tests — UA detection (LINE vs. the in-app browsers ads open in vs. plain
- * mobile/desktop browsers) and the three "open in LINE" URL builders.
+ * Device-policy tests — UA detection (LINE vs. the in-app browsers ads open in vs. plain
+ * mobile/desktop browsers), the server/client "hand off to LINE" decisions (phones/tablets yes,
+ * desktop no), and the three "open in LINE" URL builders.
  *
  * Run:  node --test lib/line-browser.test.ts
  */
@@ -12,6 +13,9 @@ import {
   detectInAppBrowser,
   isMobileUA,
   isAndroidUA,
+  requiresLineHandoffUA,
+  isMobileDevice,
+  isAndroidDevice,
   liffHttpsUrl,
   lineSchemeUrl,
   androidIntentUrl,
@@ -45,6 +49,16 @@ const UA = {
   mobileSafari: `${IOS} Version/17.5 Mobile/15E148 Safari/604.1`,
   androidChrome:
     "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+  // Android tablets drop the "Mobile" token — the Android one still marks them.
+  androidTablet:
+    "Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+  ipadSafari:
+    "Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+  // Android Chrome "Desktop site" — no Android/Mobile token.
+  androidDesktopSite:
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+  chromebook:
+    "Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
 };
 
 test("isLineInAppUA: LINE iOS / LIFF / Android → true", () => {
@@ -95,6 +109,63 @@ test("isMobileUA: phones + in-app browsers → true; desktop (and iPadOS's Mac U
   assert.equal(isMobileUA(UA.desktopChromeMac), false);
   assert.equal(isMobileUA(UA.desktopChromeWin), false);
   assert.equal(isMobileUA(UA.ipadosSafari), false);
+});
+
+test("requiresLineHandoffUA: LINE app → false (never bounce the LINE browser)", () => {
+  for (const key of ["lineIos", "lineIosLiff", "lineAndroid"] as const) {
+    assert.equal(requiresLineHandoffUA(UA[key]), false, key);
+  }
+});
+
+test("requiresLineHandoffUA: phones/tablets outside LINE, incl. ad in-app browsers → true", () => {
+  for (const key of [
+    "fbIos", "fbAndroid", "messengerIos", "messengerAndroid", "instagramIos", "instagramAndroid",
+    "tiktokIos", "tiktokAndroid", "mobileSafari", "androidChrome", "androidTablet", "ipadSafari",
+  ] as const) {
+    assert.equal(requiresLineHandoffUA(UA[key]), true, key);
+  }
+});
+
+test("requiresLineHandoffUA: desktop → false (allowed — LINE Login or the QR choice)", () => {
+  for (const key of ["desktopChromeMac", "desktopChromeWin", "chromebook"] as const) {
+    assert.equal(requiresLineHandoffUA(UA[key]), false, key);
+  }
+  // iPadOS / Android "Desktop site" look like desktops to the server — LineHandoffGuard's job.
+  assert.equal(requiresLineHandoffUA(UA.ipadosSafari), false);
+  assert.equal(requiresLineHandoffUA(UA.androidDesktopSite), false);
+  assert.equal(requiresLineHandoffUA(""), false);
+});
+
+test("isMobileDevice: Mac UA — touch means iPadOS, none means a real Mac", () => {
+  assert.equal(isMobileDevice(UA.ipadosSafari, 5), true);
+  assert.equal(isMobileDevice(UA.desktopChromeMac, 5), true);
+  assert.equal(isMobileDevice(UA.ipadosSafari, 0), false);
+  assert.equal(isMobileDevice(UA.desktopChromeMac, 0), false);
+  assert.equal(isMobileDevice(UA.desktopChromeMac, 1), false); // > 1, not ≥ 1
+});
+
+test("isMobileDevice: X11 Linux + touch is Android 'Desktop site'; ChromeOS and Windows stay desktop", () => {
+  assert.equal(isMobileDevice(UA.androidDesktopSite, 5), true);
+  assert.equal(isMobileDevice(UA.androidDesktopSite, 0), false); // plain Linux desktop
+  assert.equal(isMobileDevice(UA.chromebook, 5), false);
+  assert.equal(isMobileDevice(UA.desktopChromeWin, 10), false); // Windows touch laptop
+});
+
+test("isMobileDevice: phone/tablet UAs → true whatever the touch count", () => {
+  for (const key of ["mobileSafari", "androidChrome", "androidTablet", "ipadSafari", "fbIos", "lineIos"] as const) {
+    assert.equal(isMobileDevice(UA[key], 5), true, key);
+    assert.equal(isMobileDevice(UA[key], 0), true, key);
+  }
+});
+
+test("isAndroidDevice: Android UA or Android 'Desktop site'; not iOS / iPadOS / ChromeOS", () => {
+  assert.equal(isAndroidDevice(UA.androidChrome, 5), true);
+  assert.equal(isAndroidDevice(UA.androidTablet, 10), true);
+  assert.equal(isAndroidDevice(UA.androidDesktopSite, 5), true);
+  assert.equal(isAndroidDevice(UA.androidDesktopSite, 0), false);
+  assert.equal(isAndroidDevice(UA.ipadosSafari, 5), false);
+  assert.equal(isAndroidDevice(UA.mobileSafari, 5), false);
+  assert.equal(isAndroidDevice(UA.chromebook, 5), false);
 });
 
 test("isAndroidUA", () => {
