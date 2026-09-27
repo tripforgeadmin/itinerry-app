@@ -283,7 +283,7 @@ export function mountDashboard(data: DashboardData, lang: Lang = "th"): () => vo
     const hot = ass.filter((a) => a.int === "execute" || a.int === "ready").length;
     const iI = document.getElementById("i-intent"); if (iI) iI.innerHTML = ass.length ? "<b>" + t(lang, '"ตั้งใจไป" + "พร้อมยื่น"', '"Intent to go" + "Ready"') + " = " + hot + " " + cases + "</b> (" + pctOf(hot, ass.length) + "%) " + t(lang, "คือกลุ่มร้อนที่ควรรีบติดตาม", "— the hot group to follow up fast") : "—";
 
-    // Channel question retired 2026-09-28 — new cases store contact_preference "" and are left out of this split.
+    // Channel question retired 2026-09-27 — new cases store contact_preference "" and are left out of this split.
     const cpAss = ass.filter((a) => a.cp === "line" || a.cp === "call" || a.cp === "online");
     const cLine = cpAss.filter((a) => a.cp === "line").length, cCall = cpAss.filter((a) => a.cp === "call").length, cOnline = cpAss.filter((a) => a.cp === "online").length;
     const cpAll: [string, number, string][] = [["LINE", cLine, C.sky], [t(lang, "โทรกลับ", "Call back"), cCall, C.sun], [t(lang, "ออนไลน์", "Online"), cOnline, C.navy]];

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
  * Public consultation-slot availability, built for the Q form's former booking step.
  *  - GET /api/booking/slots            → per-day free counts across the horizon
  *  - GET /api/booking/slots?date=ISO   → free 30-min slot starts for that date
- * Read-only. DORMANT since 2026-09-28: the contact step no longer books a slot (every
+ * Read-only. DORMANT since 2026-09-27: the contact step no longer books a slot (every
  * customer is contacted back within 2 days) and /api/submit no longer claims one, so
  * nothing calls this route; kept, with lib/booking.ts, in case booking returns.
  */

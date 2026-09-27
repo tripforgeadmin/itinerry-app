@@ -4,7 +4,7 @@ import { bangkokNow, makeConfig, type CallbackConfig } from "./holidays";
 import { createCalendarEvent } from "./google-calendar";
 
 /**
- * DORMANT since 2026-09-28 — the Q form no longer books consultations (the contact step
+ * DORMANT since 2026-09-27 — the Q form no longer books consultations (the contact step
  * collects contact info only; the team contacts every customer back within 2 days) and
  * /api/submit no longer calls createBooking. Existing consultation_booking rows are still
  * listed and managed in /admin/queue; this module stays for the public slots API and in

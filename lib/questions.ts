@@ -665,7 +665,7 @@ export const QUESTIONS: Question[] = [
     ],
   },
 
-  // S6 (q36 contact channel) + S7 (q37 consultation slot) were retired 2026-09-28: the
+  // S6 (q36 contact channel) + S7 (q37 consultation slot) were retired 2026-09-27: the
   // contact step collects contact info only and the team contacts every customer back within
   // 2 days. Old rows keep their user_assessment.contact_preference / callback_* values, and
   // bookings made before then live on in consultation_booking (admin /queue).
