@@ -110,7 +110,7 @@ export const QUESTIONS: Question[] = [
     placeholder: "example@email.com",
     placeholderEn: "example@email.com",
     required: true,
-    defaultNextId: "q36",
+    defaultNextId: "q7",
     section: "S1",
     sectionTitle: "ข้อมูลส่วนตัว",
     sectionTitleEn: "Personal Information",
@@ -665,39 +665,10 @@ export const QUESTIONS: Question[] = [
     ],
   },
 
-  // ── S6: Contact Preference ────────────────────────────────────
-  {
-    id: "q36",
-    type: "radio",
-    question: "สะดวกนัดคุยกับทีมเราแบบไหน?",
-    questionEn: "How would you like to talk to us?",
-    required: true,
-    section: "S6",
-    sectionTitle: "นัดคุยกับทีม",
-    sectionTitleEn: "Book a Consultation",
-    sectionEmoji: "🗓️",
-    options: [
-      { value: "call", label: "นัดคุยทางโทรศัพท์", labelEn: "Phone call", emoji: "📱", nextId: "q37" },
-      { value: "online", label: "นัด Online Meeting", labelEn: "Online meeting", emoji: "💻", nextId: "q37" },
-    ],
-  },
-
-  // ── S7: Consultation slot ─────────────────────────────────────
-  {
-    // Rendered inside ContactScreen (q3): a real date + 30-min-slot booking checked
-    // against the team calendar. q37 stores the slot "HH:MM", q37_date the ISO date.
-    id: "q37",
-    type: "radio",
-    question: "เลือกวันและเวลานัด",
-    questionEn: "Pick a date and time",
-    required: true,
-    section: "S7",
-    sectionTitle: "วัน-เวลานัด",
-    sectionTitleEn: "Appointment Slot",
-    sectionEmoji: "⏰",
-    options: [],
-    defaultNextId: "q7",
-  },
+  // S6 (q36 contact channel) + S7 (q37 consultation slot) were retired 2026-09-28: the
+  // contact step collects contact info only and the team contacts every customer back within
+  // 2 days. Old rows keep their user_assessment.contact_preference / callback_* values, and
+  // bookings made before then live on in consultation_booking (admin /queue).
   {
     // Captured on the final intent+found screen (rendered at q7); not its own routed step.
     id: "q38",

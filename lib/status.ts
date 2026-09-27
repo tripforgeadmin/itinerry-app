@@ -83,12 +83,20 @@ export function customerStatus(status: string, lang: Lang = "th"): { label: stri
   return { label: lang === "en" ? "Evaluated" : "ประเมินแล้ว", color: "bg-success-bg text-success-deep" };
 }
 
-// The customer-facing promise (lib/line-messaging.ts's assessmentReceivedMessage) is
-// "result SENT within 24h" — so the clock runs until result_sent_at is stamped, whatever
-// the pipeline status. It only stops early for closed (win/lost) cases: the deal is over,
-// flagging them forever would be noise. The submit route derives due_date from this same
-// constant (LINE = submit + SLA_HOURS, call = the chosen callback slot).
-export const SLA_HOURS = 24;
+// The customer-facing promise is "our specialist will contact you back within 2 days" —
+// 48h of calendar time (weekends/holidays count). The copy lives in lib/line-messaging.ts
+// (post-submit + follow-webhook LINE messages, pinned to this constant by
+// lib/line-messaging.test.ts), app/done/page.tsx, app/auth/page.tsx and lib/line-flex.ts's
+// share card. The clock runs until result_sent_at is stamped, whatever the pipeline status.
+// It only stops early for closed (win/lost) cases: the deal is over, flagging them forever
+// would be noise. The submit + manual-case routes store due_date = slaDueDate() (creation +
+// SLA_HOURS); rows from the retired consultation-booking flow carry the booked slot instead.
+export const SLA_HOURS = 48;
+
+/** SLA deadline for a case created at `from` — SLA_HOURS later, in calendar time. */
+export function slaDueDate(from: Date | string | number = Date.now()): Date {
+  return new Date(new Date(from).getTime() + SLA_HOURS * 60 * 60 * 1000);
+}
 
 export function isOverdue(
   createdAt: string,
@@ -98,10 +106,8 @@ export function isOverdue(
 ): boolean {
   if (resultSentAt) return false; // promise fulfilled
   if (isClosed(status)) return false;
-  // Prefer the stored SLA due date (LINE = +24h, call = chosen slot). Fall back to created+24h
-  // for rows written before due_date existed.
-  const deadline = dueDate
-    ? new Date(dueDate).getTime()
-    : new Date(createdAt).getTime() + SLA_HOURS * 60 * 60 * 1000;
+  // Prefer the stored SLA due date (created + 48h; booked slot on booking-era rows). Fall back
+  // to created + SLA_HOURS for rows written before due_date existed.
+  const deadline = dueDate ? new Date(dueDate).getTime() : slaDueDate(createdAt).getTime();
   return Date.now() > deadline;
 }

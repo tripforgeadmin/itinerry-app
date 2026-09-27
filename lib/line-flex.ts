@@ -137,22 +137,24 @@ const TEXTS = {
   th: {
     alt: "itinerry — เช็คโอกาสผ่านวีซ่าฟรี ใน 2 นาที",
     title: "เช็คโอกาสผ่านวีซ่าของคุณ ฟรี!",
-    subtitle: "ตอบคำถามสั้นๆ 2 นาที ผู้เชี่ยวชาญวิเคราะห์ รู้ผลใน 24 ชม.",
+    subtitle: "ตอบคำถามสั้นๆ 2 นาที ผู้เชี่ยวชาญวิเคราะห์ ติดต่อกลับภายใน 2 วัน",
     open: "เปิดแอป",
     share: "แชร์ให้เพื่อน",
   },
   en: {
     alt: "itinerry — free visa eligibility check in 2 minutes",
     title: "Check your visa chances — free!",
-    subtitle: "A 2-minute questionnaire, reviewed by experts, results within 24 hours",
+    subtitle: "A 2-minute questionnaire, reviewed by experts, who get back to you within 2 days",
     open: "Open app",
     share: "Share with friends",
   },
 } as const;
 
+// New filenames (not overwrites) so LINE's per-URL image cache can't keep serving the old
+// "24 hours" art. Keep share-card-v3.png / share-card-en.png — already-sent cards still load them.
 const HERO_IMAGE: Record<"th" | "en", string> = {
-  th: "share-card-v3.png",
-  en: "share-card-en.png",
+  th: "share-card-v4.png",
+  en: "share-card-en-v2.png",
 };
 
 export function shareCardFlex(lang: "th" | "en" = "th") {

@@ -1,14 +1,15 @@
 /**
- * isOverdue tests — the 24h "result SENT" SLA clock. The promise is fulfilled only by
- * result_sent_at (not by leaving pending_review), stops for closed deals, and falls
- * back to created_at + SLA_HOURS for legacy rows without a due_date.
+ * SLA tests — the 2-day (48h, calendar time) contact-back promise: slaDueDate (the due_date
+ * new cases store) and the isOverdue clock. The clock is fulfilled only by result_sent_at
+ * (not by leaving pending_review), stops for closed deals, and falls back to
+ * created_at + SLA_HOURS for legacy rows without a due_date.
  *
  * Run:  node --test lib/status.test.ts
  */
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isOverdue, SLA_HOURS } from "./status.ts";
+import { isOverdue, slaDueDate, SLA_HOURS } from "./status.ts";
 
 const HOUR = 60 * 60 * 1000;
 const pastDue = new Date(Date.now() - 2 * HOUR).toISOString();
@@ -46,4 +47,28 @@ test("legacy row without due_date falls back to created_at + SLA_HOURS", () => {
   const wellUnder = new Date(Date.now() - 1 * HOUR).toISOString();
   assert.equal(isOverdue(justOver, "pending_review", null, null), true);
   assert.equal(isOverdue(wellUnder, "pending_review", null, null), false);
+});
+
+test("the promise is 2 days = 48h", () => {
+  assert.equal(SLA_HOURS, 48);
+});
+
+test("legacy fallback uses the 48h window (30h old → still on time, 49h → overdue)", () => {
+  const h30 = new Date(Date.now() - 30 * HOUR).toISOString();
+  const h49 = new Date(Date.now() - 49 * HOUR).toISOString();
+  assert.equal(isOverdue(h30, "pending_review", null, null), false);
+  assert.equal(isOverdue(h49, "pending_review", null, null), true);
+});
+
+test("slaDueDate = creation + 48h in calendar time (Friday submit → due Sunday)", () => {
+  const friday = new Date("2026-10-02T10:00:00+07:00");
+  assert.equal(slaDueDate(friday).toISOString(), new Date("2026-10-04T10:00:00+07:00").toISOString());
+  // accepts the ISO string a row's created_at arrives as
+  assert.equal(slaDueDate("2026-10-02T03:00:00.000Z").toISOString(), "2026-10-04T03:00:00.000Z");
+});
+
+test("slaDueDate() with no argument counts from now", () => {
+  const before = Date.now();
+  const due = slaDueDate().getTime();
+  assert.ok(due >= before + SLA_HOURS * HOUR && due <= Date.now() + SLA_HOURS * HOUR);
 });

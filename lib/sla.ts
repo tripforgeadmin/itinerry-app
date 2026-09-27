@@ -1,6 +1,6 @@
 // Internal stage-aging SLA: how long a case may sit in a mid-pipeline status before
 // it's flagged "stale" in the admin list. This is separate from the customer-facing
-// 24h result-send SLA (lib/status.ts isOverdue) — pending_review has that one, and
+// 2-day (48h) contact-back SLA (lib/status.ts isOverdue) — pending_review has that one, and
 // win/lost are closed, so neither appears here. Thresholds are admin-editable at
 // /admin/sla (stored in app_config key `sla_stage_hours`); the values below are the
 // fallbacks used when nothing is configured.

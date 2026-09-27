@@ -3,8 +3,7 @@ import { runAssessment } from "@/lib/assessment";
 import { supabase } from "@/lib/supabase";
 import { generateTicketId } from "@/lib/ticket";
 import { normalizePhone } from "@/lib/dialCodes";
-import { bangkokDateTimeToUtc } from "@/lib/holidays";
-import { SLA_HOURS } from "@/lib/status";
+import { slaDueDate } from "@/lib/status";
 import { requireAdmin } from "@/lib/adminAuth";
 import { toNull, toJson, tripFieldsFromAnswers, coreAssessmentFieldsFromAnswers, branchAnswersFromAnswers } from "@/lib/manual-case-mapping";
 
@@ -90,12 +89,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: tripError?.message ?? "trip failed" }, { status: 500 });
   }
 
-  // ---- callback slot + SLA due date (identical to /api/submit) ----
-  const isBookingChannel = answers.q36 === "call" || answers.q36 === "online";
-  const validSlot = /^\d{1,2}:\d{2}$/.test(answers.q37 ?? "") && /^\d{4}-\d{2}-\d{2}$/.test(answers.q37_date ?? "");
-  const rawCb = isBookingChannel && validSlot ? bangkokDateTimeToUtc(answers.q37_date, answers.q37) : null;
-  const callbackDatetime = rawCb && !isNaN(rawCb.getTime()) ? rawCb : null;
-  const dueDate = callbackDatetime ?? new Date(Date.now() + SLA_HOURS * 60 * 60 * 1000);
+  // ---- SLA due date (identical to /api/submit): created + 48h, no callback slot ----
+  const dueDate = slaDueDate();
 
   // ===== 3) user_assessment =====
   const ticketId = await generateTicketId(answers.q8 ?? "");
@@ -105,9 +100,9 @@ export async function POST(request: NextRequest) {
     ticket_id:            ticketId,
     ...coreAssessmentFieldsFromAnswers(answers),
     intent:               toNull(answers.q38),
-    contact_preference:   answers.q36 ?? "",
-    callback_time:        callbackDatetime ? `${answers.q37_date} ${answers.q37}` : null,
-    callback_datetime:    callbackDatetime ? callbackDatetime.toISOString() : null,
+    contact_preference:   "", // NOT NULL — same as /api/submit, no channel question
+    callback_time:        null,
+    callback_datetime:    null,
     due_date:             dueDate.toISOString(),
     branch_answers:       branchAnswers,
     entry_source:         "manual",

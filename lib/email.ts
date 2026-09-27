@@ -33,7 +33,13 @@ export async function sendNewLeadEmail(params: NewLeadParams) {
   const visaLabel = VISA_LABEL[visaType] ?? visaType;
   const subject = `[New Lead] ${ticketId ? `${ticketId} · ` : ""}${fullName} · ${visaLabel} · ${destination.toUpperCase()}`;
   const adminUrl = `${appUrl}/admin/${assessmentId}`;
-  const contactLabel = contactPreference === "line" ? "LINE OA" : "โทรกลับ";
+  // New submissions store "" — the customer no longer picks a channel; the team contacts them
+  // back (LINE or phone) within 2 days. "call"/"online" remain on older, booked cases.
+  const contactLabel =
+    contactPreference === "line" ? "LINE OA"
+    : contactPreference === "call" ? "โทรกลับ"
+    : contactPreference === "online" ? "Online Meeting"
+    : "ทีมติดต่อกลับภายใน 2 วัน";
 
   const { error } = await getResend().emails.send({
     from: "no-reply@tripforge.co",

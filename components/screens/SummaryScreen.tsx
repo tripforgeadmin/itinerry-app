@@ -20,7 +20,7 @@ const ROWS: [string, string][] = [
   ["อาชีพ", "q24"], ["หนังสือรับรองงาน", "q25"], ["เอกสารรายได้", "q26"], ["เอกสารภาษี", "q27"], ["จดทะเบียนธุรกิจ", "q28"], ["ผู้รับผิดชอบค่าใช้จ่าย", "q29"],
   ["เคยถูกปฏิเสธวีซ่า", "q30"], ["รายละเอียดการปฏิเสธ", "q31"], ["Overstay", "q32"], ["รายละเอียด Overstay", "q33"],
   ["เงินออม", "q34"], ["ความผูกพันกับไทย", "q35"],
-  ["ช่องทางติดต่อ", "q36"], ["เวลาติดต่อ", "q37"], ["ความต้องการ", "q38"], ["รู้จักจาก", "q7"],
+  ["ความต้องการ", "q38"], ["รู้จักจาก", "q7"],
 ];
 
 function display(qid: string, answers: Record<string, string>, lang: "th" | "en"): string | null {
@@ -33,16 +33,6 @@ function display(qid: string, answers: Record<string, string>, lang: "th" | "en"
   };
   // phone → prefix the dial code, e.g. "(+66) 0812345678"
   if (qid === "q5") return `(${answers["q5_cc"] || "+66"}) ${v}`;
-  // callback slot → readable "<date> <HH:00 น.>" from q37_date + q37 (chosen hourly slot)
-  if (qid === "q37") {
-    const d = answers["q37_date"];
-    if (d) {
-      const dt = new Date(`${d}T00:00:00`);
-      const day = dt.toLocaleDateString(lang === "th" ? "th-TH" : "en-GB", { weekday: "short", day: "numeric", month: "short" });
-      return `${day} ${v}${lang === "th" ? " น." : ""}`;
-    }
-    return v;
-  }
   // radio "other" with a free-text write-in
   if (q.allowOtherText && v === "other") return answers[`${qid}_other`] || label("other");
   if (q.type === "multiCheckbox") return v.split(", ").filter(Boolean).map(label).join(", ");

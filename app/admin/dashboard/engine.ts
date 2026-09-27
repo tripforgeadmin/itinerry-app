@@ -283,9 +283,13 @@ export function mountDashboard(data: DashboardData, lang: Lang = "th"): () => vo
     const hot = ass.filter((a) => a.int === "execute" || a.int === "ready").length;
     const iI = document.getElementById("i-intent"); if (iI) iI.innerHTML = ass.length ? "<b>" + t(lang, '"ตั้งใจไป" + "พร้อมยื่น"', '"Intent to go" + "Ready"') + " = " + hot + " " + cases + "</b> (" + pctOf(hot, ass.length) + "%) " + t(lang, "คือกลุ่มร้อนที่ควรรีบติดตาม", "— the hot group to follow up fast") : "—";
 
-    const cLine = ass.filter((a) => a.cp === "line").length, cCall = ass.filter((a) => a.cp === "call").length;
-    const cpRows: [string, number][] = ([["LINE", cLine], [t(lang, "โทรกลับ", "Call back"), cCall]] as [string, number][]).filter((r) => r[1] > 0);
-    fill("c-contact", ass.length ? donut(cpRows, { pal: [C.sky, C.sun], size: 150, top: pctOf(cLine, ass.length) + "%", sub: t(lang, "เลือก LINE", "chose LINE") }) + legend(cpRows, [C.sky, C.sun]) : empty());
+    // Channel question retired 2026-09-28 — new cases store contact_preference "" and are left out of this split.
+    const cpAss = ass.filter((a) => a.cp === "line" || a.cp === "call" || a.cp === "online");
+    const cLine = cpAss.filter((a) => a.cp === "line").length, cCall = cpAss.filter((a) => a.cp === "call").length, cOnline = cpAss.filter((a) => a.cp === "online").length;
+    const cpAll: [string, number, string][] = [["LINE", cLine, C.sky], [t(lang, "โทรกลับ", "Call back"), cCall, C.sun], [t(lang, "ออนไลน์", "Online"), cOnline, C.navy]];
+    const cpKept = cpAll.filter((r) => r[1] > 0);
+    const cpRows: [string, number][] = cpKept.map((r) => [r[0], r[1]]), cpPal = cpKept.map((r) => r[2]);
+    fill("c-contact", cpAss.length ? donut(cpRows, { pal: cpPal, size: 150, top: pctOf(cLine, cpAss.length) + "%", sub: t(lang, "เลือก LINE", "chose LINE") }) + legend(cpRows, cpPal) : empty());
 
     const buckets = [[20, 30], [30, 40], [40, 50], [50, 60], [60, 70], [70, 80], [80, 90], [90, 100]];
     const hrows: [string, number][] = buckets.map((b) => [b[0] + "–" + b[1], scores.filter((s) => s >= b[0] && s < (b[1] === 100 ? 101 : b[1])).length] as [string, number]);

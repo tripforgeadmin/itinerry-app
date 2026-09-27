@@ -107,8 +107,8 @@ export default function DonePage() {
               <span className="text-3xl">💬</span>
               <p className="text-white font-bold text-base">พร้อมติดต่อคุณแล้ว!</p>
               <p className="text-white/50 text-sm leading-relaxed">
-                ทีม itinerry จะติดต่อคุณผ่าน LINE<br />
-                และเบอร์โทรที่ให้ไว้ภายใน 24 ชม.
+                ทีม itinerry จะติดต่อกลับผ่าน LINE<br />
+                และเบอร์โทรที่ให้ไว้ภายใน 2 วัน
               </p>
             </div>
             <div className="px-6 pb-5 pt-1">
@@ -194,7 +194,7 @@ export default function DonePage() {
           <div className="flex flex-col gap-2.5">
             {[
               { icon: "🔍", text: "ทีมวิเคราะห์ข้อมูลและประเมินโอกาสผ่านวีซ่า" },
-              { icon: "💬", text: "ผู้เชี่ยวชาญส่งผลผ่าน LINE ภายใน 24 ชม." },
+              { icon: "💬", text: "ผู้เชี่ยวชาญติดต่อกลับภายใน 2 วัน" },
               { icon: "🗺️", text: "วางแผนและดำเนินการยื่นวีซ่าร่วมกัน" },
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3">

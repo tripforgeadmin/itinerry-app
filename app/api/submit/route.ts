@@ -11,10 +11,7 @@ import { pushMessageLogged } from "@/lib/message-log";
 import { normalizePhone, formatPhone } from "@/lib/dialCodes";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { assessmentReceivedFlex } from "@/lib/line-flex";
-import { bangkokDateTimeToUtc } from "@/lib/holidays";
-import { createBooking, bookingEventTitle } from "@/lib/booking";
-import { updateCalendarEventTitle } from "@/lib/google-calendar";
-import { SLA_HOURS } from "@/lib/status";
+import { slaDueDate } from "@/lib/status";
 
 function toNull(v: string | undefined): string | null {
   return v && v !== "" ? v : null;
@@ -83,6 +80,11 @@ export async function POST(request: NextRequest) {
   const { answers } = body as { answers: Record<string, string> };
   const attribution = sanitizeAttribution(body.attribution);
 
+  // The contact step no longer asks for a consultation channel/slot (q36, q37 + q37_date) —
+  // a browser still holding a form session from before that change may send them; drop them
+  // so nothing below records, books or reports a slot the customer can't see any more.
+  for (const key of ["q36", "q37", "q37_date"]) delete answers[key];
+
   // ---- sparse categorical branch answers, keyed by question id ----
   const branchAnswers: Record<string, string | string[]> = {};
   const branchMap: Record<string, string> = {
@@ -148,40 +150,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: accountError?.message ?? "account failed" }, { status: 500 });
   }
 
-  // ---- consultation booking (q36 = call | online, q37/q37_date = 30-min slot) ----
-  // Claim the slot BEFORE creating trip/assessment rows: if someone else just took it we
-  // 409 out cleanly and the form sends the customer back to pick a new time — no orphan
-  // records. The partial unique index on consultation_booking makes the claim race-safe.
-  const isBookingChannel = answers.q36 === "call" || answers.q36 === "online";
-  const validSlot = /^\d{1,2}:\d{2}$/.test(answers.q37 ?? "") && /^\d{4}-\d{2}-\d{2}$/.test(answers.q37_date ?? "");
-  const rawCb = isBookingChannel && validSlot ? bangkokDateTimeToUtc(answers.q37_date, answers.q37) : null;
-  const callbackDatetime = rawCb && !isNaN(rawCb.getTime()) ? rawCb : null;
-  // A valid slot → due at that exact time; otherwise the generic 24h SLA.
-  const dueDate = callbackDatetime ?? new Date(Date.now() + SLA_HOURS * 60 * 60 * 1000);
-
-  let bookingId: string | null = null;
-  let bookingMeetLink: string | null = null;
-  let bookingGcalEventId: string | null = null;
-  const bookingChannel = answers.q36 === "online" ? "online" : "phone";
-  if (callbackDatetime) {
-    const claim = await createBooking({
-      assessmentId: null, // linked right after the assessment insert below
-      accountId: account.id,
-      channel: bookingChannel,
-      slotStartIso: `${answers.q37_date}T${answers.q37.padStart(5, "0")}:00+07:00`,
-      customerName: nickname,
-      phone: formatPhone(toNull(answers.q5_cc) ?? "+66", answers.q5 ?? ""),
-    });
-    if (!claim.ok && claim.reason === "taken") {
-      return NextResponse.json({ ok: false, error: "slot_taken" }, { status: 409 });
-    }
-    // "invalid"/"error" → keep the lead; callback_datetime still records the requested time.
-    if (claim.ok) {
-      bookingId = claim.id;
-      bookingMeetLink = claim.meetLink;
-      bookingGcalEventId = claim.gcalEventId;
-    }
-  }
+  // ---- contact-back SLA ----
+  // No consultation slot is booked any more: every new case is promised a contact-back
+  // within 2 days, so the admin due date is submit + SLA_HOURS (48h, calendar time) and
+  // there's no callback slot. (Bookings made before this change stay in consultation_booking
+  // and are still worked from /admin/queue.)
+  const dueDate = slaDueDate();
 
   // ===== 2) user_trip (destination + visa type + dates) =====
   const { data: trip, error: tripError } = await supabase
@@ -204,19 +178,6 @@ export async function POST(request: NextRequest) {
 
   // ===== 3) user_assessment (qualification + screening) =====
   const ticketId = await generateTicketId(answers.q8 ?? "");
-
-  // The calendar event (if any) was created before the ticket ID existed — patch the
-  // title now that it's minted. Best-effort: never blocks the submit.
-  if (bookingGcalEventId && callbackDatetime) {
-    try {
-      await updateCalendarEventTitle(
-        bookingGcalEventId,
-        bookingEventTitle({ channel: bookingChannel, startMs: callbackDatetime.getTime(), customerName: nickname, ticketId })
-      );
-    } catch (err) {
-      console.error("booking calendar title patch error:", err);
-    }
-  }
   const { data: assessment, error: assessError } = await supabase.from("user_assessment").insert({
     trip_id:              trip.id,
     account_id:           account.id,
@@ -231,9 +192,9 @@ export async function POST(request: NextRequest) {
     overstay_entries:     answers.q32 === "yes" ? toJson(answers.q33_entries) : null,
     savings_balance:      answers.q34 ?? "",
     ties_thailand:        toArray(answers.q35),
-    contact_preference:   answers.q36 ?? "",
-    callback_time:        callbackDatetime ? `${answers.q37_date} ${answers.q37}` : null,
-    callback_datetime:    callbackDatetime ? callbackDatetime.toISOString() : null,
+    contact_preference:   "", // NOT NULL, no default — no channel question any more; admin views hide ""
+    callback_time:        null,
+    callback_datetime:    null,
     due_date:             dueDate.toISOString(),
     branch_answers:       branchAnswers,
     ...attribution, // utm_source/medium/campaign/term/content + referrer (null when no ad-click)
@@ -241,16 +202,6 @@ export async function POST(request: NextRequest) {
   if (assessError || !assessment) {
     console.error("assessment insert error:", assessError);
     return NextResponse.json({ ok: false, error: assessError?.message ?? "assessment failed" }, { status: 500 });
-  }
-
-  // Link the claimed consultation slot to this assessment (best-effort — the booking
-  // already carries account_id, so a failed link never loses the appointment).
-  if (bookingId) {
-    const { error: linkErr } = await supabase
-      .from("consultation_booking")
-      .update({ assessment_id: assessment.id })
-      .eq("id", bookingId);
-    if (linkErr) console.error("booking link error:", linkErr);
   }
 
   // Auto rule-engine evaluation — runs AFTER the response so it never adds latency.
@@ -285,7 +236,7 @@ export async function POST(request: NextRequest) {
   try {
     const auto = runAssessment(answers);
     pdfBuffer = await renderWorksheetPdf(
-      worksheetFromSubmission({ answers, branchAnswers, ticketId, dueDate, callbackDatetime, auto: auto.result })
+      worksheetFromSubmission({ answers, branchAnswers, ticketId, dueDate, callbackDatetime: null, auto: auto.result })
     );
   } catch (err) {
     console.error("pdf error:", err);
@@ -300,7 +251,7 @@ export async function POST(request: NextRequest) {
       destination: answers.q8 ?? "",
       travelArrival: answers.q10 ?? answers.q13 ?? answers.q17 ?? "",
       travelReturn: answers.q11 ?? answers.q39 ?? answers.q18 ?? "",
-      contactPreference: answers.q36 ?? "",
+      contactPreference: "",
       appUrl,
       pdfBuffer,
     });
@@ -314,24 +265,17 @@ export async function POST(request: NextRequest) {
   try {
     if (profile?.userId) {
       const msgLang = answers.q4 === "other" ? "en" : "th";
-      // When a consultation slot was claimed, the follow-up's first line becomes the
-      // appointment promise (phone: "expert will call"; online: the Meet link) instead
-      // of the generic result-delivery SLA — dueDate is the slot start in that case.
-      const booking = callbackDatetime
-        ? { channel: answers.q36 === "online" ? ("online" as const) : ("phone" as const), meetLink: bookingMeetLink }
-        : undefined;
+      // Flex thank-you card + the follow-up whose first line is the 2-day contact-back promise.
       const delivered = await pushMessageLogged({
         to: profile.userId,
         messages: [
           assessmentReceivedFlex(ticketId, msgLang),
-          assessmentFollowUpMessage(msgLang, dueDate.toISOString(), booking, profile.displayName),
+          assessmentFollowUpMessage(msgLang, profile.displayName),
         ],
         accountId: account.id,
         assessmentId,
         kind: "ticket_received",
-        content: booking
-          ? `[Flex] แจ้งรับเรื่อง · ${ticketId} + ข้อความนัดหมายปรึกษา (${booking.channel === "online" ? "Google Meet" : "โทรศัพท์"})`
-          : `[Flex] แจ้งรับเรื่อง · ${ticketId} + ข้อความติดตามผลใน 24 ชม.`,
+        content: `[Flex] แจ้งรับเรื่อง · ${ticketId} + ข้อความติดต่อกลับภายใน 2 วัน`,
       });
       if (delivered) {
         await supabase

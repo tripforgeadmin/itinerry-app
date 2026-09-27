@@ -4,8 +4,14 @@ import { bangkokNow, makeConfig, type CallbackConfig } from "./holidays";
 import { createCalendarEvent } from "./google-calendar";
 
 /**
- * Consultation-slot rules (single source of truth for the Q form, the public slots API
- * and the admin queue):
+ * DORMANT since 2026-09-28 — the Q form no longer books consultations (the contact step
+ * collects contact info only; the team contacts every customer back within 2 days) and
+ * /api/submit no longer calls createBooking. Existing consultation_booking rows are still
+ * listed and managed in /admin/queue; this module stays for the public slots API and in
+ * case booking comes back.
+ *
+ * Consultation-slot rules (single source of truth for the public slots API and any future
+ * booking flow):
  *  - 30-minute slots, 09:00–18:00 Bangkok (last start 17:30). Customer-facing copy says
  *    "~20 นาที" — the extra 10 min is the team's buffer, never shown.
  *  - Days off follow the same admin-editable calendar config as the old callback picker
